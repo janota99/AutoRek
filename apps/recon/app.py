@@ -31,6 +31,7 @@ run, plus an optional simplified export:
 from __future__ import annotations
 
 import hashlib
+import time
 from datetime import datetime
 from typing import Optional, Any
 
@@ -58,7 +59,12 @@ from apps.recon.ui_components import (
     render_upload_source_heading,
     show_toast_once,
 )
-from apps.recon.utils import clear_results_if_signature_changed, format_central_timestamp, run_id_for_inputs
+from apps.recon.utils import (
+    clear_prepared_workbooks,
+    clear_results_if_signature_changed,
+    format_central_timestamp,
+    run_id_for_inputs,
+)
 from apps.recon.assets.ui_assets import INFOR_LOGO_URI, QUICKBOOKS_LOGO_URI
 from apps.recon.uploads import (
     render_uploaded_dataset_summary,
@@ -74,6 +80,8 @@ from apps.recon.uploads import (
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    # For the Downloads tab's "page refreshed in" timing readout.
+    run_started = time.perf_counter()
     # Page title and wide layout come from st.navigation in the root app.py.
     load_app_css()
     st.markdown(
@@ -221,8 +229,8 @@ def main() -> None:
     st.sidebar.markdown("## Configuration Settings")
 
     if qb_file is None or inf_file is None:
-        for state_key in ("reconciliation_result", "primary_workbook"):
-            st.session_state.pop(state_key, None)
+        st.session_state.pop("reconciliation_result", None)
+        clear_prepared_workbooks()
 
         with progress_container:
             render_ingestion_flow(
@@ -678,14 +686,14 @@ def main() -> None:
             st.session_state.reconciliation_result = result
             # Workbook bytes are generated only from the Downloads tab. This
             # keeps the reconciliation action focused on matching and controls.
-            st.session_state.pop("primary_workbook", None)
+            clear_prepared_workbooks()
             st.rerun()
         except Exception as exc:
             st.error(f"Reconciliation stopped safely: {exc}")
             return
 
     if "reconciliation_result" in st.session_state:
-        render_result(st.session_state.reconciliation_result)
+        render_result(st.session_state.reconciliation_result, run_started=run_started)
 
 
 if __name__ == "__main__":

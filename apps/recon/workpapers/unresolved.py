@@ -71,6 +71,32 @@ from .sheet_parts import (
 )
 
 
+# Appended to the row-1 title: row 1 is the only summary row still showing
+# when the group is collapsed, so it has to say what is folded away.
+
+SUMMARY_GROUP_MARKER = (
+    "⊞ GROUPED SUMMARY — click + / – beside row 1 to show or hide KPIs, reason codes, "
+    "and exceptions by fiscal period"
+)
+
+
+def _group_summary_rows(ws, first_row: int, last_row: int) -> None:
+    """Fold the summary block (caption, KPIs, legends, reason codes, the
+    fiscal-period table) into one collapsed outline group, so the sheet opens
+    on the exceptions table. The +/- button sits beside row 1, above the
+    group, and the frozen area shrinks to the title and header rows.
+
+    Only outlineLevel/hidden are set here; the row-height passes in
+    finishing.py set .height alone, so they leave the group intact."""
+    for row in range(first_row, last_row + 1):
+        dimension = ws.row_dimensions[row]
+        dimension.outlineLevel = 1
+        dimension.hidden = True
+    ws.row_dimensions[first_row - 1].collapsed = True
+    ws.sheet_properties.outlinePr.summaryBelow = False
+    ws.sheet_format.outlineLevelRow = 1
+
+
 def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ws = wb.create_sheet(UNRESOLVED_EXCEPTIONS_SHEET)
 
@@ -251,7 +277,9 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
 
     _write_title_band(
         ws, 1, 1, end_col,
-        f"{_fiscal_period_prefix(result)} | QUICKBOOKS EXCEPTIONS | JOURNAL ENTRY SUPPORT", NAVY,
+        f"{_fiscal_period_prefix(result)} | QUICKBOOKS EXCEPTIONS | JOURNAL ENTRY SUPPORT"
+        f"    {SUMMARY_GROUP_MARKER}",
+        NAVY,
     )
     _write_caption_band(
         ws, 2, 1, end_col,
@@ -448,6 +476,9 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ws.column_dimensions[get_column_letter(note_offset)].width = 36
     _set_widths(ws, 1, len(source_headers), header_row, total_row)
     ws.freeze_panes = f"A{data_row}"
+    # Everything between the title and the exceptions table. Computed per run:
+    # the reason-code glossary and the fiscal-period table change length.
+    _group_summary_rows(ws, 2, header_row - 1)
     if len(frame):
         note_col = get_column_letter(note_offset)
         validation = DataValidation(

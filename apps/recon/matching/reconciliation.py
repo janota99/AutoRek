@@ -54,7 +54,9 @@ from .summaries import (
     build_customer_summary,
     build_exception_analysis,
     build_method_summary,
+    build_product_review_items,
     build_product_summary,
+    customer_cases_without_bottle_count,
 )
 from .validation import validate_reconciliation
 
@@ -452,6 +454,18 @@ def build_reconciliation(
         metadata.get("fiscal_period"),
         fiscal_year,
     )
+    product_review_items = build_product_review_items(
+        qb,
+        qb_mapping,
+        metadata.get("fiscal_period"),
+        fiscal_year,
+    )
+    customer_cases_without_bottles = customer_cases_without_bottle_count(
+        qb,
+        qb_mapping,
+        metadata.get("fiscal_period"),
+        fiscal_year,
+    )
     controls = build_controls(
         qb, inf, matches, historical_clearances, unmatched_qb, unmatched_inf,
         duplicate_qb_rows_final, inf_screen.duplicate_rows,
@@ -711,6 +725,8 @@ def build_reconciliation(
         reference_hold_analysis=reference_hold_analysis,
         reference_hold_qb_rows=reference_hold_qb,
         qb_dispositions=qb_dispositions,
+        product_review_items=product_review_items,
+        customer_cases_without_bottles=customer_cases_without_bottles,
     )
     validate_reconciliation(result)
     return result

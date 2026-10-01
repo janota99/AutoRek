@@ -19,8 +19,8 @@ An optional legacy-format export, `Sales_Reconciliation_Legacy_<run>.xlsx`, is a
 | `vendor_aliases.py` + `vendor_aliases.json` | Human-confirmed customer/vendor identity pairs, each with `confirmed_by`, date, and rationale. |
 | `matching/` | The matching engine (package; see below). |
 | `workpapers/` | Excel workbook builders (package; see below). No Streamlit. |
-| `excel_styles.py` | openpyxl styling primitives: borders, bands, number formats, autofit. |
-| `ui_components.py` | Streamlit UI blocks: CSS loading, KPI cards, stepper, results tabs, Downloads tab. |
+| `excel_styles.py` | openpyxl styling primitives: borders, bands, number formats, autofit. `_CellPainter` reuses each distinct cell style instead of re-hashing it per cell, which roughly halves the build time; it copies openpyxl's internal `cell._style`, so openpyxl is pinned to 3.1.x and `tests/test_excel_styles.py` guards it. |
+| `ui_components.py` | Streamlit UI blocks: CSS loading, KPI cards, stepper, results tabs, Downloads tab (with a "Workbook built in X s · page refreshed in Y s" readout). |
 | `utils.py`, `config.py` | Run signature and formatting helpers; palette and time-zone constants. |
 | `assets/` | QuickBooks/Infinium logos as data URIs (`ui_assets.py`). The suite logo lives in `shared/assets/`. |
 | `tests/` | pytest suite. `conftest.py` holds the shared QB/Infinium mapping and run-metadata fixtures. |
@@ -33,7 +33,7 @@ callers write `from .matching import build_reconciliation`, not the submodule pa
 
 | Module | Owns |
 |---|---|
-| `core` | `APP_VERSION`, `MATCHING_RULE_VERSION`, the `MatchGroup` / `ReconciliationResult` types, PO/invoice/amount normalization, `PRODUCT_LEXICON`, fiscal-period parsing, `flag_mask`. |
+| `core` | `APP_VERSION`, `MATCHING_RULE_VERSION`, the `MatchGroup` / `ReconciliationResult` types, PO/invoice/amount normalization, `PRODUCT_LEXICON`, the reporting-only product classifier (`product_match`, `pack_size`), fiscal-period parsing, `flag_mask`. |
 | `labels` | Section, hold, disposition, and match-reference label constants. |
 | `engine` | `prepare_working_frame`, `perform_matching`: every exact, grouped, and fuzzy pass. |
 | `exceptions` | Amount variances, ambiguous duplicate candidates, PO reuse errors. |
@@ -41,7 +41,7 @@ callers write `from .matching import build_reconciliation`, not the submodule pa
 | `holds` | Reason codes and the reference-evidence review holds. |
 | `dispositions` | Final QuickBooks dispositions, fuzzy-match review holds, historical clearances. |
 | `paired_rows` | The side-by-side paired-row table and per-match assessments. |
-| `summaries` | Method, product, and customer summaries; exception analysis; the controls table. |
+| `summaries` | Method, product (with bottle counts and the items-needing-review list), and customer summaries; exception analysis; the controls table. |
 | `validation` | `validate_reconciliation`: end-of-run integrity checks. |
 | `reconciliation` | `build_reconciliation`: runs every step above in order. |
 

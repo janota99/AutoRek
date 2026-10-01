@@ -72,8 +72,19 @@ def run_id_for_inputs(*source_hashes: str) -> tuple[str, datetime]:
     return f"REC-{now_central.strftime('%Y%m%d-%H%M%S')}-{digest}", now_central
 
 
+# Everything the Downloads tab prepares from one reconciliation result. A new
+# result must clear all of it, or a Download button would serve the previous
+# run's file under the new run ID.
+PREPARED_WORKBOOK_KEYS = ("primary_workbook", "primary_workbook_timing", "legacy_workbook")
+
+
+def clear_prepared_workbooks() -> None:
+    for key in PREPARED_WORKBOOK_KEYS:
+        st.session_state.pop(key, None)
+
+
 def clear_results_if_signature_changed(signature: tuple[Any, ...]) -> None:
     if st.session_state.get("input_signature") != signature:
         st.session_state.input_signature = signature
         st.session_state.pop("reconciliation_result", None)
-        st.session_state.pop("primary_workbook", None)
+        clear_prepared_workbooks()

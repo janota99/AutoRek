@@ -1312,12 +1312,79 @@ def test_main_sheet_titles_lead_with_the_fiscal_period(qb_mapping, inf_mapping, 
     prefix = "FISCAL PERIOD 05 - 2026"
     assert wb["Raw Data"]["A1"].value == f"{prefix} | QUICKBOOKS | RAW TRANSACTION DETAIL"
     assert wb["Reconciliation Detail"]["A1"].value == f"{prefix} | QUICKBOOKS | RECONCILIATION DETAIL"
-    assert wb["Unresolved Exceptions"]["A1"].value == f"{prefix} | QUICKBOOKS EXCEPTIONS | JOURNAL ENTRY SUPPORT"
+    assert wb["Unresolved Exceptions"]["A1"].value.startswith(
+        f"{prefix} | QUICKBOOKS EXCEPTIONS | JOURNAL ENTRY SUPPORT"
+    )
     # The other run says period 01 -- the titles differ, which is the point.
     other = load_workbook(io.BytesIO(build_primary_workbook(result)))
     assert other["Reconciliation Detail"]["A1"].value.startswith("FISCAL PERIOD 01 - 2026 | ")
     # The Infinium side keeps its own heading.
     assert wb["Raw Data"]["A1"].value != wb["Raw Data"].cell(1, 12).value
+
+
+def _assert_summary_grouped_and_collapsed(ws):
+    """Rows 2 through the row above the exceptions header form one collapsed
+    outline group; the title and the header stay visible and frozen."""
+    data_row = int(ws.freeze_panes[1:])
+    header_row = data_row - 1
+    grouped = [row for row in range(1, data_row + 1) if ws.row_dimensions[row].outlineLevel == 1]
+    assert grouped == list(range(2, header_row))
+    assert all(ws.row_dimensions[row].hidden for row in grouped)
+    for visible in (1, header_row, data_row):
+        assert not ws.row_dimensions[visible].hidden
+    assert ws.sheet_properties.outlinePr.summaryBelow is False
+    assert "GROUPED SUMMARY" in ws["A1"].value and "beside row 1" in ws["A1"].value
+    return header_row
+
+
+def test_unresolved_summary_rows_are_grouped_and_collapsed_above_the_exceptions_table(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    """The KPIs, legends, reason codes, and fiscal-period table fold away
+    under row 1's +/- button, so the sheet opens on the exceptions table."""
+    result = _reference_result(qb_mapping, inf_mapping, make_metadata)
+    ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Unresolved Exceptions"]
+    header_row = _assert_summary_grouped_and_collapsed(ws)
+    text = " ".join(
+        str(ws.cell(row, col).value)
+        for row in range(2, header_row) for col in range(1, ws.max_column + 1)
+        if ws.cell(row, col).value is not None
+    )
+    assert "REASON CODES ON THIS SHEET" in text
+    assert "QUICKBOOKS EXCEPTIONS BY FISCAL PERIOD" in text
+    assert ws.cell(header_row, 1).value is not None
+
+
+def test_unresolved_summary_group_end_follows_the_run_not_a_fixed_row(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    """The glossary and fiscal-period table change length run to run, so the
+    group's last row is computed each time."""
+    single = build_reconciliation(
+        pd.DataFrame([{"PO": "P", "Invoice": "I", "Amount": 1.0, "Qty": 1, "Period": "1",
+                       "Customer": "Acme", "Date": "2026-01-05"}]),
+        pd.DataFrame([{"PO": "Q", "Invoice": "J", "Amount": 2.0, "Period": "1",
+                       "Customer": "Acme", "Date": "2026-01-05"}]),
+        qb_mapping, inf_mapping, make_metadata(), 2026,
+    )
+    reference = _reference_result(qb_mapping, inf_mapping, make_metadata)
+    header_rows = {
+        _assert_summary_grouped_and_collapsed(
+            load_workbook(io.BytesIO(build_primary_workbook(result)))["Unresolved Exceptions"]
+        )
+        for result in (single, reference)
+    }
+    assert len(header_rows) == 2
+
+
+def test_posting_summary_points_to_the_grouped_summary_and_existing_sheets(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    result = _reference_result(qb_mapping, inf_mapping, make_metadata)
+    ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Posting Summary"]
+    text = " ".join(str(c.value) for row in ws.iter_rows() for c in row if c.value)
+    assert "Analytics workbook" not in text and "Executive Summary" not in text
+    assert "grouped summary" in text and "frozen header" not in text
 
 
 def test_main_sheet_titles_when_no_fiscal_period_was_selected(qb_mapping, inf_mapping, make_metadata):
@@ -1716,7 +1783,7 @@ def test_unresolved_exceptions_embeds_a_run_scoped_reason_code_glossary(
     qb_mapping, inf_mapping, make_metadata,
 ):
     """The dedicated Reason Code Glossary sheet was removed; its
-    definitions now live in Unresolved Exceptions' own frozen header,
+    definitions now live in Unresolved Exceptions' grouped summary,
     scoped to only the codes this run's Review Hold table actually shows
     -- not the full static list of every code the engine can ever
     produce."""
@@ -1816,12 +1883,15 @@ def test_product_aggregates_sums_quantity_and_value_by_product(
         make_metadata(), 2026,
     )
     frame = result.product_summary
-    assert list(frame.columns) == ["Product Name", "Product Quantity", "Product Value"]
+    assert list(frame.columns) == [
+        "Product Name", "Bottles per Case", "Case Quantity", "Bottle Count", "Product Value",
+    ]
     allsups = frame.set_index("Product Name").loc["Allsups 24 Case"]
-    assert allsups["Product Quantity"] == pytest.approx(5)
+    assert allsups["Case Quantity"] == pytest.approx(5)
+    assert allsups["Bottle Count"] == pytest.approx(120)
     assert allsups["Product Value"] == pytest.approx(150.00)
     juniors = frame.set_index("Product Name").loc["Juniors 24 Case"]
-    assert juniors["Product Quantity"] == pytest.approx(1)
+    assert juniors["Case Quantity"] == pytest.approx(1)
     assert juniors["Product Value"] == pytest.approx(30.00)
 
     ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Aggregates"]
@@ -1829,12 +1899,12 @@ def test_product_aggregates_sums_quantity_and_value_by_product(
     assert "JE SUPPORT" not in text and "REVIEW HOLD" not in text and "Matched %" not in text
     header_row = next(row for row in ws.iter_rows(max_row=5) if any(c.value == "Product Name" for c in row))
     headers = [c.value for c in header_row]
-    assert headers == ["Product Name", "Product Quantity", "Product Value"]
+    assert headers == ["Product Name", "Bottles per Case", "Case Quantity", "Bottle Count", "Product Value"]
     data_rows = {
         row[headers.index("Product Name")].value: row
         for row in ws.iter_rows(min_row=header_row[0].row + 1) if row[0].value and "TOTAL" not in str(row[0].value)
     }
-    assert data_rows["Allsups 24 Case"][headers.index("Product Quantity")].value == pytest.approx(5)
+    assert data_rows["Allsups 24 Case"][headers.index("Case Quantity")].value == pytest.approx(5)
 
 
 def test_product_aggregates_falls_back_cleanly_with_no_product_mapping(
@@ -1877,25 +1947,159 @@ def test_customer_aggregates_sums_quantity_and_value_by_customer_for_the_selecte
         make_metadata(fiscal_period=1), 2026,
     )
     frame = result.customer_summary
-    assert list(frame.columns) == ["Customer Name", "Customer Quantity", "Customer Value"]
+    assert list(frame.columns) == ["Customer Name", "Case Quantity", "Bottle Count", "Customer Value"]
     acme = frame.set_index("Customer Name").loc["Acme"]
-    assert acme["Customer Quantity"] == pytest.approx(5)      # 3 + 2, period 2's 99 excluded
+    assert acme["Case Quantity"] == pytest.approx(5)          # 3 + 2, period 2's 99 excluded
     assert acme["Customer Value"] == pytest.approx(150.00)    # 100 + 50, period 2's 999 excluded
     beta = frame.set_index("Customer Name").loc["Beta Co"]
-    assert beta["Customer Quantity"] == pytest.approx(1)
+    assert beta["Case Quantity"] == pytest.approx(1)
     assert beta["Customer Value"] == pytest.approx(30.00)
 
     ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Aggregates"]
     text = " ".join(str(c.value) for row in ws.iter_rows() for c in row if c.value)
     assert "CUSTOMER AGGREGATE SUMMARY" in text
     header_row = next(row for row in ws.iter_rows() if any(c.value == "Customer Name" for c in row))
-    headers = [c.value for c in header_row]
-    assert headers == ["Customer Name", "Customer Quantity", "Customer Value"]
+    # The product table above is wider, so the sheet's rows run past this table.
+    headers = [c.value for c in header_row if c.value is not None]
+    assert headers == ["Customer Name", "Case Quantity", "Bottle Count", "Customer Value"]
     data_rows = {
         row[headers.index("Customer Name")].value: row
         for row in ws.iter_rows(min_row=header_row[0].row + 1) if row[0].value and "TOTAL" not in str(row[0].value)
     }
     assert data_rows["Acme"][headers.index("Customer Value")].value == pytest.approx(150.00)
+    # No product column is mapped, so there is no pack size to count bottles with.
+    assert data_rows["Acme"][headers.index("Bottle Count")].value is None
+    assert "no QuickBooks product description column is mapped" in text
+
+
+def _aggregate_result(qb_rows, qb_mapping, inf_mapping, make_metadata, **metadata):
+    qb_mapping_with_product = {**qb_mapping, "product": "Description"}
+    inf_rows = [{"PO": "INF-ONLY", "Invoice": "X", "Amount": 1.00, "Period": "1",
+                 "Customer": "Acme", "Date": "2026-01-05"}]
+    for row in qb_rows:
+        row.setdefault("Customer", "Acme")
+        row.setdefault("Date", "2026-01-05")
+        row.setdefault("Period", "1")
+    return build_reconciliation(
+        pd.DataFrame(qb_rows), pd.DataFrame(inf_rows), qb_mapping_with_product, inf_mapping,
+        make_metadata(**metadata), 2026,
+    )
+
+
+def _aggregates_block(ws, first_header):
+    """(header row number, headers, {first-column value: row cells}) for one
+    table on the Aggregates sheet, stopping at its TOTAL row."""
+    header_row = next(row for row in ws.iter_rows() if row[0].value == first_header)
+    headers = [c.value for c in header_row if c.value is not None]
+    rows = {}
+    for row in ws.iter_rows(min_row=header_row[0].row + 1):
+        rows[row[0].value] = row
+        if row[0].value == "TOTAL":
+            break
+    return header_row[0].row, headers, rows
+
+
+def test_product_aggregates_put_review_rows_last_and_tie_to_every_quickbooks_line(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    """Lines the classifier can't place keep their cases and dollars in the
+    table (as review rows at the bottom, with no bottle count), so the Case
+    Quantity and Value totals agree with every QuickBooks line in the period."""
+    qb_rows = [
+        {"PO": "P1", "Invoice": "I1", "Amount": 100.10, "Qty": 10, "Description": "LOWES 32 CASE"},
+        {"PO": "P2", "Invoice": "I2", "Amount": 200.20, "Qty": 20, "Description": "ALLSUPS 24 CASE"},
+        {"PO": "P3", "Invoice": "I3", "Amount": 30.03, "Qty": 3, "Description": "LOWES"},
+        {"PO": "P4", "Invoice": "I4", "Amount": 40.04, "Qty": 4, "Description": "JUNIORS 32"},
+        {"PO": "P5", "Invoice": "I5", "Amount": 50.05, "Qty": 5, "Description": "GIFT CARD"},
+        # Another period: outside the selected period's totals.
+        {"PO": "P6", "Invoice": "I6", "Amount": 999.00, "Qty": 99, "Description": "MYSTERY", "Period": "2"},
+    ]
+    result = _aggregate_result(qb_rows, qb_mapping, inf_mapping, make_metadata, fiscal_period=1)
+
+    frame = result.product_summary
+    assert list(frame["Product Name"]) == [
+        "Allsups 24 Case", "Lowes 32 Case",
+        "Needs review – size unclear", "New item – 32-count", "Unrecognized product",
+    ]
+    review = frame.iloc[2:]
+    assert review["Bottles per Case"].isna().all() and review["Bottle Count"].isna().all()
+    assert frame["Case Quantity"].sum() == pytest.approx(42)
+    assert round(frame["Product Value"].sum() * 100) == 10010 + 20020 + 3003 + 4004 + 5005
+
+    items = result.product_review_items
+    assert list(items["QuickBooks Description"]) == ["LOWES", "JUNIORS 32", "GIFT CARD"]
+    assert list(items["Invoice"]) == ["I3", "I4", "I5"]
+    assert list(items["Case Quantity"]) == [3, 4, 5]
+    assert list(items["Amount"]) == pytest.approx([30.03, 40.04, 50.05])
+
+    ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Aggregates"]
+    header_row, headers, rows = _aggregates_block(ws, "Product Name")
+    size_col, cases_col, bottle_col = (
+        get_column_letter(headers.index(name) + 1)
+        for name in ("Bottles per Case", "Case Quantity", "Bottle Count")
+    )
+    lowes = rows["Lowes 32 Case"]
+    assert lowes[headers.index("Bottles per Case")].value == 32
+    # Bottle Count is a live formula, so a corrected case count recalculates.
+    assert lowes[headers.index("Bottle Count")].value == f"={size_col}{lowes[0].row}*{cases_col}{lowes[0].row}"
+    unclear = rows["Needs review – size unclear"]
+    assert unclear[headers.index("Bottles per Case")].value is None
+    assert unclear[headers.index("Bottle Count")].value is None
+    total = rows["TOTAL"]
+    assert total[headers.index("Case Quantity")].value == pytest.approx(42)
+    assert total[headers.index("Product Value")].value == pytest.approx(420.42)
+    assert total[headers.index("Bottle Count")].value == (
+        f"=SUM({bottle_col}{header_row + 1}:{bottle_col}{total[0].row - 1})"
+    )
+
+    text = _worksheet_text(ws)
+    assert "ITEMS NEEDING REVIEW" in text and "No items need review." not in text
+    _, item_headers, item_rows = _aggregates_block(ws, "Review Reason")
+    assert item_headers == [
+        "Review Reason", "QuickBooks Description", "Customer", "Invoice", "Case Quantity", "Amount",
+    ]
+    assert [row[1].value for name, row in item_rows.items() if name != "TOTAL"] == [
+        "LOWES", "JUNIORS 32", "GIFT CARD",
+    ]
+
+
+def test_product_aggregates_say_no_items_need_review_when_every_line_is_clean(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    qb_rows = [{"PO": "P1", "Invoice": "I1", "Amount": 10.00, "Qty": 1, "Description": "PPL 40 CASE"}]
+    result = _aggregate_result(qb_rows, qb_mapping, inf_mapping, make_metadata)
+    assert result.product_review_items.empty
+    text = _worksheet_text(load_workbook(io.BytesIO(build_primary_workbook(result)))["Aggregates"])
+    assert "No items need review." in text and "ITEMS NEEDING REVIEW" not in text
+
+
+def test_customer_bottle_count_is_summed_line_by_line_across_pack_sizes(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    """A customer buying 24s and 40s gets 24 x cases + 40 x cases, not one
+    pack size times the total; cases with no pack size are left out of the
+    bottle count and named in the caption."""
+    qb_rows = [
+        {"PO": "P1", "Invoice": "I1", "Amount": 10.00, "Qty": 2, "Description": "LOWES 24 CASE"},
+        {"PO": "P2", "Invoice": "I2", "Amount": 20.00, "Qty": 3, "Description": "LOWES 40 CASE"},
+        {"PO": "P3", "Invoice": "I3", "Amount": 30.00, "Qty": 7, "Description": "LOWES"},
+        {"PO": "P4", "Invoice": "I4", "Amount": 40.00, "Qty": 4, "Description": "GIFT CARD", "Customer": "Beta Co"},
+    ]
+    result = _aggregate_result(qb_rows, qb_mapping, inf_mapping, make_metadata)
+    frame = result.customer_summary.set_index("Customer Name")
+    assert frame.at["Acme", "Case Quantity"] == pytest.approx(12)
+    assert frame.at["Acme", "Bottle Count"] == pytest.approx(2 * 24 + 3 * 40)
+    assert pd.isna(frame.at["Beta Co", "Bottle Count"])
+    assert result.customer_cases_without_bottles == {"Acme": 7.0, "Beta Co": 4.0}
+
+    ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Aggregates"]
+    _, headers, rows = _aggregates_block(ws, "Customer Name")
+    # A stored value, not a formula: a customer's lines mix pack sizes.
+    assert rows["Acme"][headers.index("Bottle Count")].value == pytest.approx(168)
+    assert rows["Beta Co"][headers.index("Bottle Count")].value is None
+    assert rows["TOTAL"][headers.index("Bottle Count")].value == pytest.approx(168)
+    caption = ws.cell(rows["Acme"][0].row - 2, 1).value
+    assert "leaves out 11 case(s)" in caption and "Acme (7)" in caption and "Beta Co (4)" in caption
 
 # ---------------------------------------------------------------------------
 # The journal-entry bridge: the engine's Final Disposition is immutable;

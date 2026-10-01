@@ -18,7 +18,7 @@ from ..duplicates import AMOUNT_CENTS, IDENTITY_GRADE_ROLES, STABLE_FINGERPRINT_
 APP_VERSION = "2.16.3"
 
 
-MATCHING_RULE_VERSION = "2026.09-STREAMLINED-DUPLICATE-OUTPUT"
+MATCHING_RULE_VERSION = "2026.09-SIZE-AWARE-PRODUCTS"
 
 
 # Grouped matching is intentionally bounded to keep reconciliation runs
@@ -50,12 +50,22 @@ PRODUCT_STANDARD = "__REC_PRODUCT_STANDARD"
 FISCAL_LABEL = "__REC_FISCAL_LABEL"
 
 
+# Every standard name ends in "<bottles per case> Case", and only 24, 32 and
+# 40 exist (a test guards this). A variant without a size is listed only under
+# a brand that comes in one size; a bare multi-size brand ("LOWES", "FOOD
+# CLUB") is deliberately absent, so it goes to "Needs review" instead of
+# guessing a pack size.
+
 PRODUCT_LEXICON = {
     "Allsups 24 Case": ["ALLSUPS", "ALLSUPS 24", "ALLSUPS 24 CASE", "ALLSUP 24"],
 
     "Food Club 24 Case": [
-        "FOOD CLUB", "FOOD CLUB 24", "FOOD CLUB 24 CASE", "FC 24",
+        "FOOD CLUB 24", "FOOD CLUB 24 CASE", "FC 24",
         "FOODCLUB 24", "FOODCLUB24 CASE", "FC24 CASE",
+    ],
+    "Food Club 32 Case": [
+        "FC32", "FC 32", "FC32 CASE", "FOOD CLUB 32", "FOOD CLUB 32 CASE",
+        "FOODCLUB 32", "FOODCLUB32 CASE",
     ],
     "Food Club 40 Case": [
         "FOOD CLUB 40", "FOOD CLUB 40 CASE", "FC 40", "FOODCLUB 40",
@@ -70,11 +80,15 @@ PRODUCT_LEXICON = {
         "FOODKING40 CASE", "FK40 CASE", "KINGS 40 CASE", "KINGS 40",
     ],
     "Juniors 24 Case": ["JUNIORS", "JUNIORS 24", "JUNIORS 24 CASE"],
-    "Lowes 24 Case": ["LOWES", "LOWES 24", "LOWES 24 CASE", "LOWES24"],
+    "Lowes 24 Case": ["LOWES 24", "LOWES 24 CASE", "LOWES24"],
+    "Lowes 32 Case": ["LOW 32", "LOW32", "LOWES 32", "LOWES 32 CASE"],
     "Lowes 40 Case": ["LOWES 40", "LOWES 40 CASE"],
     "Panhandle Pure 24 Case": [
         "PPL24", "PP 24 CASE", "PPL 24 CASSE", "PP24",
         "PANHANDLE PURE 24 CASE", "PPL 24 CASE", "PPL 24",
+    ],
+    "Panhandle Pure 32 Case": [
+        "PP32", "PP 32", "PPL32", "PPL 32", "PP 32 CASE", "PANHANDLE PURE 32 CASE",
     ],
     "Panhandle Pure 40 Case": [
         "PPL40", "PP 40 CASE", "PPL 40 CASSE", "PP40",
@@ -89,6 +103,31 @@ PRODUCT_LEXICON = {
         "SPRING HOUSE 24", "SPRING HOUSE 24 CASE", "SH 24", "SPRINGHOUSE 24", "SPRINGHOUSE 24 CASE",
     ]
 }
+
+
+PACK_SIZES = (24, 32, 40)
+
+
+# Labels for QuickBooks product lines the classifier can't place with
+# certainty. They appear at the bottom of the Aggregates product table, in
+# this order, with no bottle count -- never folded into a real product.
+
+PRODUCT_SIZE_UNCLEAR = "Needs review – size unclear"
+
+
+PRODUCT_NEW_32_COUNT = "New item – 32-count"
+
+
+PRODUCT_UNRECOGNIZED = "Unrecognized product"
+
+
+PRODUCT_REVIEW_LABELS = (PRODUCT_SIZE_UNCLEAR, PRODUCT_NEW_32_COUNT, PRODUCT_UNRECOGNIZED)
+
+
+_RE_PACK_SIZE = re.compile(r"\s+(\d+)\s+CASE$", re.IGNORECASE)
+
+
+_RE_SIZE_TOKEN = re.compile(r"\d+")
 
 
 _RE_TRAILING_ZEROS = re.compile(r"^([0-9]+)\.0+$")
@@ -170,6 +209,8 @@ class ReconciliationResult:
     reference_hold_analysis: pd.DataFrame = field(default_factory=pd.DataFrame)
     reference_hold_qb_rows: list[int] = field(default_factory=list)
     qb_dispositions: pd.DataFrame = field(default_factory=pd.DataFrame)
+    product_review_items: pd.DataFrame = field(default_factory=pd.DataFrame)
+    customer_cases_without_bottles: dict[str, float] = field(default_factory=dict)
 
 
 @lru_cache(maxsize=4096)
@@ -306,25 +347,73 @@ def _product_lookup() -> dict[str, str]:
     return lookup
 
 
+def pack_size(standard_name: Any) -> Optional[int]:
+    """Bottles per case from a standard product name ("Lowes 32 Case" -> 32),
+    or None for a review label or anything without an explicit 24, 32 or 40."""
+    match = _RE_PACK_SIZE.search(str(standard_name or ""))
+    size = int(match.group(1)) if match else None
+    return size if size in PACK_SIZES else None
+
+
+def _product_brand(standard_name: str) -> str:
+    return _RE_PACK_SIZE.sub("", standard_name)
+
+
+@lru_cache(maxsize=1)
+def _brand_pack_sizes() -> dict[str, frozenset[int]]:
+    sizes: dict[str, set[int]] = {}
+    for standard_name in PRODUCT_LEXICON:
+        sizes.setdefault(_product_brand(standard_name), set()).add(pack_size(standard_name))
+    return {brand: frozenset(values) for brand, values in sizes.items()}
+
+
 @lru_cache(maxsize=1024)
-def _cached_fuzzy_match(cleaned: str) -> Optional[str]:
+def _cached_classify_product(text: str) -> str:
+    """Name the product, then check the name against the size in the text.
+
+    The lexicon lookup (exact, else get_close_matches at 0.82) only finds the
+    nearest product name -- it can't tell "LOWES 40" from "LOWES 24" reliably,
+    so the size written in the text decides:
+
+    - text says 32 but the product isn't a 32 -> "New item – 32-count";
+    - no product at all -> "Unrecognized product";
+    - text gives a size that differs from the product's -> "Needs review";
+    - text gives no size: a one-size brand (Allsups, Juniors, Plains,
+      Toot N Totum, Spring House) takes that size; a multi-size brand
+      (Lowes, Panhandle Pure, Food Club, Food King) -> "Needs review".
+    """
+    cleaned = _cached_clean_alphanumeric(text)
+    if not cleaned:
+        return PRODUCT_UNRECOGNIZED
     lookup = _product_lookup()
-    if cleaned in lookup:
-        return lookup[cleaned]
-    close = get_close_matches(cleaned, lookup.keys(), n=1, cutoff=0.82)
-    return lookup[close[0]] if close else None
+    product = lookup.get(cleaned)
+    if product is None:
+        close = get_close_matches(cleaned, lookup.keys(), n=1, cutoff=0.82)
+        product = lookup[close[0]] if close else None
+    product_size = pack_size(product) if product else None
+    text_sizes = {int(token) for token in _RE_SIZE_TOKEN.findall(text)}
+    if 32 in text_sizes and product_size != 32:
+        return PRODUCT_NEW_32_COUNT
+    if product is None:
+        return PRODUCT_UNRECOGNIZED
+    if text_sizes:
+        return product if text_sizes == {product_size} else PRODUCT_SIZE_UNCLEAR
+    return product if len(_brand_pack_sizes()[_product_brand(product)]) == 1 else PRODUCT_SIZE_UNCLEAR
+
+
+def product_match(value: Any) -> str:
+    """Classify a QuickBooks product description for reporting only -- never
+    a financial match. Returns a PRODUCT_LEXICON name or one of
+    PRODUCT_REVIEW_LABELS; a blank description is "Unrecognized product"."""
+    if value is None or pd.isna(value):
+        return PRODUCT_UNRECOGNIZED
+    return _cached_classify_product(str(value).strip().upper())
 
 
 def get_fuzzy_lexicon_match(value: Any) -> Optional[str]:
-    """Classify products for reporting without affecting financial matches."""
-    cleaned = clean_alphanumeric(value)
-    if not cleaned:
-        return None
-    return _cached_fuzzy_match(cleaned)
-
-
-def product_match(value: Any) -> Optional[str]:
-    return get_fuzzy_lexicon_match(value)
+    """The PRODUCT_LEXICON name for a description, or None when it needs review."""
+    label = product_match(value)
+    return None if label in PRODUCT_REVIEW_LABELS else label
 
 
 @lru_cache(maxsize=1024)

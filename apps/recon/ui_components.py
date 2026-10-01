@@ -10,6 +10,7 @@ builders from the Downloads tab and displays the result.
 from __future__ import annotations
 
 import html
+import time
 import traceback
 from pathlib import Path
 from typing import Any, Optional
@@ -331,7 +332,14 @@ def render_pre_execution_controls(
     )
 
 
-def render_result(result: ReconciliationResult) -> None:
+def _workbook_timing_text(timing: dict[str, float]) -> str:
+    text = f"Workbook built in {timing['build']:.2f} s"
+    if "page" in timing:
+        text += f" · page refreshed in {timing['page']:.2f} s"
+    return text
+
+
+def render_result(result: ReconciliationResult, run_started: Optional[float] = None) -> None:
     metrics = result.metrics
     control_status = metrics["Control Status"]
     if control_status == "PASS":
@@ -502,8 +510,12 @@ def render_result(result: ReconciliationResult) -> None:
                 key=f"prepare_primary_{result.run_id}",
             ):
                 try:
+                    build_started = time.perf_counter()
                     with st.spinner("Preparing the accounting workpaper..."):
                         st.session_state.primary_workbook = build_primary_workbook(result)
+                    st.session_state.primary_workbook_timing = {
+                        "build": time.perf_counter() - build_started,
+                    }
                     st.toast("Accounting workpaper prepared.", icon="✅")
                 except Exception as exc:
                     _render_workbook_exception("accounting workpaper", exc)
@@ -516,6 +528,8 @@ def render_result(result: ReconciliationResult) -> None:
                 type="primary",
                 width="stretch",
             )
+        # Filled in at the end of this page run, once the whole run is timed.
+        timing_slot = st.empty()
         st.markdown("#### Accountant's legacy format")
         st.caption(
             "A simplified export in the original hand-built layout: QuickBooks left, Infinium right, "
@@ -542,3 +556,12 @@ def render_result(result: ReconciliationResult) -> None:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 width="stretch",
             )
+
+    # The run that built the workpaper also re-rendered every tab above; its
+    # total, measured here at the end, shows how much of the wait was the
+    # build itself. Later runs keep showing that first measurement.
+    timing = st.session_state.get("primary_workbook_timing")
+    if timing is not None:
+        if "page" not in timing and run_started is not None:
+            timing["page"] = time.perf_counter() - run_started
+        timing_slot.caption(_workbook_timing_text(timing))

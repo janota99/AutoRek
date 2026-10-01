@@ -23,13 +23,18 @@ from apps.recon.matching import (
     clean_alphanumeric,
     clean_po,
     get_fuzzy_lexicon_match,
+    pack_size,
     parse_amount_cents,
     parse_fiscal_period,
     perform_matching,
     prepare_working_frame,
+    PRODUCT_NEW_32_COUNT,
+    PRODUCT_SIZE_UNCLEAR,
+    PRODUCT_UNRECOGNIZED,
     valid_cents,
     validate_reconciliation,
 )
+from apps.recon.matching.core import PRODUCT_LEXICON, product_match
 from apps.recon.vendor_aliases import ALIAS_CONFIDENCE, ALIAS_METHOD, VendorAlias
 
 
@@ -96,6 +101,81 @@ def test_fuzzy_lexicon_match_never_affects_matching_only_labels_products():
     assert get_fuzzy_lexicon_match("FC 24") == "Food Club 24 Case"
     assert get_fuzzy_lexicon_match("PPL24") == "Panhandle Pure 24 Case"
     assert get_fuzzy_lexicon_match("totally unknown product") is None
+
+
+@pytest.mark.parametrize("name, expected", [
+    ("Allsups 24 Case", 24),
+    ("Lowes 32 Case", 32),
+    ("Panhandle Pure 40 Case", 40),
+    (PRODUCT_SIZE_UNCLEAR, None),
+    ("Mystery 12 Case", None),
+    (None, None),
+])
+def test_pack_size_is_parsed_from_the_standard_name(name, expected):
+    assert pack_size(name) == expected
+
+
+def test_every_lexicon_product_names_an_explicit_24_32_or_40_pack_size():
+    """Bottle counts come straight from the standard name -- there is no
+    fallback size, so a new lexicon entry without one must fail here."""
+    missing = [name for name in PRODUCT_LEXICON if pack_size(name) not in (24, 32, 40)]
+    assert missing == []
+
+
+def test_every_lexicon_variant_classifies_to_its_own_product():
+    """A variant whose own size disagrees with its product, or a sizeless
+    variant under a multi-size brand, would send its own text to review."""
+    misfiled = {
+        variant: product_match(variant)
+        for name, variants in PRODUCT_LEXICON.items()
+        for variant in [name, *variants]
+        if product_match(variant) != name
+    }
+    assert misfiled == {}
+
+
+@pytest.mark.parametrize("text, expected", [
+    # The new 32-count products.
+    ("LOWES 32 CASE", "Lowes 32 Case"),
+    ("LOW32", "Lowes 32 Case"),
+    ("PP32", "Panhandle Pure 32 Case"),
+    ("PPL 32 CASE", "Panhandle Pure 32 Case"),
+    ("FC32", "Food Club 32 Case"),
+    ("FOOD CLUB 32 CASE", "Food Club 32 Case"),
+    # One-size brands default to 24 when the text gives no size.
+    ("ALLSUPS", "Allsups 24 Case"),
+    ("Juniors", "Juniors 24 Case"),
+    ("PLAINS", "Plains 24 Case"),
+    ("Toot n Totum", "Toot N Totum 24 Case"),
+    ("SPRING HOUSE", "Spring House 24 Case"),
+    # A multi-size brand with no size in the text.
+    ("LOWES", PRODUCT_SIZE_UNCLEAR),
+    ("FOOD CLUB", PRODUCT_SIZE_UNCLEAR),
+    ("FOOD KING", PRODUCT_SIZE_UNCLEAR),
+    ("KINGS", PRODUCT_SIZE_UNCLEAR),
+    # A size in the text that disagrees with the product.
+    ("PPL 12 CASE", PRODUCT_SIZE_UNCLEAR),
+    ("ALLSUPS 40 CASE", PRODUCT_SIZE_UNCLEAR),
+    # Unchanged clean descriptions.
+    ("LOWES 40 CASE", "Lowes 40 Case"),
+    ("PPL 24 CASSE", "Panhandle Pure 24 Case"),
+    ("FOOD KING 24 CASE", "Food King 24 Case"),
+])
+def test_product_classifier_checks_the_size_in_the_text(text, expected):
+    assert product_match(text) == expected
+
+
+@pytest.mark.parametrize("text", ["ALLSUPS 32 CASE", "JUNIORS 32", "ACME SPRING WATER 32 CT"])
+def test_any_other_32_is_a_new_32_count_item(text):
+    """Only Lowes, Panhandle Pure and Food Club come in 32s; any other "32"
+    is flagged as a new item instead of being counted as a 24."""
+    assert product_match(text) == PRODUCT_NEW_32_COUNT
+
+
+@pytest.mark.parametrize("text", ["totally unknown product", "", "   ", None, float("nan")])
+def test_unmatched_or_blank_text_is_unrecognized_not_dropped(text):
+    assert product_match(text) == PRODUCT_UNRECOGNIZED
+    assert get_fuzzy_lexicon_match(text) is None
 
 
 # ---------------------------------------------------------------------------

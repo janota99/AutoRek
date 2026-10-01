@@ -15,12 +15,15 @@ from .core import (
     _historical_row_indexes,
     _matched_row_indexes,
     _optional_index,
+    cents_or_zero,
     cents_to_float,
     FISCAL_LABEL,
     MatchGroup,
     numeric_quantity_sum,
+    pack_size,
     parse_fiscal_period,
     PRIOR_PERIOD_URGENT_THRESHOLD,
+    PRODUCT_REVIEW_LABELS,
     PRODUCT_STANDARD,
     QB_ID,
     ReconciliationResult,
@@ -131,29 +134,119 @@ def build_method_summary(
     ).reset_index(drop=True)
 
 
+PRODUCT_SUMMARY_COLUMNS = [
+    "Product Name", "Bottles per Case", "Case Quantity", "Bottle Count", "Product Value",
+]
+
+
+CUSTOMER_SUMMARY_COLUMNS = ["Customer Name", "Case Quantity", "Bottle Count", "Customer Value"]
+
+
+PRODUCT_REVIEW_ITEM_COLUMNS = [
+    "Review Reason", "QuickBooks Description", "Customer", "Invoice", "Case Quantity", "Amount",
+]
+
+
+def _aggregate_scope(
+    qb: pd.DataFrame,
+    current_fiscal_period: Optional[int],
+    fiscal_year: Optional[int],
+) -> pd.DataFrame:
+    """The primary QuickBooks rows the Aggregates sheet covers: every row, or
+    only the selected fiscal period's."""
+    if current_fiscal_period is None:
+        return qb.copy()
+    expected_label = f"P{int(current_fiscal_period):02d}-{int(fiscal_year or 0)}"
+    return qb.loc[qb[FISCAL_LABEL].eq(expected_label)].copy()
+
+
+def _case_quantities(work: pd.DataFrame, qty_col: str) -> pd.Series:
+    return pd.to_numeric(work[qty_col], errors="coerce").fillna(0)
+
+
+def _line_bottles(work: pd.DataFrame, qty_col: str) -> pd.Series:
+    """Bottles on each line (pack size x cases), or NaN when the line's product
+    has no known pack size (a review label, or no product column mapped)."""
+    sizes = (
+        work[PRODUCT_STANDARD].map(pack_size)
+        if PRODUCT_STANDARD in work.columns
+        else pd.Series(None, index=work.index, dtype=object)
+    )
+    return pd.to_numeric(sizes, errors="coerce") * _case_quantities(work, qty_col)
+
+
 def build_product_summary(
     qb: pd.DataFrame,
     mapping: dict[str, Optional[str]],
     current_fiscal_period: Optional[int] = None,
     fiscal_year: Optional[int] = None,
 ) -> pd.DataFrame:
+    """Cases, bottles, and value by standard product, for bottle-count
+    reconciliation -- reporting only, never a matching decision.
+
+    Every primary QuickBooks line in scope lands in exactly one row, so the
+    Case Quantity and Value totals agree with QuickBooks. Lines the classifier
+    couldn't place (see PRODUCT_REVIEW_LABELS) sit at the bottom with no
+    pack size or bottle count."""
     qty_col = mapping.get("quantity")
     amount_col = mapping.get("amount")
-    if not qty_col or not amount_col:
-        return pd.DataFrame(columns=["Product Name", "Product Quantity", "Product Value"])
-    work = qb[qb[PRODUCT_STANDARD].notna()].copy()
-    if current_fiscal_period is not None:
-        expected_label = f"P{int(current_fiscal_period):02d}-{int(fiscal_year or 0)}"
-        work = work.loc[work[FISCAL_LABEL].eq(expected_label)].copy()
+    if not qty_col or not amount_col or not mapping.get("product"):
+        return pd.DataFrame(columns=PRODUCT_SUMMARY_COLUMNS)
+    work = _aggregate_scope(qb, current_fiscal_period, fiscal_year)
     if work.empty:
-        return pd.DataFrame(columns=["Product Name", "Product Quantity", "Product Value"])
-    work["__QTY"] = pd.to_numeric(work[qty_col], errors="coerce").fillna(0)
-    work["__AMOUNT"] = work[AMOUNT_CENTS].map(cents_to_float)
+        return pd.DataFrame(columns=PRODUCT_SUMMARY_COLUMNS)
+    work["__QTY"] = _case_quantities(work, qty_col)
+    work["__CENTS"] = work[AMOUNT_CENTS].map(cents_or_zero)
+    grouped = work.groupby(PRODUCT_STANDARD).agg(cases=("__QTY", "sum"), cents=("__CENTS", "sum"))
+    standard = sorted(name for name in grouped.index if name not in PRODUCT_REVIEW_LABELS)
+    review = [label for label in PRODUCT_REVIEW_LABELS if label in grouped.index]
+    records = []
+    for name in standard + review:
+        bottles_per_case = pack_size(name)
+        cases = float(grouped.at[name, "cases"])
+        records.append({
+            "Product Name": name,
+            "Bottles per Case": bottles_per_case,
+            "Case Quantity": cases,
+            "Bottle Count": bottles_per_case * cases if bottles_per_case else None,
+            "Product Value": cents_to_float(grouped.at[name, "cents"]),
+        })
+    frame = pd.DataFrame(records, columns=PRODUCT_SUMMARY_COLUMNS)
+    frame["Bottles per Case"] = frame["Bottles per Case"].astype("Int64")
+    return frame
+
+
+def build_product_review_items(
+    qb: pd.DataFrame,
+    mapping: dict[str, Optional[str]],
+    current_fiscal_period: Optional[int] = None,
+    fiscal_year: Optional[int] = None,
+) -> pd.DataFrame:
+    """One row per QuickBooks line the product classifier flagged for review,
+    with the original description, so the reviewer can see exactly which
+    lines carry no bottle count. Same scope as build_product_summary."""
+    product_col = mapping.get("product")
+    qty_col = mapping.get("quantity")
+    if not product_col or not qty_col or not mapping.get("amount"):
+        return pd.DataFrame(columns=PRODUCT_REVIEW_ITEM_COLUMNS)
+    work = _aggregate_scope(qb, current_fiscal_period, fiscal_year)
+    work = work.loc[work[PRODUCT_STANDARD].isin(PRODUCT_REVIEW_LABELS)]
+    if work.empty:
+        return pd.DataFrame(columns=PRODUCT_REVIEW_ITEM_COLUMNS)
+    customer_col = mapping.get("customer")
+    order = {label: position for position, label in enumerate(PRODUCT_REVIEW_LABELS)}
+    frame = pd.DataFrame({
+        "Review Reason": work[PRODUCT_STANDARD],
+        "QuickBooks Description": work[product_col],
+        "Customer": work[customer_col] if customer_col and customer_col in work.columns else None,
+        "Invoice": work[mapping["invoice"]] if mapping.get("invoice") else None,
+        "Case Quantity": _case_quantities(work, qty_col),
+        "Amount": work[AMOUNT_CENTS].map(cents_to_float),
+        "__ORDER": work[PRODUCT_STANDARD].map(order),
+    })
     return (
-        work.groupby(PRODUCT_STANDARD, as_index=False)
-        .agg(**{"Product Quantity": ("__QTY", "sum"), "Product Value": ("__AMOUNT", "sum")})
-        .rename(columns={PRODUCT_STANDARD: "Product Name"})
-        .sort_values("Product Name")
+        frame.sort_values("__ORDER", kind="stable")
+        .drop(columns="__ORDER")
         .reset_index(drop=True)
     )
 
@@ -164,33 +257,68 @@ def build_customer_summary(
     current_fiscal_period: Optional[int] = None,
     fiscal_year: Optional[int] = None,
 ) -> pd.DataFrame:
-    """Sum of quantity and value by QuickBooks Customer, same period scope
+    """Cases, bottles, and value by QuickBooks Customer, same period scope
     as build_product_summary -- a plain pivot, not a matching decision
     view. Customer is an optional mapping (see ingestion.py); with no
-    customer/quantity/amount column mapped, this returns empty."""
+    customer/quantity/amount column mapped, this returns empty.
+
+    Bottle Count is summed line by line (a customer buys several pack
+    sizes), from lines with a known pack size only; it is blank for a
+    customer with none. The Aggregates caption names the cases left out."""
     customer_col = mapping.get("customer")
     qty_col = mapping.get("quantity")
     amount_col = mapping.get("amount")
-    columns = ["Customer Name", "Customer Quantity", "Customer Value"]
     if not customer_col or customer_col not in qb.columns or not qty_col or not amount_col:
-        return pd.DataFrame(columns=columns)
+        return pd.DataFrame(columns=CUSTOMER_SUMMARY_COLUMNS)
     customer_names = qb[customer_col].astype("string").str.strip()
-    work = qb[customer_names.notna() & customer_names.ne("")].copy()
-    if current_fiscal_period is not None:
-        expected_label = f"P{int(current_fiscal_period):02d}-{int(fiscal_year or 0)}"
-        work = work.loc[work[FISCAL_LABEL].eq(expected_label)].copy()
-    if work.empty:
-        return pd.DataFrame(columns=columns)
-    work["__CUSTOMER"] = customer_names.loc[work.index]
-    work["__QTY"] = pd.to_numeric(work[qty_col], errors="coerce").fillna(0)
-    work["__AMOUNT"] = work[AMOUNT_CENTS].map(cents_to_float)
-    return (
-        work.groupby("__CUSTOMER", as_index=False)
-        .agg(**{"Customer Quantity": ("__QTY", "sum"), "Customer Value": ("__AMOUNT", "sum")})
-        .rename(columns={"__CUSTOMER": "Customer Name"})
-        .sort_values("Customer Name")
-        .reset_index(drop=True)
+    work = _aggregate_scope(
+        qb[customer_names.notna() & customer_names.ne("")], current_fiscal_period, fiscal_year,
     )
+    if work.empty:
+        return pd.DataFrame(columns=CUSTOMER_SUMMARY_COLUMNS)
+    work["__CUSTOMER"] = customer_names.loc[work.index]
+    work["__QTY"] = _case_quantities(work, qty_col)
+    work["__BOTTLES"] = _line_bottles(work, qty_col)
+    work["__CENTS"] = work[AMOUNT_CENTS].map(cents_or_zero)
+    grouped = work.groupby("__CUSTOMER").agg(
+        cases=("__QTY", "sum"),
+        bottles=("__BOTTLES", lambda values: values.sum(min_count=1)),
+        cents=("__CENTS", "sum"),
+    )
+    records = [
+        {
+            "Customer Name": name,
+            "Case Quantity": float(row.cases),
+            "Bottle Count": None if pd.isna(row.bottles) else float(row.bottles),
+            "Customer Value": cents_to_float(row.cents),
+        }
+        for name, row in grouped.sort_index().iterrows()
+    ]
+    return pd.DataFrame(records, columns=CUSTOMER_SUMMARY_COLUMNS)
+
+
+def customer_cases_without_bottle_count(
+    qb: pd.DataFrame,
+    mapping: dict[str, Optional[str]],
+    current_fiscal_period: Optional[int] = None,
+    fiscal_year: Optional[int] = None,
+) -> dict[str, float]:
+    """Cases per customer that build_customer_summary's Bottle Count leaves
+    out (no known pack size), for the Aggregates caption. Customers with
+    none are omitted."""
+    customer_col = mapping.get("customer")
+    qty_col = mapping.get("quantity")
+    if not customer_col or customer_col not in qb.columns or not qty_col or not mapping.get("amount"):
+        return {}
+    customer_names = qb[customer_col].astype("string").str.strip()
+    work = _aggregate_scope(
+        qb[customer_names.notna() & customer_names.ne("")], current_fiscal_period, fiscal_year,
+    )
+    if work.empty:
+        return {}
+    missing = _line_bottles(work, qty_col).isna()
+    cases = _case_quantities(work, qty_col)[missing].groupby(customer_names.loc[work.index][missing]).sum()
+    return {str(name): float(value) for name, value in cases.sort_index().items() if value}
 
 
 def _period_sort(label: str) -> tuple[int, int, str]:

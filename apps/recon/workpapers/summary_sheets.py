@@ -19,6 +19,7 @@ from ..config import (
     NAVY,
     NAVY_LIGHT,
     NEUTRAL_GOLD_FILL,
+    NEUTRAL_GOLD_TEXT,
     RED_LIGHT,
     SLATE,
     SLATE_LIGHT,
@@ -47,15 +48,22 @@ from .tables import (
 )
 
 
+_AGGREGATE_QUANTITY_HEADERS = {"Bottles per Case", "Case Quantity"}
+
+
 def _write_aggregate_table(
     ws, start_row: int, frame: pd.DataFrame, *,
     title: str, populated_caption: str, empty_caption: str,
-    color: str, quantity_header: str, value_header: str,
+    color: str, value_header: str, bottle_formula: bool = False,
 ) -> int:
     """Write one plain totals table (title band, caption, header, body,
     total row) starting at start_row. Returns the row number of the blank
     spacer row immediately after it, so the caller can chain another table
-    beneath it on the same sheet."""
+    beneath it on the same sheet.
+
+    With bottle_formula, each Bottle Count that has a pack size becomes a live
+    "=Bottles per Case x Case Quantity" formula (and its total a SUM);
+    otherwise Bottle Count is written as the stored value."""
     headers = list(frame.columns)
     end_col = len(headers)
     caption_row = start_row + 1
@@ -70,17 +78,31 @@ def _write_aggregate_table(
     _write_dataframe_values(ws, frame, header_row, 1)
     _format_header(
         ws, header_row, 1, end_col, color, headers=headers,
-        amount_columns={value_header}, quantity_columns={quantity_header},
+        amount_columns={value_header}, quantity_columns=_AGGREGATE_QUANTITY_HEADERS,
     )
     last_row = header_row + len(frame)
+    bottle_letter = get_column_letter(headers.index("Bottle Count") + 1)
+    if len(frame) and bottle_formula:
+        size_letter = get_column_letter(headers.index("Bottles per Case") + 1)
+        cases_letter = get_column_letter(headers.index("Case Quantity") + 1)
+        for row in range(data_row, last_row + 1):
+            if ws[f"{size_letter}{row}"].value is not None:
+                ws[f"{bottle_letter}{row}"] = f"={size_letter}{row}*{cases_letter}{row}"
     if len(frame):
         _format_body_block(ws, data_row, last_row, 1, end_col, NAVY_LIGHT)
-        _apply_number_formats(ws, headers, data_row, last_row, 1, {value_header}, {quantity_header})
+        _apply_number_formats(
+            ws, headers, data_row, last_row, 1, {value_header}, _AGGREGATE_QUANTITY_HEADERS,
+        )
     total_row = last_row + 1
     totals = {
-        quantity_header: float(frame[quantity_header].sum()),
+        "Case Quantity": float(frame["Case Quantity"].sum()),
         value_header: float(frame[value_header].sum()),
     } if len(frame) else {}
+    if len(frame) and frame["Bottle Count"].notna().any():
+        totals["Bottle Count"] = (
+            f"=SUM({bottle_letter}{data_row}:{bottle_letter}{last_row})"
+            if bottle_formula else float(frame["Bottle Count"].sum())
+        )
     _write_total_row(ws, total_row, 1, end_col, totals, headers)
     _set_widths(ws, 1, end_col, header_row, total_row)
     ws.column_dimensions["A"].width = 34
@@ -89,10 +111,63 @@ def _write_aggregate_table(
     return total_row + 2
 
 
+def _write_product_review_items(ws, start_row: int, items: pd.DataFrame) -> int:
+    """The QuickBooks lines behind the product table's review rows, by
+    original description -- or a single "No items need review." line.
+    Returns the row for the next table."""
+    if items.empty:
+        cell = ws.cell(start_row, 1, "No items need review.")
+        cell.font = Font(name=FONT_NAME, size=9, italic=True, color=SLATE)
+        cell.alignment = Alignment(horizontal="left", vertical="center")
+        fix_row_height(ws, start_row, 18)
+        return start_row + 2
+    headers = list(items.columns)
+    end_col = len(headers)
+    header_row = start_row + 2
+    data_row = header_row + 1
+    last_row = header_row + len(items)
+    _write_title_band(ws, start_row, 1, end_col, "ITEMS NEEDING REVIEW", NEUTRAL_GOLD_TEXT)
+    _write_caption_band(
+        ws, start_row + 1, 1, end_col,
+        "QuickBooks lines whose product or pack size could not be confirmed. They are included in "
+        "the Case Quantity and Value totals above but have no bottle count. Correct the description "
+        "or confirm the pack size before relying on the bottle totals.",
+        NEUTRAL_GOLD_TEXT,
+    )
+    _write_dataframe_values(ws, items, header_row, 1)
+    _format_header(
+        ws, header_row, 1, end_col, NEUTRAL_GOLD_TEXT, headers=headers,
+        amount_columns={"Amount"}, quantity_columns={"Case Quantity"},
+    )
+    _format_body_block(ws, data_row, last_row, 1, end_col, NAVY_LIGHT)
+    _apply_number_formats(ws, headers, data_row, last_row, 1, {"Amount"}, {"Case Quantity"})
+    totals = {
+        "Case Quantity": float(items["Case Quantity"].sum()),
+        "Amount": float(items["Amount"].sum()),
+    }
+    _write_total_row(ws, last_row + 1, 1, end_col, totals, headers)
+    return last_row + 3
+
+
+def _customer_bottle_note(result: ReconciliationResult) -> str:
+    """Caption sentence naming the cases the customer Bottle Count leaves out."""
+    if not result.qb_mapping.get("product"):
+        return " Bottle Count is blank because no QuickBooks product description column is mapped."
+    missing = result.customer_cases_without_bottles
+    if not missing:
+        return " Bottle Count is summed line by line, since a customer can buy several pack sizes."
+    names = [f"{name} ({cases:,.0f})" for name, cases in missing.items()]
+    shown = ", ".join(names[:5]) + (f", and {len(names) - 5} more" if len(names) > 5 else "")
+    return (
+        f" Bottle Count is summed line by line and leaves out {sum(missing.values()):,.0f} case(s) "
+        f"with no known pack size: {shown}. See Items needing review."
+    )
+
+
 def build_aggregates_sheet(
     wb: Workbook, result: ReconciliationResult, *, sheet_title: str = "Product Aggregate Summary",
 ) -> None:
-    """Plain quantity and value totals by product, and by QuickBooks
+    """Plain case, bottle, and value totals by product, and by QuickBooks
     Customer -- used for bottle-count and customer-volume reconciliation,
     not a matching decision view, so it deliberately does not compute
     match rates or JE Support/Review Hold breakdowns (see
@@ -110,18 +185,23 @@ def build_aggregates_sheet(
     next_row = _write_aggregate_table(
         ws, 1, result.product_summary,
         title="PRODUCT AGGREGATE SUMMARY",
-        populated_caption=f"Sum of quantity and value by product, for bottle-count reconciliation. {period_scope}",
-        empty_caption="A QuickBooks quantity column, an amount column, and a recognizable product "
-        "description are not all mapped, so no product breakdown is available.",
-        color=NAVY, quantity_header="Product Quantity", value_header="Product Value",
+        populated_caption="Cases, bottles, and value by product, for bottle-count reconciliation. "
+        "QuickBooks QTY is a case count; Bottle Count = Bottles per Case × Case Quantity. "
+        f"{period_scope}",
+        empty_caption="A QuickBooks quantity column, an amount column, and a product description "
+        "column are not all mapped, so no product breakdown is available.",
+        color=NAVY, value_header="Product Value", bottle_formula=True,
     )
+    if len(result.product_summary):
+        next_row = _write_product_review_items(ws, next_row, result.product_review_items)
     _write_aggregate_table(
         ws, next_row, result.customer_summary,
         title="CUSTOMER AGGREGATE SUMMARY",
-        populated_caption=f"Sum of quantity and value by QuickBooks Customer. {period_scope}",
+        populated_caption=f"Cases, bottles, and value by QuickBooks Customer. {period_scope}"
+        + _customer_bottle_note(result),
         empty_caption="A QuickBooks quantity column, an amount column, and a Customer column are "
         "not all mapped, so no customer breakdown is available.",
-        color=TEAL, quantity_header="Customer Quantity", value_header="Customer Value",
+        color=TEAL, value_header="Customer Value",
     )
     ws.freeze_panes = "A4"
     _prepare_sheet(ws, landscape=False)
@@ -229,8 +309,8 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     )
     _write_caption_band(
         ws, 2, 1, end_col,
-        "Every figure on this page is read from the same controls shown in the Analytics workbook's "
-        "Executive Summary and this workbook's Unresolved Exceptions and Reconciliation Detail sheets.",
+        "Every figure on this page is read from the same controls behind this workbook's "
+        "Unresolved Exceptions and Reconciliation Detail sheets.",
         NAVY,
     )
 
@@ -394,8 +474,9 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     ws.merge_cells(start_row=nav_row, start_column=1, end_row=nav_row, end_column=end_col)
     nav_cell = ws.cell(
         nav_row, 1,
-        "Review Hold detail and reviewer actions: Unresolved Exceptions (reason code definitions "
-        "are in that sheet's own frozen header). Every source row: Reconciliation Detail.",
+        "Review Hold detail and reviewer actions: Unresolved Exceptions (its KPIs, reason code "
+        "definitions, and exceptions by fiscal period are in the grouped summary at the top -- "
+        "click + beside row 1 to expand it). Every source row: Reconciliation Detail.",
     )
     nav_cell.font = Font(name="Segoe UI", size=9, italic=True, color=SLATE)
     nav_cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)

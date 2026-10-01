@@ -44,6 +44,31 @@ Historical rows may only clear exceptions in the **opposite** primary source. Hi
 QuickBooks can only clear primary Infinium, and the reverse. Unused historical rows never create
 exceptions. Historical rows that overlap their own primary dataset can't clear an exception.
 
+## Product classification (Aggregates sheet only)
+
+`product_match` (`matching/core.py`) labels each QuickBooks description for the Aggregates
+sheet. It never feeds a financial match, but it does change product grouping, so a change to it
+bumps `MATCHING_RULE_VERSION`.
+
+- QuickBooks `QTY` is a **case** count. Bottles per case comes from the standard name in
+  `PRODUCT_LEXICON` ("Lowes 32 Case" means 32). Only 24, 32 and 40 exist, and a test fails if a
+  name lacks one. There is no fallback size.
+- The lexicon lookup (exact, else `get_close_matches` at 0.82) finds the nearest product name.
+  The size written in the text then decides:
+  - text says 32 but the product isn't Lowes 32, Panhandle Pure 32 or Food Club 32:
+    **New item – 32-count**;
+  - no product found (or a blank description): **Unrecognized product**;
+  - text gives a size that differs from the product's: **Needs review – size unclear**;
+  - text gives no size: a one-size brand (Allsups, Juniors, Plains, Toot N Totum, Spring House)
+    takes its 24; a multi-size brand (Lowes, Panhandle Pure, Food Club, Food King) goes to
+    **Needs review – size unclear**. That's why bare `LOWES` and `FOOD CLUB` aren't variants.
+- Review rows sit at the bottom of the product table with no pack size or bottle count. Every
+  QuickBooks line in scope lands in exactly one row, so the Case Quantity and Value totals agree
+  with QuickBooks. An "Items needing review" list under the table shows each flagged line.
+- Product Bottle Count is a live formula (`=Bottles per Case × Case Quantity`). Customer Bottle
+  Count is a stored value summed line by line, because customers buy several pack sizes; the
+  caption names any cases left out.
+
 ## Versions
 
 - `APP_VERSION` and `MATCHING_RULE_VERSION` (in `matching/core.py`) are part of the run

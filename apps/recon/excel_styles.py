@@ -16,6 +16,7 @@ from decimal import Decimal
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles.cell_style import StyleArray
 from openpyxl.utils import get_column_letter
 
 from .config import (
@@ -68,6 +69,67 @@ BORDER_TOTAL = Border(
     top=Side(style="thin", color=SLATE),
     bottom=Side(style="double", color=SLATE),
 )
+
+# ---------------------------------------------------------------------------
+# Style reuse
+# ---------------------------------------------------------------------------
+
+_DEFAULT_STYLE = tuple(StyleArray())
+
+
+class _CellPainter:
+    """Apply one fixed look to many cells without paying openpyxl's per-cell cost.
+
+    Every ``cell.font = ...`` (fill, border, alignment, number_format) makes
+    openpyxl hash the style object to find it in the workbook's style list,
+    then store that list position in the cell's ``_style`` array -- and that
+    hashing was most of the workbook build time. A cell's resulting
+    ``_style`` depends only on its ``_style`` before and the values assigned,
+    so the first cell with each distinct starting style is painted through
+    the normal API and every later one gets a copy of the result. Anything
+    else already on the cell (a number format, protection) is part of the
+    starting style, so it carries through exactly as before.
+
+    Positions in the style list are per workbook, so a painter must never be
+    shared across workbooks; _cached_painter keeps one set per workbook.
+    test_cell_painter_matches_openpyxl_assignment guards the ``_style``
+    internals this relies on (openpyxl is pinned to 3.1.x).
+    """
+
+    __slots__ = ("_apply", "_results")
+
+    def __init__(self, apply) -> None:
+        self._apply = apply
+        self._results: dict[tuple, tuple] = {}
+
+    def paint(self, cell) -> None:
+        before = _DEFAULT_STYLE if cell._style is None else tuple(cell._style)
+        after = self._results.get(before)
+        if after is None:
+            self._apply(cell)
+            self._results[before] = tuple(cell._style)
+        else:
+            cell._style = StyleArray(after)
+
+
+def _attribute_painter(**attributes) -> _CellPainter:
+    """A painter that assigns these cell style attributes, in this order."""
+    def apply(cell) -> None:
+        for name, value in attributes.items():
+            setattr(cell, name, value)
+    return _CellPainter(apply)
+
+
+def _cached_painter(ws, key: tuple, make) -> _CellPainter:
+    """The workbook's painter for ``key``, built by ``make()`` on first use, so
+    helpers called once per row still reuse styles across rows."""
+    wb = ws.parent
+    painters = wb.__dict__.setdefault("_recon_cell_painters", {})
+    painter = painters.get(key)
+    if painter is None:
+        painter = painters[key] = make()
+    return painter
+
 
 # ---------------------------------------------------------------------------
 # Formatting Engine
@@ -200,24 +262,29 @@ def _format_body_block(
     light_fill: str,
 ) -> None:
     fill_even = PatternFill("solid", fgColor=light_fill)
-    
+    painters = {
+        parity: _cached_painter(
+            ws, ("body", light_fill, parity),
+            lambda fill=fill: _attribute_painter(
+                font=FONT_BODY, border=BORDER_THIN, fill=fill, alignment=ALIGN_LEFT_CENTER,
+            ),
+        )
+        for parity, fill in ((0, fill_even), (1, FILL_NONE))
+    }
     for row in range(start_row, end_row + 1):
-        row_fill = fill_even if row % 2 == 0 else FILL_NONE
+        paint = painters[row % 2].paint
         for col in range(start_col, end_col + 1):
-            cell = ws.cell(row, col)
-            cell.font = FONT_BODY
-            cell.border = BORDER_THIN
-            cell.fill = row_fill
-            cell.alignment = ALIGN_LEFT_CENTER
+            paint(ws.cell(row, col))
         ws.row_dimensions[row].height = 20
 
 
 def _apply_duplicate_style(ws, row: int, start_col: int, end_col: int) -> None:
     """Apply Excel's traditional red bad-value style to a duplicate source row."""
+    paint = _cached_painter(
+        ws, ("duplicate",), lambda: _attribute_painter(fill=FILL_DUPLICATE, font=FONT_DUPLICATE),
+    ).paint
     for col in range(start_col, end_col + 1):
-        cell = ws.cell(row, col)
-        cell.fill = FILL_DUPLICATE
-        cell.font = FONT_DUPLICATE
+        paint(ws.cell(row, col))
 
 
 def _apply_default_alignment(ws, row: int, start_col: int, end_col: int) -> None:
@@ -227,10 +294,12 @@ def _apply_default_alignment(ws, row: int, start_col: int, end_col: int) -> None
     gets a consistent alignment/border regardless of which style painted
     its color, then let _apply_number_formats override specific columns
     (amounts, dates, quantities) to right/center afterward."""
+    paint = _cached_painter(
+        ws, ("default_alignment",),
+        lambda: _attribute_painter(alignment=ALIGN_LEFT_CENTER, border=BORDER_THIN),
+    ).paint
     for col in range(start_col, end_col + 1):
-        cell = ws.cell(row, col)
-        cell.alignment = ALIGN_LEFT_CENTER
-        cell.border = BORDER_THIN
+        paint(ws.cell(row, col))
 
 
 def _apply_legacy_status_fill(ws, row: int, start_col: int, end_col: int, fill_color: str) -> None:
@@ -238,19 +307,24 @@ def _apply_legacy_status_fill(ws, row: int, start_col: int, end_col: int, fill_c
     plain regular-weight black text. Color alone carries the status --
     bold is reserved for headers, totals, and the one status cell that
     needs attention (see _apply_legacy_status_cell)."""
-    fill = PatternFill("solid", fgColor=fill_color)
+    paint = _cached_painter(
+        ws, ("legacy_status_fill", fill_color),
+        lambda: _attribute_painter(fill=PatternFill("solid", fgColor=fill_color), font=FONT_LEGACY_BODY),
+    ).paint
     for col in range(start_col, end_col + 1):
-        cell = ws.cell(row, col)
-        cell.fill = fill
-        cell.font = FONT_LEGACY_BODY
+        paint(ws.cell(row, col))
 
 
 def _apply_legacy_status_cell(ws, row: int, col: int, fill_color: str, bold: bool) -> None:
     """A single status cell (Match Method / Exception Type) -- bold only
     when the row genuinely needs attention."""
-    cell = ws.cell(row, col)
-    cell.fill = PatternFill("solid", fgColor=fill_color)
-    cell.font = FONT_LEGACY_BODY_BOLD if bold else FONT_LEGACY_BODY
+    _cached_painter(
+        ws, ("legacy_status_cell", fill_color, bold),
+        lambda: _attribute_painter(
+            fill=PatternFill("solid", fgColor=fill_color),
+            font=FONT_LEGACY_BODY_BOLD if bold else FONT_LEGACY_BODY,
+        ),
+    ).paint(ws.cell(row, col))
 
 
 def _apply_number_formats(
@@ -269,14 +343,24 @@ def _apply_number_formats(
         )
         if not (target_align or target_format or is_numeric_dense):
             continue
-        for row in range(start_row, end_row + 1):
-            cell = ws.cell(row, col)
+
+        def apply(cell, target_align=target_align, target_format=target_format,
+                  is_numeric_dense=is_numeric_dense) -> None:
             if target_align:
                 cell.alignment = target_align
             if target_format:
                 cell.number_format = target_format
             if is_numeric_dense:
                 cell.font = _numeric_font(cell)
+
+        # _numeric_font reads the cell's current font, which is part of its
+        # starting style, so the painter's reuse still holds.
+        paint = _cached_painter(
+            ws, ("number_format", target_align, target_format, is_numeric_dense),
+            lambda apply=apply: _CellPainter(apply),
+        ).paint
+        for row in range(start_row, end_row + 1):
+            paint(ws.cell(row, col))
 
 
 def _set_widths(
