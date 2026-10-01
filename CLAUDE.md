@@ -19,7 +19,7 @@ auditability, and "never silently change the books" beat convenience everywhere.
 ```powershell
 pip install -r requirements.txt
 streamlit run app.py                          # always from this folder (C:\AutoRek)
-py -m pytest                                  # Recon's 309 tests; keep them free of FutureWarnings
+py -m pytest                                  # Recon's 355 tests; keep them free of FutureWarnings
 node apps/invoice_hub/tests/test_layers.js    # Invoice Hub; prints ALL TESTS PASSED
 ```
 

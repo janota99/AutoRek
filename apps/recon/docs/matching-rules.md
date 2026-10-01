@@ -59,7 +59,17 @@ bumps `MATCHING_RULE_VERSION`.
 - QuickBooks `QTY` is a **case** count. Bottles per case comes from the standard name in
   `PRODUCT_LEXICON` ("Lowes 32 Case" means 32). Only 24, 32 and 40 exist, and a test fails if a
   name lacks one. There is no fallback size.
+- **Packaging words mean nothing.** CASE, CASES, CS, CSE, PACK, PACKS, PK, PKS, PCK, PKG, COUNT
+  and CT are stripped before the lookup, as whole words or stuck to a number (`40PK`), never
+  inside another word (`PACKAGING`). So `PP40`, `PP 40 CASE` and `PP40PK` are the same product,
+  and text that is only these words is **Unrecognized product**.
+- As a last resort, when nothing else matched, CASE(S), PACK(S) or COUNT glued to the end of a
+  word comes off if what's left is a word from a lexicon name or another packaging word
+  (`ALLSUPSPACK`, `PP 40 CASEPACK`). `DISCOUNT` and `ACCOUNT` are left alone, so those lines
+  stay **Unrecognized product**.
 - The lexicon lookup (exact, else `get_close_matches` at 0.82) finds the nearest product name.
+  It tries the stripped text first, then the text as written, against every lexicon name both
+  as written and stripped, so stripping only ever adds a match (`PP 24 CASE PAK` still lands).
   The size written in the text then decides:
   - text says 32 but the product isn't Lowes 32, Panhandle Pure 32 or Food Club 32:
     **New item – 32-count**;

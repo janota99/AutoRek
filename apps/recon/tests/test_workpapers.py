@@ -1772,6 +1772,17 @@ def test_posting_summary_flags_an_inconsistent_fiscal_period(qb_mapping, inf_map
     assert "⚠" in text
 
 
+def test_posting_summary_column_c_is_pinned_wide_enough_for_amounts(qb_mapping, inf_mapping, make_metadata):
+    """Autofit used to shrink column C to 13, too narrow for a six-figure
+    amount; the pinned width must survive the workbook-wide autofit pass."""
+    from apps.recon.workpapers.summary_sheets import POSTING_SUMMARY_COLUMN_C_WIDTH
+
+    result = _reference_result(qb_mapping, inf_mapping, make_metadata)
+    ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Posting Summary"]
+    assert POSTING_SUMMARY_COLUMN_C_WIDTH == 16.0   # Excel's Column Width box reads 15.27
+    assert ws.column_dimensions["C"].width == POSTING_SUMMARY_COLUMN_C_WIDTH
+
+
 def test_posting_summary_is_silent_when_the_period_matches(qb_mapping, inf_mapping, make_metadata):
     result = _reference_result(qb_mapping, inf_mapping, make_metadata)   # all rows are Period "1", selected period 1
     ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Posting Summary"]

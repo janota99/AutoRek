@@ -18,7 +18,7 @@ from ..duplicates import AMOUNT_CENTS, IDENTITY_GRADE_ROLES, STABLE_FINGERPRINT_
 APP_VERSION = "2.16.3"
 
 
-MATCHING_RULE_VERSION = "2026.09-SIZE-AWARE-PRODUCTS"
+MATCHING_RULE_VERSION = "2026.09-PACKAGING-WORDS-IGNORED"
 
 
 # Grouped matching is intentionally bounded to keep reconciliation runs
@@ -125,6 +125,32 @@ PRODUCT_REVIEW_LABELS = (PRODUCT_SIZE_UNCLEAR, PRODUCT_NEW_32_COUNT, PRODUCT_UNR
 
 
 _RE_PACK_SIZE = re.compile(r"\s+(\d+)\s+CASE$", re.IGNORECASE)
+
+
+# QuickBooks descriptions use CASE, PACK, their abbreviations and COUNT/CT
+# interchangeably, or leave them off: "PP40", "PP 40 CASE" and "PP40PK" are
+# the same product. The words carry no meaning, so they're removed before the
+# lookup -- as whole words or stuck to a number, never inside another word
+# ("PACKAGING" stays). A description that is only these words has no brand
+# left and is "Unrecognized product".
+
+_PACKAGING_WORDS = (
+    "CASE", "CASES", "CS", "CSE", "PACK", "PACKS", "PK", "PKS", "PCK", "PKG", "COUNT", "CT",
+)
+
+
+_RE_LETTER_DIGIT_BOUNDARY = re.compile(r"(?<=\d)(?=[A-Z])|(?<=[A-Z])(?=\d)")
+
+
+_RE_PACKAGING_WORD = re.compile(r"\b(?:" + "|".join(_PACKAGING_WORDS) + r")\b")
+
+
+# The long words glued onto the end of a name ("ALLSUPSPACK"). Ordinary words
+# end the same way (DISCOUNT, ACCOUNT, SHOWCASE), so the ending only comes off
+# when what's left is a lexicon word or another packaging word ("CASEPACK"),
+# and only once every other lookup has found nothing.
+
+_RE_GLUED_PACKAGING_WORD = re.compile(r"\b([A-Z]+?)(?:CASES?|PACKS?|COUNT)\b")
 
 
 _RE_SIZE_TOKEN = re.compile(r"\d+")
@@ -337,13 +363,44 @@ def flag_mask(series: pd.Series) -> pd.Series:
     return series.map(lambda value: False if pd.isna(value) else bool(value)).astype(bool)
 
 
+def _strip_packaging_words(text: str) -> str:
+    """Upper-case text with the packaging words removed ("PP40PK" -> "PP 40 ")."""
+    return _RE_PACKAGING_WORD.sub(" ", _RE_LETTER_DIGIT_BOUNDARY.sub(" ", text))
+
+
+@lru_cache(maxsize=1)
+def _glued_word_hosts() -> frozenset[str]:
+    """The words a glued packaging word may be peeled off: every word in the
+    lexicon names, plus the packaging words themselves."""
+    words = set(_PACKAGING_WORDS)
+    for standard_name, variants in PRODUCT_LEXICON.items():
+        for name in (standard_name, *variants):
+            words.update(re.findall(r"[A-Z]+", name.upper()))
+    return frozenset(words)
+
+
+def _unglue_packaging_words(text: str) -> str:
+    """Stripped text with glued endings peeled off ("ALLSUPSPACK" -> "ALLSUPS")."""
+    hosts = _glued_word_hosts()
+    return _RE_GLUED_PACKAGING_WORD.sub(
+        lambda found: found.group(1) if found.group(1) in hosts else found.group(0),
+        _strip_packaging_words(text),
+    )
+
+
 @lru_cache(maxsize=1)
 def _product_lookup() -> dict[str, str]:
+    """Every lexicon name, as written and with packaging words stripped.
+
+    The stripped keys give exact hits on stripped text; the originals keep
+    near-spellings of a packaging word ("PPL 24 CASSE") close enough for
+    get_close_matches, as they were before stripping existed."""
     lookup: dict[str, str] = {}
     for standard_name, variants in PRODUCT_LEXICON.items():
-        lookup[clean_alphanumeric(standard_name)] = standard_name
-        for variant in variants:
-            lookup[clean_alphanumeric(variant)] = standard_name
+        for name in (standard_name, *variants):
+            upper = name.upper()
+            lookup[_cached_clean_alphanumeric(upper)] = standard_name
+            lookup[_cached_clean_alphanumeric(_strip_packaging_words(upper))] = standard_name
     return lookup
 
 
@@ -367,6 +424,18 @@ def _brand_pack_sizes() -> dict[str, frozenset[int]]:
     return {brand: frozenset(values) for brand, values in sizes.items()}
 
 
+def _lookup_product(lookup: dict[str, str], keys: tuple[str, ...]) -> Optional[str]:
+    """Exact hit on any key, else the closest name to each key in turn."""
+    keys = tuple(dict.fromkeys(keys))
+    product = next((lookup[key] for key in keys if key in lookup), None)
+    for key in keys:
+        if product is not None:
+            break
+        close = get_close_matches(key, lookup.keys(), n=1, cutoff=0.82)
+        product = lookup[close[0]] if close else None
+    return product
+
+
 @lru_cache(maxsize=1024)
 def _cached_classify_product(text: str) -> str:
     """Name the product, then check the name against the size in the text.
@@ -381,15 +450,23 @@ def _cached_classify_product(text: str) -> str:
     - text gives no size: a one-size brand (Allsups, Juniors, Plains,
       Toot N Totum, Spring House) takes that size; a multi-size brand
       (Lowes, Panhandle Pure, Food Club, Food King) -> "Needs review".
+
+    Packaging words (CASE, PACK, PK, CT, ...) are stripped first, so they
+    never decide the product on their own.
     """
-    cleaned = _cached_clean_alphanumeric(text)
+    cleaned = _cached_clean_alphanumeric(_strip_packaging_words(text))
     if not cleaned:
         return PRODUCT_UNRECOGNIZED
+    # The text as written is tried after the stripped text, so stripping only
+    # ever adds a match: "PP 24 CASE PAK" is too short for get_close_matches
+    # once CASE is gone, but still close to "PP 24 CASE". Glued words come
+    # off only after both have found nothing, exact or close.
     lookup = _product_lookup()
-    product = lookup.get(cleaned)
+    product = _lookup_product(lookup, (cleaned, _cached_clean_alphanumeric(text)))
     if product is None:
-        close = get_close_matches(cleaned, lookup.keys(), n=1, cutoff=0.82)
-        product = lookup[close[0]] if close else None
+        unglued = _cached_clean_alphanumeric(_unglue_packaging_words(text))
+        if unglued and unglued != cleaned:
+            product = _lookup_product(lookup, (unglued,))
     product_size = pack_size(product) if product else None
     text_sizes = {int(token) for token in _RE_SIZE_TOKEN.findall(text)}
     if 32 in text_sizes and product_size != 32:

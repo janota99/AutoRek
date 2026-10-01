@@ -8,6 +8,8 @@ future change to either module reintroduces one of those issues, one of
 these tests should fail.
 """
 
+import re
+
 import pandas as pd
 import pytest
 
@@ -170,6 +172,82 @@ def test_any_other_32_is_a_new_32_count_item(text):
     """Only Lowes, Panhandle Pure and Food Club come in 32s; any other "32"
     is flagged as a new item instead of being counted as a 24."""
     assert product_match(text) == PRODUCT_NEW_32_COUNT
+
+
+_PACKAGING_SUFFIXES = [
+    "", " CASE", " CASES", " PACK", " PACKS", "PK", " PK", " PKS", " CS", " CSE", " PCK", " PKG",
+    " CT", "CT", " COUNT", "-PACK", "PACK", " CASE PACK",
+]
+
+
+@pytest.mark.parametrize("suffix", _PACKAGING_SUFFIXES)
+def test_case_pack_and_their_abbreviations_are_interchangeable_or_absent(suffix):
+    """Data entry uses CASE, PACK, PK, CT, ... interchangeably or leaves them
+    off -- "PP40", "PP 40 CASE" and "PP40PK" are the same product. Only the
+    long words come off when stuck to letters ("ALLSUPSPACK"), so the short
+    ones skip sizeless variants."""
+    misfiled = {}
+    for name, variants in PRODUCT_LEXICON.items():
+        for variant in [name, *variants]:
+            base = re.sub(r"\s*CASE$", "", variant.upper())
+            if suffix in ("PK", "CT") and not base[-1:].isdigit():
+                continue
+            text = base + suffix
+            if product_match(text) != name:
+                misfiled[text] = product_match(text)
+    assert misfiled == {}
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("LOWES 40 PACK", "Lowes 40 Case"),
+    ("LOWES 32 PACK", "Lowes 32 Case"),       # was "New item – 32-count"
+    ("PP40PK", "Panhandle Pure 40 Case"),
+    ("PP 24 COUNT", "Panhandle Pure 24 Case"),
+    ("ALLSUPS PACK", "Allsups 24 Case"),      # one-size brand, no size
+    ("LOWES PACK", PRODUCT_SIZE_UNCLEAR),     # multi-size brand, no size
+    ("ALLSUPS 40 PK", PRODUCT_SIZE_UNCLEAR),  # size disagrees with the brand
+    ("PP 24 CASE PAK", "Panhandle Pure 24 Case"),   # near-spelling still caught as written
+])
+def test_packaging_words_never_change_the_size_rules(text, expected):
+    assert product_match(text) == expected
+
+
+@pytest.mark.parametrize("text", ["CASE", "PACK", "24 PK", "CT", "CASE PACK", "40 COUNT", "PACKAGING FEE"])
+def test_packaging_words_alone_never_name_a_product(text):
+    assert product_match(text) == PRODUCT_UNRECOGNIZED
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("ALLSUPSPACK", "Allsups 24 Case"),
+    ("JUNIORSCASES", "Juniors 24 Case"),
+    ("PLAINSCOUNT", "Plains 24 Case"),
+    ("PP 40 CASEPACK", "Panhandle Pure 40 Case"),
+    ("LOWESPACK", PRODUCT_SIZE_UNCLEAR),
+])
+def test_a_long_packaging_word_glued_to_a_name_comes_off(text, expected):
+    assert product_match(text) == expected
+
+
+@pytest.mark.parametrize("text", [
+    "ALLSUPS ACCOUNT", "LOWES DISCOUNT 40", "PP DISCOUNT", "SHOWCASE", "SIXPACK", "BOOKCASE 24",
+])
+def test_ordinary_words_ending_like_a_packaging_word_are_left_alone(text):
+    """DISCOUNT is not DIS + COUNT: an ending only comes off a lexicon word,
+    so a discount or account line never lands in a product total."""
+    assert product_match(text) == PRODUCT_UNRECOGNIZED
+
+
+def test_stripping_packaging_words_never_merges_two_products():
+    """Two lexicon names that only differed by a packaging word would
+    silently overwrite each other in the lookup."""
+    from apps.recon.matching.core import _cached_clean_alphanumeric, _strip_packaging_words
+
+    owners = {}
+    for name, variants in PRODUCT_LEXICON.items():
+        for variant in [name, *variants]:
+            key = _cached_clean_alphanumeric(_strip_packaging_words(variant.upper()))
+            owners.setdefault(key, set()).add(name)
+    assert {key: names for key, names in owners.items() if len(names) > 1} == {}
 
 
 @pytest.mark.parametrize("text", ["totally unknown product", "", "   ", None, float("nan")])

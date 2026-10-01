@@ -31,6 +31,7 @@ from ..excel_styles import (
     _apply_number_formats,
     _format_body_block,
     _format_header,
+    _pin_column_width,
     _prepare_sheet,
     _set_widths,
     _thin_border,
@@ -208,6 +209,9 @@ def build_aggregates_sheet(
 
 
 _POSTING_SUMMARY_END_COL = 8
+
+
+POSTING_SUMMARY_COLUMN_C_WIDTH = 16.0
 
 
 # The four top-level dispositions, in this fixed order, everywhere the
@@ -485,6 +489,9 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     for col in range(1, end_col + 1):
         ws.column_dimensions[get_column_letter(col)].width = 18
     ws.column_dimensions["A"].width = 12
+    # Wide enough for a six-figure amount without "####". 16.0 is what Excel
+    # saves when 15.27 is typed into Column Width (the box excludes padding).
+    _pin_column_width(ws, "C", POSTING_SUMMARY_COLUMN_C_WIDTH)
     ws.sheet_view.showGridLines = False
     ws.page_setup.orientation = "landscape"
     ws.page_setup.fitToWidth = 1
