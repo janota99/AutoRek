@@ -8,9 +8,14 @@ Read this before changing anything in `matching/`, `duplicates.py`, `fuzzy_po_ma
 1. Unique PO + invoice + exact signed amount.
 2. Unique PO + exact signed amount.
 3. Unique invoice + exact signed amount.
-4. Unique grouped aggregate by PO and/or invoice. This pass is bounded by `MAX_GROUP_POOL_ROWS`
+4. Same-key duplicate clusters (`_duplicate_cluster_pairs`). When two or more rows share the
+   exact same PO/invoice/signed-amount key and carry nothing else that tells them apart, they're
+   paired in source-file order. Any leftover row stays unresolved.
+5. Unique grouped aggregate by PO and/or invoice. This pass is bounded by `MAX_GROUP_POOL_ROWS`
    (20) and `MAX_GROUP_SIZE` (8); larger pools stay unresolved for review.
-5. Bounded fuzzy passes (`fuzzy_po_matching.py`) over rows that survive every exact pass.
+6. Confirmed vendor aliases (`vendor_aliases.py`). These post like an exact match, not as a
+   review hold, and run even when fuzzy matching is switched off for historical rows.
+7. Bounded fuzzy passes (`fuzzy_po_matching.py`) over rows that survive every pass above.
 
 **Amounts must agree exactly to the signed cent.** Anything ambiguous stays unresolved for
 review. Never add a similarity-percentage or "closest match" rule.
@@ -20,7 +25,8 @@ review. Never add a similarity-percentage or "closest match" rule.
 - **Whole-word containment:** every significant word of the shorter PO reference must appear in
   the longer one. These matches are always held for review.
 - **Controlled typo:** exactly one word may differ by one inserted, deleted, or substituted
-  character, with an exact amount and exactly one candidate on each side.
+  character, with an exact amount and exactly one candidate on each side. These post as a
+  separately labeled match (`Controlled PO Typo + Exact Amount`), not a review hold.
 - **Order:** exact-token components resolve before typo-level ones, so a look-alike row can't
   drag a clean match into a larger cluster.
 - **Vendor aliases** (`vendor_aliases.json`) record human-confirmed identity pairs that no string

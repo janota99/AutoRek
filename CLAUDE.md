@@ -18,7 +18,7 @@ auditability, and "never silently change the books" beat convenience everywhere.
 
 ```powershell
 pip install -r requirements.txt
-streamlit run app.py                          # always from this folder (C:\Projects)
+streamlit run app.py                          # always from this folder (C:\AutoRek)
 py -m pytest                                  # Recon's 309 tests; keep them free of FutureWarnings
 node apps/invoice_hub/tests/test_layers.js    # Invoice Hub; prints ALL TESTS PASSED
 ```
@@ -76,3 +76,4 @@ Module docstrings carry the detailed reasoning (especially Recon's `duplicates.p
 
 - `/grill-me`: stress-test a plan or design, one question at a time.
 - `/handoff [focus]`: write `HANDOFF.md` for a fresh session (user-invoked only).
+- `/reup [scope]`: bring the markdown docs back in line with the code; edits docs only (user-invoked only).

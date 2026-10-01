@@ -44,8 +44,10 @@ shared chrome, and then runs the selected page script top to bottom.
 - **Real company data** lives in `apps/recon/data/`, `apps/sales_tax/data/`, and FIFO's
   `fifo_snapshots/` and `app_settings.json`. The root `.gitignore` excludes them; never commit them.
 - `.streamlit/config.toml` forces the light theme because the app stylesheets assume a light page.
-- **Dependency pins:** `streamlit>=1.58` (`width="stretch"`, top navigation) and `pandas<3`
-  (pandas 3 changes string and copy semantics; re-run every check before lifting it).
+- **Dependency pins:** `streamlit>=1.58` (`width="stretch"`, top navigation), `pandas<3`
+  (pandas 3 changes string and copy semantics; re-run every check before lifting it), and
+  `openpyxl<3.2` (Recon's `excel_styles.py` copies openpyxl's internal `cell._style`; see
+  [apps/recon/docs/architecture.md](../apps/recon/docs/architecture.md)).
 
 ## Testing and verification
 

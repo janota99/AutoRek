@@ -56,7 +56,7 @@ If a new shared constant would create an import cycle, put it in `core` or `labe
 | `raw_data` | The Raw Data sheet. |
 | `detail` | The Reconciliation Detail sheet, paired display frames, row hyperlinks. |
 | `sheet_parts` | Reviewer-facing wording for duplicates, variances, and PO reuse; the KPI band; legends. |
-| `unresolved` | The Unresolved Exceptions sheet. |
-| `summary_sheets` | The Posting Summary and Aggregates sheets. |
+| `unresolved` | The Unresolved Exceptions sheet. Its summary rows (KPIs, reason codes, exceptions by fiscal period) form an Excel row group that's collapsed when the file opens. |
+| `summary_sheets` | The Posting Summary and Aggregates sheets. The legacy workbook reuses the Aggregates builder. |
 | `legacy` | The legacy-format workbook. |
 | `primary` | `build_primary_workbook`: assembles the primary workpaper. |

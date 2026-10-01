@@ -13,9 +13,9 @@ Confirm with the user before changing behavior — some of it may be intentional
 
 ## Documentation
 
-The old user-facing `README.md` predated the current code and was retired when the
-app moved into the combined suite (2026-09-30). Where it disagreed with the code,
-the code and these docs are right. It had claimed:
+FIFO's old standalone `README.md` predated the current code and was retired when the
+app moved into the combined suite (2026-09-30). The suite's root `README.md` replaced it.
+If you meet a copy of the old file, the code and these docs are right. It had claimed:
 - Aliases 1–15; the real ones are **2–30** (`user_inputs.PRODUCTS`).
 - A W0082 rule matching `BLUE`/`NATURAL`/`CLEAR` in the description; no such rule exists. BLUE and NATURAL caps are simply aliases 3 and 4.
 - An "Inventory Balances" file with aliases in column A and period headers in row 2. The actual input is the Master Grid (alias column plus `01`–`13` / `01V`–`13V` headers).
@@ -23,5 +23,5 @@ the code and these docs are right. It had claimed:
 
 ## Tooling
 
-- A headless check that runs the whole page, from the repository root: `PYTHONPATH=. PYTHONIOENCODING=utf-8 py -c "from streamlit.testing.v1 import AppTest; at = AppTest.from_file('apps/fifo_inventory/app.py', default_timeout=120).run(); print(at.exception)"`. The UTF-8 setting is needed because the app's emoji crash the Windows cp1252 console. Set `FIFO_SNAPSHOT_DIR` to a scratch folder first if the check shouldn't touch real snapshots.
+- The headless page check is in [docs/suite-architecture.md](../../../docs/suite-architecture.md#testing-and-verification) (use `apps/fifo_inventory/app.py`). Its `PYTHONIOENCODING=utf-8` setting is needed because the app's emoji crash the Windows cp1252 console. Set `FIFO_SNAPSHOT_DIR` to a scratch folder first if the check shouldn't touch real snapshots.
 - No tests yet. `fifo_snapshots/` and `app_settings.json` hold real data and settings; the root `.gitignore` keeps them out of version control.

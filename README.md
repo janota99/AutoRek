@@ -101,9 +101,14 @@ Reconciles a QuickBooks sales export against an Infinium sales export for a fisc
 3. **Confirm the worksheet, the header row, and the column mapping** for each file. The app
    detects them automatically, and you can override its choices.
 4. **Click "Run Reconciliation".**
-5. **Review the results tabs, then download the workpaper** (`Sales_Reconciliation_<run>.xlsx`).
+5. **Review the results tabs.** Then, in the Downloads tab, click **"Prepare Sales
+   Reconciliation"** and download the workpaper (`Sales_Reconciliation_<run>.xlsx`).
    It has five sheets: Posting Summary, Reconciliation Detail, Unresolved Exceptions,
    Aggregates, and Raw Data. A legacy-format export is also available.
+
+The Aggregates sheet shows case quantities and bottle counts by product and by customer. A
+product line the app can't size with certainty isn't guessed: it's listed under "Items needing
+review" instead.
 
 The matching rules are run in this order:
 
@@ -111,7 +116,10 @@ The matching rules are run in this order:
 2. PO + exact amount
 3. Invoice + exact amount
 4. Small grouped totals
-5. Tightly limited fuzzy PO matching, which is always held for review
+5. Confirmed customer-name aliases (see below)
+6. Tightly limited fuzzy PO matching. A match on whole words of a name is always held for
+   review. A one-letter typo is accepted only when the amount agrees exactly and there's
+   exactly one candidate on each side.
 
 Amounts must agree **to the exact signed cent**. When a row could match more than one thing,
 the app leaves it unresolved and lists it as an exception instead of guessing. Confirmed
