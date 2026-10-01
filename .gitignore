@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Real company data and state - never commit, even to a private repo.
+apps/recon/data/
+apps/sales_tax/data/
+apps/fifo_inventory/fifo_snapshots/
+apps/fifo_inventory/app_settings.json

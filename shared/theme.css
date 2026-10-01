@@ -1,0 +1,34 @@
+/* Suite-wide styling, injected on every page by shared/layout.py:apply_template().
+   Each app still loads its own stylesheet after this one, so app styles win on
+   anything they both touch. Keep this file to suite chrome and the Dashboard. */
+
+/* Streamlit's default top padding leaves a large gap under the navigation bar. */
+.block-container {
+    padding-top: 3rem !important;
+}
+
+/* Dashboard */
+.suite-hero h1 {
+    margin-bottom: 0.25rem;
+    color: #19365d;
+}
+
+.suite-hero p {
+    max-width: 46rem;
+    color: #475569;
+    font-size: 1.05rem;
+}
+
+.suite-card-title {
+    margin: 0 0 0.35rem;
+    color: #19365d;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.suite-card-summary {
+    min-height: 4.5rem;
+    color: #475569;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}

@@ -1,0 +1,22 @@
+/* styles.css */
+div[data-testid="stDownloadButton"] button {
+    background-color: #0B3350;
+    color: #FFFFFF;
+    font-weight: 700;
+    border: 1px solid #0B3350;
+}
+div[data-testid="stDownloadButton"] button:hover {
+    background-color: #14456E;
+    color: #FFFFFF;
+    border: 1px solid #14456E;
+}
+div[data-testid="stDownloadButton"] button:active {
+    background-color: #082741;
+    color: #FFFFFF;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background-color: #F5F8FB;
+    border: 1px solid #D9E2EC;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+}

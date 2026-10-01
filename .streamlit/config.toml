@@ -1,0 +1,4 @@
+[theme]
+# The apps' stylesheets assume a light page, so don't follow the OS dark mode.
+base = "light"
+primaryColor = "#19365d"

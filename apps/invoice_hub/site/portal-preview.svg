@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 610" role="img" aria-labelledby="title description">
+  <title id="title">Invoice operations dashboard preview</title>
+  <desc id="description">A simplified interface showing Outlook intake, invoice queue metrics, and an aging table.</desc>
+  <rect width="900" height="610" fill="#dfe7ef"/>
+  <rect x="28" y="28" width="844" height="554" rx="8" fill="#ffffff" stroke="#c4d0dc" stroke-width="2"/>
+  <rect x="28" y="28" width="844" height="66" rx="8" fill="#13283f"/>
+  <rect x="28" y="84" width="844" height="10" fill="#13283f"/>
+  <rect x="53" y="48" width="30" height="30" fill="#2f6fed"/>
+  <text x="68" y="69" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="13" font-weight="700">IT</text>
+  <text x="96" y="67" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">Invoice Operations</text>
+  <rect x="660" y="48" width="177" height="30" rx="3" fill="#2f6fed"/>
+  <text x="748" y="68" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="12" font-weight="700">SCAN OUTLOOK FOLDERS</text>
+  <text x="58" y="135" fill="#2f6fed" font-family="Arial, sans-serif" font-size="11" font-weight="700">WORKFLOW OVERVIEW</text>
+  <text x="58" y="164" fill="#13283f" font-family="Arial, sans-serif" font-size="25" font-weight="700">Invoice Dashboard</text>
+  <text x="58" y="186" fill="#65758a" font-family="Arial, sans-serif" font-size="12">Monitor intake, current responsibility, and processing age.</text>
+  <g font-family="Arial, sans-serif">
+    <rect x="58" y="215" width="186" height="93" fill="#f5f8fb" stroke="#d8e1ea"/><text x="75" y="241" fill="#65758a" font-size="11">OPEN INVOICES</text><text x="75" y="280" fill="#13283f" font-size="31" font-weight="700">24</text>
+    <rect x="258" y="215" width="186" height="93" fill="#f5f8fb" stroke="#d8e1ea"/><text x="275" y="241" fill="#65758a" font-size="11">OUTSTANDING VALUE</text><text x="275" y="280" fill="#13283f" font-size="29" font-weight="700">$184,260</text>
+    <rect x="458" y="215" width="186" height="93" fill="#f5f8fb" stroke="#d8e1ea"/><text x="475" y="241" fill="#65758a" font-size="11">HIGH URGENCY</text><text x="475" y="280" fill="#b42318" font-size="31" font-weight="700">5</text>
+    <rect x="658" y="215" width="179" height="93" fill="#f5f8fb" stroke="#d8e1ea"/><text x="675" y="241" fill="#65758a" font-size="11">AVG. DAYS OPEN</text><text x="675" y="280" fill="#13283f" font-size="31" font-weight="700">11.4</text>
+  </g>
+  <rect x="58" y="334" width="779" height="205" fill="#ffffff" stroke="#d8e1ea"/>
+  <rect x="58" y="334" width="779" height="42" fill="#edf3f8"/>
+  <g fill="#52677c" font-family="Arial, sans-serif" font-size="10" font-weight="700"><text x="76" y="360">INVOICE</text><text x="205" y="360">VENDOR / CUSTOMER</text><text x="405" y="360">CURRENT STAGE</text><text x="589" y="360">TOTAL AGE</text><text x="707" y="360">STATUS</text></g>
+  <g font-family="Arial, sans-serif" font-size="12">
+    <text x="76" y="409" fill="#2f6fed" font-weight="700">INV-1042</text><text x="205" y="409" fill="#13283f">Northstar Technology</text><text x="405" y="409" fill="#13283f">Department Approval</text><text x="589" y="409" fill="#13283f">18 days</text><rect x="707" y="391" width="99" height="25" fill="#fff1ef"/><text x="756" y="408" text-anchor="middle" fill="#b42318" font-size="10" font-weight="700">HIGH URGENCY</text>
+    <line x1="76" y1="434" x2="815" y2="434" stroke="#e1e7ed"/>
+    <text x="76" y="465" fill="#2f6fed" font-weight="700">INV-1048</text><text x="205" y="465" fill="#13283f">Apex Supply Company</text><text x="405" y="465" fill="#13283f">GL Coding</text><text x="589" y="465" fill="#13283f">9 days</text><rect x="707" y="447" width="99" height="25" fill="#ecfdf3"/><text x="756" y="464" text-anchor="middle" fill="#067647" font-size="10" font-weight="700">ON TRACK</text>
+    <line x1="76" y1="490" x2="815" y2="490" stroke="#e1e7ed"/>
+    <text x="76" y="521" fill="#2f6fed" font-weight="700">AR-2308</text><text x="205" y="521" fill="#13283f">Greenway Markets</text><text x="405" y="521" fill="#13283f">Received</text><text x="589" y="521" fill="#13283f">2 days</text><rect x="707" y="503" width="99" height="25" fill="#edf4ff"/><text x="756" y="520" text-anchor="middle" fill="#1f56c0" font-size="10" font-weight="700">NEW</text>
+  </g>
+</svg>

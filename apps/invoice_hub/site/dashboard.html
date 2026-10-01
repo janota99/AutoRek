@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Personal, role-based dashboard for the Automated Outlook Invoice Tracker prototype.">
+  <title>My Dashboard | Automated Outlook Invoice Tracker</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2313283f'/%3E%3Cpath d='M18 14h20l8 8v28H18z' fill='white'/%3E%3Cpath d='M38 14v10h8' fill='none' stroke='%2313283f' stroke-width='3'/%3E%3Cpath d='M24 34h16M24 41h16' stroke='%232f6fed' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="hub-data.js" defer></script>
+  <script src="hub-access.js" defer></script>
+  <script src="hub-workflow.js" defer></script>
+  <script src="hub-settings.js" defer></script>
+  <script src="hub-mail.js" defer></script>
+  <script src="hub-inbox.js" defer></script>
+  <script src="inbox-ui.js" defer></script>
+  <script src="settings-ui.js" defer></script>
+  <script src="dashboard.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="Automated Outlook Invoice Tracker home">
+        <span class="brand-mark" aria-hidden="true">IT</span>
+        <span><strong>Invoice Tracker</strong><small>Outlook Workflow Prototype</small></span>
+      </a>
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="index.html">Service</a>
+        <a href="feedback.html">Reviews &amp; Feedback</a>
+        <a class="active" href="dashboard.html" aria-current="page">My Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-width dashboard-page">
+    <p class="prototype-banner" role="note"><strong>Prototype:</strong> sign-in and privacy are simulated in your browser with fictitious data. A real deployment must authenticate people and restrict data on a server.</p>
+
+    <!-- Signed-out view -->
+    <section class="signin-panel" id="signInView" aria-labelledby="signin-heading">
+      <span class="eyebrow">Access required</span>
+      <h1 id="signin-heading">Sign in to your dashboard</h1>
+      <p class="lead">Enter the email address an administrator added to the access list. You will only see the dashboard built for your role.</p>
+      <form class="form-stack" id="signInForm" novalidate>
+        <label for="signInEmail">Work email</label>
+        <input id="signInEmail" name="email" type="email" autocomplete="email" placeholder="name@company.com" aria-describedby="signInError" required>
+        <p class="field-error" id="signInError" role="alert" hidden></p>
+        <button class="button button-primary button-full" type="submit">Continue</button>
+      </form>
+      <details class="demo-help" id="demoHelp" hidden>
+        <summary>Try the prototype with a demo account</summary>
+        <p>These fictitious accounts exist only for testing. Select one to fill in the email, then choose Continue.</p>
+        <ul id="demoList"></ul>
+      </details>
+    </section>
+
+    <!-- Signed-in view -->
+    <div id="dashboardView" hidden>
+      <div class="dashboard-top">
+        <header class="dashboard-heading">
+          <span class="eyebrow" id="roleEyebrow"></span>
+          <h1 id="dashboardHeading" tabindex="-1"></h1>
+          <p id="dashboardIntro"></p>
+        </header>
+        <div class="session-box">
+          <span>Signed in as</span>
+          <strong id="signedInAs"></strong>
+          <div class="session-actions">
+            <button class="button button-secondary icon-button" id="settingsButton" type="button" aria-label="Open my settings" title="My settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Settings</span>
+            </button>
+            <button class="button button-secondary" id="signOutButton" type="button">Sign out</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="form-status page-status" id="pageStatus" role="status" hidden></p>
+
+      <div class="kpi-grid" id="kpiGrid" aria-label="Summary"></div>
+
+      <section class="data-panel" id="queuePanel" aria-labelledby="queueTitle" hidden>
+        <div class="panel-heading">
+          <div><span class="eyebrow">Sample data</span><h2 id="queueTitle"></h2></div>
+          <p class="table-legend"><span class="flag flag-warn">5+</span> days in current stage &nbsp; <span class="flag flag-alert">30+</span> days since received</p>
+        </div>
+        <form class="filter-bar" id="filterBar" role="search" aria-label="Filter and sort this queue" novalidate>
+          <div class="filter-field grow">
+            <label for="filterSearch">Search</label>
+            <input id="filterSearch" type="search" maxlength="80" autocomplete="off" placeholder="Reference, name or document">
+          </div>
+          <div class="filter-field">
+            <label for="filterStage">Stage</label>
+            <select id="filterStage"><option value="">All stages</option></select>
+          </div>
+          <div class="filter-field">
+            <label for="filterAging">Aging</label>
+            <select id="filterAging">
+              <option value="">All items</option>
+              <option value="held"></option>
+              <option value="old"></option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label for="filterSort">Sort by</label>
+            <select id="filterSort">
+              <option value="age-desc">Oldest first</option>
+              <option value="age-asc">Newest first</option>
+              <option value="stage-desc">Longest in current stage</option>
+              <option value="amount-desc">Largest amount</option>
+              <option value="party-asc">Name A–Z</option>
+            </select>
+          </div>
+        </form>
+        <div class="filter-summary">
+          <span id="resultCount" role="status" aria-live="polite"></span>
+          <button class="link-button" id="clearFilters" type="button" hidden>Clear filters</button>
+        </div>
+        <p class="empty-state" id="queueEmpty" hidden></p>
+        <div class="bulk-bar" id="bulkBar" role="region" aria-label="Bulk actions" hidden>
+          <span id="bulkCount" role="status" aria-live="polite"></span>
+          <div class="bulk-buttons" id="bulkButtons"></div>
+          <span class="bulk-note" id="bulkNote"></span>
+          <button class="link-button" id="bulkSelectAll" type="button" hidden></button>
+          <button class="link-button" id="bulkClear" type="button">Clear selection</button>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table" id="queueTable">
+            <thead>
+              <tr>
+                <th scope="col" class="check-col" id="selectHeader" hidden><input type="checkbox" id="selectPage" aria-label="Select every bill on this page"></th>
+                <th scope="col">Reference</th>
+                <th scope="col" id="partyHeading">Vendor</th>
+                <th scope="col" id="documentHeading">Attachment</th>
+                <th scope="col">Stage</th>
+                <th scope="col" class="num">Age</th>
+                <th scope="col" class="num">In stage</th>
+                <th scope="col" class="num">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="queueBody"></tbody>
+          </table>
+        </div>
+        <nav class="pagination" id="pagination" aria-label="Table pages" hidden>
+          <span id="pageRange" role="status" aria-live="polite"></span>
+          <div class="page-buttons" id="pageButtons"></div>
+          <label class="page-size">Rows per page
+            <select id="pageSize">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+        </nav>
+      </section>
+
+      <!-- Vendor bill lifecycle: received -> approved -> sent to Accounts Payable (everyone except administrators) -->
+      <section class="data-panel" id="lifecyclePanel" aria-labelledby="lifecycleTitle" hidden>
+        <div class="panel-heading">
+          <div><span class="eyebrow">Outlook · sample messages</span><h2 id="lifecycleTitle">My vendor bills: received, approved, GL coded</h2></div>
+        </div>
+        <p class="hint">Each bill is followed through your own mailbox using your rules below: who sent the email, who it went to, and what its subject says. The bill is identified by its PDF filename (vendor, invoice number and BOL), so the same bill is recognized in the received, approved and GL coded emails. Only filenames are read, never file contents. Change how your mail is read in <strong>Settings</strong> (the gear icon).</p>
+        <div class="mail-source"><span id="mailSource" role="status" aria-live="polite"></span><button class="link-button" id="mailRefresh" type="button">Refresh</button></div>
+        <div class="lifecycle-tabs" id="lifecycleTabs" role="group" aria-label="Show bills at this stage">
+          <button type="button" data-stage="received" aria-pressed="true">Received <span class="tab-count">0</span></button>
+          <button type="button" data-stage="approved" aria-pressed="false">Approved <span class="tab-count">0</span></button>
+          <button type="button" data-stage="sent" aria-pressed="false">GL coded, sent to AP <span class="tab-count">0</span></button>
+        </div>
+        <div class="lifecycle-filters">
+          <div class="date-range" id="lifecycleRange">
+            <label for="rangeFrom">Received from</label>
+            <input type="date" id="rangeFrom">
+            <label for="rangeTo">to</label>
+            <input type="date" id="rangeTo">
+            <button class="link-button" id="rangeClear" type="button" hidden>Clear dates</button>
+          </div>
+          <label class="check-option" id="waitingLabel" hidden><input type="checkbox" id="waitingOnly"> <span id="waitingText"></span></label>
+        </div>
+        <p class="lifecycle-summary" id="lifecycleSummary" role="status" aria-live="polite"></p>
+        <p class="empty-state compact" id="lifecycleEmpty" hidden></p>
+        <ul class="bill-list" id="lifecycleList"></ul>
+        <button class="button button-secondary show-more" id="lifecycleMore" type="button" hidden></button>
+      </section>
+
+      <!-- Outlook mapping and message search (everyone except administrators) -->
+      <section class="data-panel" id="inboxPanel" aria-labelledby="inboxTitle" hidden>
+        <div class="panel-heading">
+          <div><span class="eyebrow">Outlook · sample messages</span><h2 id="inboxTitle">My inbox rules &amp; search</h2></div>
+        </div>
+        <div class="inbox-layout">
+          <div class="inbox-map">
+            <h3>How your bills are recognized</h3>
+            <p class="hint">A rule tells the tracker how to spot one stage of a bill in your own mailbox: who sent it, who it went to, what its subject says, and (optionally) which folder. Folders can differ from person to person, so senders and subjects do most of the work. Only you see your rules.</p>
+            <ul class="mapping-list" id="mappingList"></ul>
+            <p class="empty-state compact" id="mappingEmpty">No folders mapped yet.</p>
+            <p class="hint suggest-hint">Rules marked "From settings" come from your Settings (gear icon) and update as you change them. Use the form below for extra rules in special cases.</p>
+            <form class="form-stack" id="mappingForm" novalidate>
+              <label for="mapMailbox">Mailbox email</label>
+              <input id="mapMailbox" type="email" list="mailboxOptions" maxlength="120" autocomplete="off" placeholder="ap-invoices@company.com" aria-describedby="mapMailbox-error">
+              <datalist id="mailboxOptions"></datalist>
+              <p class="field-error" id="mapMailbox-error" hidden></p>
+              <label for="mapFolder">Folder <span class="optional">(optional: blank searches every folder)</span></label>
+              <input id="mapFolder" type="text" list="folderOptions" maxlength="160" autocomplete="off" placeholder="Any folder" aria-describedby="mapFolder-error">
+              <datalist id="folderOptions"></datalist>
+              <p class="field-error" id="mapFolder-error" hidden></p>
+              <label for="mapQueue">These emails are</label>
+              <select id="mapQueue" aria-describedby="mapQueue-error">
+                <option value="">Select the stage</option>
+                <option value="AP:received">Bills received from the vendor</option>
+                <option value="AP:approved">Bills approved, ready for GL coding</option>
+                <option value="AP:sent">Bills GL coded and sent to AP</option>
+                <option value="AR">Customer invoices (AR)</option>
+              </select>
+              <p class="field-error" id="mapQueue-error" hidden></p>
+              <label for="mapSender">Sender contains <span class="optional">(optional)</span></label>
+              <input id="mapSender" type="text" maxlength="60" autocomplete="off" placeholder="e.g., ACCTINV" aria-describedby="mapSender-error">
+              <p class="field-error" id="mapSender-error" hidden></p>
+              <label for="mapRecipient">Recipient contains <span class="optional">(optional)</span></label>
+              <input id="mapRecipient" type="text" maxlength="60" autocomplete="off" placeholder="e.g., Accounts Payable" aria-describedby="mapRecipient-error">
+              <p class="field-error" id="mapRecipient-error" hidden></p>
+              <label for="mapSubject">Subject contains <span class="optional">(optional)</span></label>
+              <input id="mapSubject" type="text" maxlength="60" autocomplete="off" placeholder="e.g., APPROVED" aria-describedby="mapSubject-error">
+              <p class="field-error" id="mapSubject-error" hidden></p>
+              <button class="button button-primary button-full" type="submit">Save mapping</button>
+              <p class="form-status" id="mapStatus" role="status" hidden></p>
+            </form>
+          </div>
+
+          <div class="inbox-search">
+            <h3>Search messages</h3>
+            <form class="filter-bar" id="inboxSearchForm" role="search" aria-label="Search your mapped folders" novalidate>
+              <div class="filter-field grow">
+                <label for="inboxQuery">Search words</label>
+                <input id="inboxQuery" type="search" maxlength="80" autocomplete="off" placeholder="Vendor, invoice number, amount, PO…">
+              </div>
+              <div class="filter-field">
+                <label for="inboxFolder">Folder</label>
+                <select id="inboxFolder"><option value="">All mapped folders</option></select>
+              </div>
+              <label class="check-option"><input id="inboxPdfOnly" type="checkbox" checked> Only messages with PDF attachments</label>
+            </form>
+            <div class="filter-summary"><span id="inboxCount" role="status" aria-live="polite"></span></div>
+            <p class="empty-state compact" id="inboxEmpty" hidden></p>
+            <ul class="message-list" id="inboxResults"></ul>
+            <button class="button button-secondary show-more" id="inboxMore" type="button" hidden></button>
+          </div>
+        </div>
+        <p class="form-note left">Searches the sample messages in your mapped folders: subject, sender, preview, attachment names and (sample) PDF text. The live service will read Outlook through Microsoft Graph.</p>
+      </section>
+
+      <!-- Invoice detail (opens from a row in the queue) -->
+      <dialog class="detail-dialog" id="detailDialog" aria-labelledby="detailTitle">
+        <div class="detail-body">
+          <div class="detail-head">
+            <div>
+              <span class="eyebrow" id="detailType"></span>
+              <h2 id="detailTitle"></h2>
+              <p id="detailSubtitle"></p>
+            </div>
+            <button class="dialog-close" id="detailClose" type="button" aria-label="Close invoice details">×</button>
+          </div>
+          <p class="detail-flag" id="detailFlag"></p>
+          <h3 class="detail-section">Workflow progress</h3>
+          <ol class="stage-track" id="detailTrack"></ol>
+
+          <section id="detailActions" aria-labelledby="actionHeading" hidden>
+            <h3 class="detail-section" id="actionHeading">Your action</h3>
+            <div class="action-box">
+              <label for="actionNote" id="actionNoteLabel">Comment</label>
+              <textarea id="actionNote" rows="3" maxlength="300" aria-describedby="actionError"></textarea>
+              <p class="field-error" id="actionError" hidden></p>
+              <div class="action-buttons" id="actionButtons"></div>
+            </div>
+          </section>
+          <p class="form-status" id="actionStatus" role="status" hidden></p>
+
+          <h3 class="detail-section">Stage history</h3>
+          <ol class="history-list" id="detailHistory"></ol>
+          <h3 class="detail-section">Details</h3>
+          <dl class="detail-facts" id="detailFacts"></dl>
+          <h3 class="detail-section">Outlook source</h3>
+          <dl class="detail-facts" id="detailSource"></dl>
+          <p class="form-note left" id="detailSourceNote"></p>
+          <div class="detail-nav">
+            <button class="button button-secondary" id="detailPrev" type="button">← Previous</button>
+            <span id="detailPosition" aria-live="polite"></span>
+            <button class="button button-secondary" id="detailNext" type="button">Next →</button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- The email(s) a PDF was taken from (envelope icon in the table) -->
+      <dialog class="detail-dialog lineage-dialog" id="lineageDialog" aria-labelledby="lineageTitle">
+        <div class="detail-body">
+          <div class="detail-head">
+            <div>
+              <span class="eyebrow">Email lineage</span>
+              <h2 id="lineageTitle">Where this PDF came from</h2>
+              <p id="lineageFile"></p>
+            </div>
+            <button class="dialog-close" id="lineageClose" type="button" aria-label="Close email lineage">×</button>
+          </div>
+          <ol class="lineage-list" id="lineageList"></ol>
+          <p class="form-note left" id="lineageNote"></p>
+        </div>
+      </dialog>
+
+      <!-- Bulk approve, reject or send for approval -->
+      <dialog class="detail-dialog bulk-dialog" id="bulkDialog" aria-labelledby="bulkTitle">
+        <div class="detail-body">
+          <div class="detail-head">
+            <div>
+              <span class="eyebrow">Bulk action</span>
+              <h2 id="bulkTitle"></h2>
+              <p id="bulkSummary"></p>
+            </div>
+            <button class="dialog-close" id="bulkClose" type="button" aria-label="Close bulk action">×</button>
+          </div>
+          <div id="bulkForm">
+            <ul class="bulk-items" id="bulkItems"></ul>
+            <label for="bulkNoteInput" id="bulkNoteLabel">Comment</label>
+            <textarea id="bulkNoteInput" rows="3" maxlength="300" aria-describedby="bulkError"></textarea>
+            <p class="field-error" id="bulkError" hidden></p>
+            <div class="action-buttons">
+              <button class="button button-primary" id="bulkConfirm" type="button"></button>
+              <button class="button button-secondary" id="bulkCancel" type="button">Cancel</button>
+            </div>
+          </div>
+          <div id="bulkResult" hidden>
+            <p class="form-status" id="bulkResultText"></p>
+            <ul id="bulkFailures"></ul>
+            <button class="button button-secondary" id="bulkDone" type="button">Close</button>
+          </div>
+        </div>
+      </dialog>
+
+      <!-- Settings (gear icon): each person's own senders, subject words and filename pattern -->
+      <dialog class="detail-dialog settings-dialog" id="settingsDialog" aria-labelledby="settingsTitle">
+        <div class="detail-body">
+          <div class="detail-head">
+            <div>
+              <span class="eyebrow">Just for you</span>
+              <h2 id="settingsTitle">Settings</h2>
+              <p>These tell the tracker how to read <em>your</em> mailbox. Other people's settings do not change yours.</p>
+            </div>
+            <button class="dialog-close" id="settingsClose" type="button" aria-label="Close settings">×</button>
+          </div>
+
+          <form id="settingsForm" novalidate>
+            <ul class="form-errors" id="settingsErrors" role="alert" hidden></ul>
+
+            <h3 class="detail-section">How your bills are recognized</h3>
+            <p class="hint">Separate several options with commas (for example two approvers). A message matches if it fits any option. Leave every box in a stage empty to switch that stage off. The folder is optional; empty searches every folder.</p>
+            <div id="settingsStages"></div>
+
+            <h3 class="detail-section">Your PDF filenames</h3>
+            <label for="setPattern">Filename pattern</label>
+            <input id="setPattern" type="text" maxlength="80" autocomplete="off" spellcheck="false" aria-describedby="setPatternHint">
+            <p class="hint" id="setPatternHint">Use <code>{vendor}</code>, <code>{invoice}</code> and <code>{bol}</code>; everything else is literal text. <code>{vendor}</code> and <code>{invoice}</code> are required. For example, <code>{vendor} {invoice} - BOL {bol}</code> reads "Shoppa's WW12345- BOL 12346.pdf".</p>
+            <label for="setSamples">Check some filenames (one per line)</label>
+            <textarea id="setSamples" rows="5" spellcheck="false" placeholder="Shoppa's WW12345- BOL 12346.pdf"></textarea>
+            <div class="settings-row">
+              <button class="button button-secondary" id="setUseMail" type="button">Use the PDF names in my mail</button>
+              <span id="setCheckSummary" role="status" aria-live="polite"></span>
+            </div>
+            <ul class="check-results" id="setResults"></ul>
+
+            <h3 class="detail-section">Your view</h3>
+            <label for="setRange">When I open my bills, show</label>
+            <select id="setRange">
+              <option value="0">Everything (no date range)</option>
+              <option value="30">The last 30 days</option>
+              <option value="60">The last 60 days</option>
+              <option value="90">The last 90 days</option>
+              <option value="180">The last 180 days</option>
+              <option value="365">The last year</option>
+            </select>
+
+            <details class="share-box">
+              <summary>Copy or share my settings</summary>
+              <p class="hint">Copy this text to give a colleague the same settings, or paste settings you were given and choose Load.</p>
+              <textarea id="setShare" rows="6" spellcheck="false" aria-label="Settings text"></textarea>
+              <div class="settings-row">
+                <button class="button button-secondary" id="setShareShow" type="button">Show my saved settings</button>
+                <button class="button button-secondary" id="setShareLoad" type="button">Load the settings in the box</button>
+              </div>
+            </details>
+
+            <div class="detail-nav settings-actions">
+              <button class="button button-primary" type="submit">Save settings</button>
+              <button class="button button-secondary" id="setReset" type="button">Reset to organization defaults</button>
+              <button class="button button-secondary" id="setCancel" type="button">Cancel</button>
+            </div>
+            <p class="form-status" id="settingsStatus" role="status" hidden></p>
+          </form>
+        </div>
+      </dialog>
+
+      <!-- Administrators only -->
+      <section class="data-panel" id="adminPanel" aria-labelledby="admin-heading" hidden>
+        <div class="panel-heading">
+          <div><span class="eyebrow">Administrator</span><h2 id="admin-heading">Who has access</h2></div>
+        </div>
+        <div class="admin-layout">
+          <form class="form-stack" id="accessForm" novalidate>
+            <h3>Add a person</h3>
+            <label for="accessEmail">Email</label>
+            <input id="accessEmail" type="email" maxlength="120" placeholder="name@company.com" aria-describedby="accessEmail-error">
+            <p class="field-error" id="accessEmail-error" hidden></p>
+            <label for="accessName">Name</label>
+            <input id="accessName" type="text" maxlength="80" placeholder="Full name" aria-describedby="accessName-error">
+            <p class="field-error" id="accessName-error" hidden></p>
+            <label for="accessRole">Role</label>
+            <select id="accessRole" aria-describedby="accessRole-error">
+              <option value="">Select a role</option>
+              <option value="gl">GL Accountant</option>
+              <option value="office">Office Admin</option>
+              <option value="ap">Accounts Payable</option>
+              <option value="ar">AR Clerk</option>
+              <option value="approver">Department Approver</option>
+              <option value="admin">Administrator</option>
+            </select>
+            <p class="field-error" id="accessRole-error" hidden></p>
+            <div id="departmentField" hidden>
+              <label for="accessDepartment">Department</label>
+              <select id="accessDepartment" aria-describedby="accessDepartment-error">
+                <option value="">Select a department</option>
+                <option>Operations</option>
+                <option>Maintenance</option>
+                <option>Logistics</option>
+                <option>Finance</option>
+              </select>
+              <p class="field-error" id="accessDepartment-error" hidden></p>
+            </div>
+            <button class="button button-primary button-full" type="submit">Grant access</button>
+            <p class="form-status" id="accessStatus" role="status" hidden></p>
+          </form>
+
+          <div>
+            <h3>Current access list</h3>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col" class="num"><span class="visually-hidden">Actions</span></th></tr>
+                </thead>
+                <tbody id="peopleBody"></tbody>
+              </table>
+            </div>
+            <p class="form-note left">Administrators manage the list but cannot open anyone else's dashboard.</p>
+            <h3 class="admin-subhead">Sample data</h3>
+            <p class="form-note left">Approvals and rejections are saved in this browser. Reset them to return every sample invoice to its starting stage.</p>
+            <button class="button button-secondary" id="resetWorkflow" type="button">Reset sample workflow</button>
+            <p class="form-status" id="resetStatus" role="status" hidden></p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-width footer-inner"><span>Automated Outlook Invoice Tracker</span><span>Student prototype · Fictitious data</span></div>
+  </footer>
+  <script src="streamlit-bridge.js"></script>
+</body>
+</html>

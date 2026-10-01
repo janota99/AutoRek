@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Reviews and feedback for the Automated Outlook Invoice Tracker prototype.">
+  <title>Reviews &amp; Feedback | Automated Outlook Invoice Tracker</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2313283f'/%3E%3Cpath d='M18 14h20l8 8v28H18z' fill='white'/%3E%3Cpath d='M38 14v10h8' fill='none' stroke='%2313283f' stroke-width='3'/%3E%3Cpath d='M24 34h16M24 41h16' stroke='%232f6fed' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="feedback.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="Automated Outlook Invoice Tracker home">
+        <span class="brand-mark" aria-hidden="true">IT</span>
+        <span><strong>Invoice Tracker</strong><small>Outlook Workflow Prototype</small></span>
+      </a>
+      <nav class="main-nav" aria-label="Primary navigation">
+        <a href="index.html">Service</a>
+        <a class="active" href="feedback.html" aria-current="page">Reviews &amp; Feedback</a>
+        <a href="dashboard.html">My Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-width feedback-page">
+    <a class="back-link" href="index.html"><span aria-hidden="true">←</span> Back to Service Page</a>
+    <header class="feedback-heading">
+      <span class="eyebrow">Customer perspective</span>
+      <h1>Reviews &amp; Feedback</h1>
+      <p>Review how the prototype supports accounting users and share suggestions for the next stage of development.</p>
+    </header>
+
+    <div class="feedback-layout">
+      <section class="reviews-panel" aria-labelledby="reviews-heading">
+        <div class="panel-heading">
+          <div><span class="eyebrow">Sample reviews</span><h2 id="reviews-heading">What stakeholders are saying</h2></div>
+          <span class="review-count" id="reviewCount" aria-live="polite">2 reviews</span>
+        </div>
+        <article class="review-card" data-rating="5">
+          <div class="review-topline">
+            <div class="reviewer"><span class="reviewer-initials" aria-hidden="true">JD</span><div><strong>Jane Doe</strong><span>Accounts Payable Clerk</span></div></div>
+            <div class="rating" aria-label="5 out of 5 stars">★★★★★</div>
+          </div>
+          <blockquote>“The separate AP and AR queues make it much easier to identify which invoices still require action. The stage-aging information would be especially useful during month-end.”</blockquote>
+          <p class="recommendation">Would recommend: <strong>Yes</strong></p>
+        </article>
+        <article class="review-card" data-rating="4">
+          <div class="review-topline">
+            <div class="reviewer"><span class="reviewer-initials dark" aria-hidden="true">MT</span><div><strong>Michael Torres</strong><span>Operations Manager</span></div></div>
+            <div class="rating" aria-label="4 out of 5 stars">★★★★<span>★</span></div>
+          </div>
+          <blockquote>“The invoice detail view clearly shows what my department needs to approve. A notification for invoices held more than five days would make the workflow even stronger.”</blockquote>
+          <p class="recommendation">Would recommend: <strong>Yes</strong></p>
+        </article>
+      </section>
+
+      <section class="feedback-form-panel" aria-labelledby="form-heading">
+        <span class="eyebrow">Your feedback</span>
+        <h2 id="form-heading">Help improve the prototype</h2>
+        <p>Add a review to the list. Entries are saved in this browser only and are never sent anywhere.</p>
+        <form id="feedbackForm" action="#" novalidate>
+          <label for="customerName">Name</label>
+          <input id="customerName" name="customerName" type="text" maxlength="80" autocomplete="name" placeholder="Your full name" aria-describedby="customerName-error">
+          <p class="field-error" id="customerName-error" hidden></p>
+          <label for="department">Department or role <span class="optional">(optional)</span></label>
+          <input id="department" name="department" type="text" maxlength="80" placeholder="e.g., Accounts Payable" aria-describedby="department-error">
+          <p class="field-error" id="department-error" hidden></p>
+          <label for="rating">Rating</label>
+          <select id="rating" name="rating" aria-describedby="rating-error">
+            <option value="">Select a rating</option>
+            <option value="5">5 — Excellent</option>
+            <option value="4">4 — Very good</option>
+            <option value="3">3 — Good</option>
+            <option value="2">2 — Needs improvement</option>
+            <option value="1">1 — Poor</option>
+          </select>
+          <p class="field-error" id="rating-error" hidden></p>
+          <fieldset aria-describedby="recommendation-error">
+            <legend>Would you recommend this service?</legend>
+            <label class="radio-option"><input type="radio" name="recommendation" value="yes"> Yes</label>
+            <label class="radio-option"><input type="radio" name="recommendation" value="no"> No</label>
+          </fieldset>
+          <p class="field-error" id="recommendation-error" hidden></p>
+          <label for="feedback">Feedback</label>
+          <textarea id="feedback" name="feedback" rows="6" maxlength="1000" placeholder="What works well, and what should be improved?" aria-describedby="feedback-error feedback-count"></textarea>
+          <p class="field-error" id="feedback-error" hidden></p>
+          <p class="char-count" id="feedback-count" aria-live="off">0 / 1000</p>
+          <button class="button button-primary button-full" type="submit">Submit Feedback</button>
+          <p class="form-status" id="formStatus" role="status" hidden></p>
+          <p class="form-note">Prototype only. Please do not enter confidential company information.</p>
+          <button class="link-button" id="clearReviews" type="button" hidden>Remove reviews I added</button>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-width footer-inner"><span>Automated Outlook Invoice Tracker</span><span>Student prototype · Fictitious data</span></div>
+  </footer>
+  <script src="streamlit-bridge.js"></script>
+</body>
+</html>

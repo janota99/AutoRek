@@ -1,0 +1,8 @@
+streamlit>=1.58      # the version this suite was built and tested on
+pandas>=2.2,<3        # pandas 3 changes string/copy semantics; re-test before lifting
+numpy>=1.26
+openpyxl>=3.1.5
+tzdata               # Recon's ZoneInfo("America/Chicago") on Windows
+
+# Tests: `py -m pytest` (Recon) and `node apps/invoice_hub/tests/test_layers.js` (Invoice Hub)
+pytest
