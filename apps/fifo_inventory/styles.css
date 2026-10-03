@@ -1,22 +1,56 @@
 /* styles.css */
 div[data-testid="stDownloadButton"] button {
-    background-color: #0B3350;
+    background-color: #1e3a8a;
     color: #FFFFFF;
     font-weight: 700;
-    border: 1px solid #0B3350;
+    border: 1px solid #1e3a8a;
 }
 div[data-testid="stDownloadButton"] button:hover {
-    background-color: #14456E;
+    background-color: #1e40af;
     color: #FFFFFF;
-    border: 1px solid #14456E;
+    border: 1px solid #1e40af;
 }
 div[data-testid="stDownloadButton"] button:active {
-    background-color: #082741;
+    background-color: #1e3a8a;
     color: #FFFFFF;
 }
+
+/* ---- Card layout, palette and sidebar branding ---- */
+.stApp { background-color: #f8fafc; }
+
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background-color: #F5F8FB;
-    border: 1px solid #D9E2EC;
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1rem 1.25rem;
+}
+/* Nested containers/expanders sit flat inside their card. */
+div[data-testid="stVerticalBlockBorderWrapper"] div[data-testid="stVerticalBlockBorderWrapper"] {
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+}
+
+h1, h2, h3, h4 { color: #1e3a8a; }
+[data-testid="stSidebar"] h2 { color: #1e3a8a; }
+
+div[data-testid="stDownloadButton"] button,
+div[data-testid="stDownloadButton"] button:active {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+}
+div[data-testid="stDownloadButton"] button:hover {
+    background-color: #1e40af;
+    border-color: #1e40af;
+}
+
+/* Sidebar logo: about half the old size, centered, with room below. */
+[data-testid="stSidebarHeader"] { padding-bottom: 1.5rem; }
+[data-testid="stSidebarHeader"] [data-testid="stLogoLink"] {
+    display: flex;
+    justify-content: center;
+}
+[data-testid="stSidebarLogo"] {
+    width: 55% !important;
+    margin: 0 auto;
 }

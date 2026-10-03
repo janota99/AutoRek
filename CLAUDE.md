@@ -5,11 +5,12 @@ tools for a bottling/packaging operation behind a shared top navigation bar:
 
 | Page (URL) | Code | What it does |
 |---|---|---|
-| Dashboard (`/`) | `apps/dashboard.py` | Landing page: one card per app, built from the registry in `shared/layout.py`. |
+| Dashboard (`/`) | `apps/dashboard.py` | Landing page: one card per app, built from the registry in `shared/layout.py`. Every page also carries the account strip (greeting, role, account menu) in its top-right corner. |
 | FIFO Inventory (`/fifo-inventory`) | `apps/fifo_inventory/` | 13-period strict FIFO costing of raw materials; PASS/REVIEW/FAIL controls; period close. |
 | Sales Reconciliation (`/recon`) | `apps/recon/` | Matches QuickBooks sales to Infinium; builds the reconciliation workpaper. |
 | Sales Tax Review (`/sales-tax`) | `apps/sales_tax/` | VBA-macro port: transaction cleanup against a vendor mapping and trial balance, plus vendor-list reconciliation. |
-| Invoice Lifecycle Hub (`/invoice-hub`) | `apps/invoice_hub/` | Static HTML/JS prototype of an Outlook invoice tracker, embedded as a Streamlit component. |
+| Invoice Lifecycle Hub (`/invoice-hub`) | `apps/invoice_hub/` | Static HTML/JS prototype of an Outlook invoice tracker, embedded as a Streamlit component. Its page has two tabs: Service overview and My Dashboard (the signed-in person's invoice workspace). |
+| Reviews & Feedback (`/feedback`) | `apps/feedback.py` | Navigation-bar page (not a Dashboard card): the hub's reviews and feedback form, embedded. |
 
 The audience is an accountant/inventory controller, not a developer. Accuracy,
 auditability, and "never silently change the books" beat convenience everywhere.
@@ -47,7 +48,8 @@ checks and for how to prove a refactor changed nothing.
 - **Sales Tax:** the source and mapping files are read **by position**. Blank ≠ conflict.
   The download stays disabled until the dollar control check is $0.00.
 - **Invoice Hub:** sign-in is simulated in the browser; never present it as real access
-  control. A new page in `site/` needs the `streamlit-bridge.js` script tag.
+  control. It also drives the suite's account strip and personalizes only; it never gates an app.
+  A new page in `site/` needs the `streamlit-bridge.js` script tag.
 
 ## Read before working on… (progressive disclosure)
 

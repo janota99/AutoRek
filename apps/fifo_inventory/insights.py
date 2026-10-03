@@ -13,20 +13,20 @@ from .user_inputs import PRODUCTS
 
 
 def render_insights(layer_store):
-    st.divider()
-    st.subheader("📊 Insights & Settings")
-    st.caption("Reads directly from the FIFO layers and closed-period history on record — none of this requires "
-               "running a preview first.")
+    with st.container(border=True):
+        st.subheader(":material/insights: Insights & Settings")
+        st.caption("Reads directly from the FIFO layers and closed-period history on record — none of this requires "
+                   "running a preview first.")
 
-    tabs = st.tabs(["📅 Inventory Aging", "📈 Trends", "🔎 Product Lookup", "⚙️ Settings"])
-    with tabs[0]:
-        _aging_tab(layer_store)
-    with tabs[1]:
-        _trends_tab(layer_store)
-    with tabs[2]:
-        _product_lookup_tab(layer_store)
-    with tabs[3]:
-        _settings_tab()
+        tabs = st.tabs([":material/calendar_month: Inventory Aging", ":material/show_chart: Trends", ":material/search: Product Lookup", ":material/tune: Settings"])
+        with tabs[0]:
+            _aging_tab(layer_store)
+        with tabs[1]:
+            _trends_tab(layer_store)
+        with tabs[2]:
+            _product_lookup_tab(layer_store)
+        with tabs[3]:
+            _settings_tab()
 
 
 def _aging_tab(layer_store):

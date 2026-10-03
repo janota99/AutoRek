@@ -34,4 +34,193 @@
     right: -1.25rem;
 }
 
+/* Account strip (shared/layout.py + suite_banner.js): a slim greeting and account menu pinned to the
+   top-right of every page, in the navigation bar's row, so it takes no room from the workflows.
+   Signed in: "Good afternoon, Dylan", role, and an avatar menu. Signed out: a Sign in button.
+   suite_banner.js sets --pp-sb-right so the strip clears Streamlit's own menu. Explicit colors and
+   fonts so app stylesheets can't restyle it. */
+[data-testid="stElementContainer"]:has(.pp-suite-banner) {
+    position: absolute;  /* out of the page flow: no gap above the first element */
+    width: 0;
+    height: 0;
+    margin: 0;
+}
+
+.pp-suite-banner {
+    position: fixed;
+    top: 0.65rem;
+    right: var(--pp-sb-right, 4rem);
+    z-index: 1000001;  /* above Streamlit's header */
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+}
+
+/* Streamlit's navigation bar collapses extra pages into a "more" menu to fit its width; leave room
+   for the strip so it never covers a page link. */
+.stApp:has(.pp-suite-banner) [data-testid="stHeader"] .rc-overflow {
+    max-width: calc(100% - 11rem);
+}
+
+.stApp:has(.pp-suite-banner[data-state="in"]) [data-testid="stHeader"] .rc-overflow {
+    max-width: calc(100% - 21rem);
+}
+
+.pp-sb-hello {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.pp-sb-greeting {
+    color: #13283f;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.pp-sb-role {
+    color: #65758a;
+    font-size: 0.8rem;
+}
+
+.pp-suite-banner[data-state="out"] .pp-sb-hello,
+.pp-suite-banner[data-state="out"] .pp-sb-menu,
+.pp-suite-banner[data-state="in"] .pp-sb-signin {
+    display: none;
+}
+
+.pp-sb-menu {
+    position: relative;
+}
+
+.pp-suite-banner button {
+    font: inherit;
+    cursor: pointer;
+}
+
+.pp-suite-banner .pp-sb-account {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.45rem 0.15rem 0.15rem;
+    border: 1px solid #c9d4e0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #13283f;
+}
+
+.pp-suite-banner .pp-sb-account:hover,
+.pp-suite-banner .pp-sb-account[aria-expanded="true"] {
+    border-color: #13283f;
+}
+
+.pp-sb-avatar {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #13283f;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.pp-sb-caret {
+    font-size: 0.75rem;
+}
+
+.pp-sb-popover {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    min-width: 16rem;
+    padding: 0.4rem;
+    border: 1px solid #d8e1ea;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(19, 40, 63, 0.18);
+}
+
+.pp-sb-popover[hidden] {
+    display: none;
+}
+
+.pp-sb-who {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.5rem 0.6rem 0.65rem;
+    border-bottom: 1px solid #e6ecf2;
+    overflow-wrap: anywhere;
+}
+
+.pp-sb-who strong {
+    color: #13283f;
+    font-size: 1rem;
+}
+
+.pp-sb-who span {
+    color: #65758a;
+    font-size: 0.85rem;
+}
+
+.pp-suite-banner .pp-sb-item {
+    display: block;
+    width: 100%;
+    margin-top: 0.15rem;
+    padding: 0.55rem 0.6rem;
+    border: 0;
+    border-radius: 0.35rem;
+    background: transparent;
+    color: #13283f;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+}
+
+.pp-suite-banner .pp-sb-item:hover {
+    background: #eef3f9;
+}
+
+.pp-suite-banner .pp-sb-signin {
+    min-height: 2.25rem;
+    padding: 0.3rem 1rem;
+    border: 1px solid #13283f;
+    border-radius: 0.4rem;
+    background: #13283f;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.pp-suite-banner .pp-sb-signin:hover {
+    background: #1f3c5c;
+}
+
+@media (max-width: 720px) {
+    .pp-sb-hello { display: none; }
+}
+
+/* Small helper text (captions, upload statuses) is easier to read a little larger than Streamlit's default. */
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] p {
+    font-size: 0.95rem;
+}
+
+[data-testid="stFileUploaderFile"] small,
+[data-testid="stFileUploaderFileName"],
+[data-testid="stFileUploaderDropzoneInstructions"] span,
+[data-testid="stFileUploaderDropzoneInstructions"] small {
+    font-size: 0.9rem;
+}
+
+[data-testid="stWidgetLabel"] p {
+    font-size: 0.95rem;
+}
+
 /* The Dashboard is styled by apps/dashboard.css (it is one HTML block, not Streamlit widgets). */

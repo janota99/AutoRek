@@ -13,7 +13,21 @@ It's a static HTML/JavaScript site in `site/` with three pages:
 
 - `component.py` declares `site/` as a Streamlit component. Streamlit then serves the folder
   with correct MIME types, and the site's own links (`dashboard.html`, `#anchors`) work inside the iframe.
-- `app.py` (the page) just renders that component.
+- `app.py` (the Invoice Lifecycle Hub page) renders that component: `index.html` (Service) with a
+  `workspace-nav` tab bar (Service | My Dashboard) that switches the frame to `dashboard.html`.
+  Links to `feedback.html` carry `standalone-only` and are hidden in the suite.
+- `apps/feedback.py` (the suite's Reviews & Feedback page) embeds it with
+  `invoice_hub(page="feedback.html")`. The component always opens `index.html`; the bridge reads
+  `page` from the first render and opens that page instead. It also opens `dashboard.html` once
+  when the suite's account strip set sessionStorage `pp.suite.hubPage` (Sign in, My invoice workspace).
+  `feedback.html` needs no sign-in and starts its form with the signed-in person's name and role.
+- Suite mode is CSS keyed off classes the bridge sets on `<html>`: `in-suite` everywhere (hides the
+  site header and the Service greeting; the suite has its own), plus `workspace` on
+  `dashboard.html` / `feedback.html` (rules at the end of `styles.css`).
+  Opened straight from disk, the site is unchanged: three pages with the full navigation.
+- The bridge copies the signed-in person (name, role line, intro) to sessionStorage
+  `pp.suite.profile.v1` and posts `pp-suite:session` to the page; the suite account strip
+  (`shared/suite_banner.js`) reads it. See `docs/suite-architecture.md`.
 - `site/streamlit-bridge.js` is loaded last on every page. It sends `componentReady` and sizes the
   frame to the page's full content height (kept current with a `ResizeObserver`), so the Streamlit
   page scrolls the hub and nothing is hidden in an inner scroll box. Because the frame is that tall,

@@ -3,6 +3,9 @@
 The page is one hand-written HTML block (styled by dashboard.css, animated by dashboard.js) rather
 than Streamlit widgets. Each card is a plain link to the app's page; dashboard.js routes the click
 through Streamlit's own navigation so the session is kept.
+
+The signed-in person's invoice dashboard lives on the Invoice Lifecycle Hub page and Reviews &
+Feedback is its own page in the navigation bar; the account strip (shared/suite_banner.js) is on every page.
 """
 import html
 import json
@@ -79,10 +82,12 @@ page = (
     f"<style>{(_HERE / 'dashboard.css').read_text(encoding='utf-8')}</style>"
     '<div class="pp-dash">'
     '<header class="pp-hero"><p class="pp-brand">Panhandle Pure</p>'
-    "<h1>Accounting Workspace</h1><p>Pick an application to get started.</p></header>"
+    "<h1>Accounting Workspace</h1><p>Pick an application to get started.</p>"
+    "</header>"
     '<div class="pp-notice"><strong>Uploaded files:</strong> Switching applications clears uploads '
     "from the application you leave. Open applications in separate browser tabs to retain each session.</div>"
-    f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div></div>'
+    f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
+    "</div>"
     f"<script>window.PP_ICONS = {_icons_json()};\n"
     f"{(_HERE / 'dashboard.js').read_text(encoding='utf-8')}</script>"
 )

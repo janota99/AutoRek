@@ -20,24 +20,24 @@ def render_sidebar(layer_store):
 
         last_closed = st.session_state.get('fifo_last_closed_period')
         if last_closed:
-            st.caption(f"Latest closed period: {last_closed['period_key']}")
+            st.success(f"Latest closed period: {last_closed['period_key']}", icon=":material/lock:")
         else:
-            st.caption("No fiscal period has been closed in this session or snapshot.")
+            st.info("No fiscal period has been closed in this session or snapshot.", icon=":material/info:")
 
         selected_key = layer_store.period_key(fiscal_year, current_period)
         if layer_store.period_is_closed(fiscal_year, current_period):
-            st.warning(f"{selected_key} is already closed. It cannot be processed twice.")
+            st.warning(f"{selected_key} is already closed. It cannot be processed twice.", icon=":material/lock:")
         else:
             sequence_message = layer_store.sequence_error(fiscal_year, current_period)
             if sequence_message:
                 st.warning(sequence_message)
 
         st.divider()
-        st.header("📜 Period History (Saved Balances)")
+        st.header("Period History (Saved Balances)")
         period_history = st.session_state.get('fifo_period_history', [])
         if not period_history:
-            st.caption("No period has been closed yet — nothing is saved for future periods to read as a beginning "
-                       "balance. Closing a period below is what saves it.")
+            st.info("No period has been closed yet — nothing is saved for future periods to read as a beginning "
+                    "balance. Closing a period below is what saves it.", icon=":material/info:")
         else:
             history_rows = []
             for record in period_history:
@@ -61,23 +61,23 @@ def render_sidebar(layer_store):
         saved_snapshots = layer_store.list_snapshot_files()
         if saved_snapshots:
             st.caption(
-                f"💾 {len(saved_snapshots)} snapshot(s) auto-saved to disk at `{SNAPSHOT_DIR}/` — most recent: "
+                f"{len(saved_snapshots)} snapshot(s) auto-saved to disk at `{SNAPSHOT_DIR}/` — most recent: "
                 f"`{saved_snapshots[0].name}`. These are written automatically every time a period is closed or "
                 f"reopened; the download button below is an extra manual copy, not the primary backup anymore."
             )
         else:
-            st.caption(
+            st.info(
                 f"No snapshots have been auto-saved to disk yet at `{SNAPSHOT_DIR}/`. One will be written "
-                f"automatically the first time a period is closed."
+                f"automatically the first time a period is closed.", icon=":material/info:"
             )
 
         st.download_button(
-            "💾 Save Current Layers Snapshot",
+            "Save Current Layers Snapshot",
             data=layer_store.to_json(),
             file_name=f"fifo_layers_snapshot_{selected_key}.json",
             mime="application/json",
         )
-        restore_file = st.file_uploader("🔁 Restore Layers Snapshot", type=['json'], key="restore_layers")
+        restore_file = st.file_uploader("Restore Layers Snapshot", type=['json'], key="restore_layers")
         if restore_file is not None and st.button("Apply Restored Snapshot"):
             try:
                 layer_store.from_json(restore_file.getvalue().decode('utf-8'))
@@ -88,7 +88,7 @@ def render_sidebar(layer_store):
                 st.error(f"Snapshot was not applied: {exc}")
 
         if saved_snapshots:
-            with st.expander("📂 Restore a specific saved snapshot from disk", expanded=False):
+            with st.expander("Restore a specific saved snapshot from disk", expanded=False):
                 st.caption("Use this to roll back to an older closed period's snapshot instead of the latest one — "
                            "for example, recovering from a bad close that's further back than Reopen alone can undo.")
                 snapshot_choice = st.selectbox(
@@ -110,7 +110,7 @@ def render_sidebar(layer_store):
                        "first, to remove several - because every later period's beginning balance depends on the one "
                        "before it, and deleting one out of order would silently break that chain.")
             confirm_reopen = st.checkbox(f"Confirm reopening {selected_key}", key="confirm_reopen")
-            if st.button("↩ Reopen Latest Closed Period (Remove From Memory)", disabled=not confirm_reopen):
+            if st.button("Reopen Latest Closed Period (Remove From Memory)", disabled=not confirm_reopen):
                 try:
                     layer_store.reopen_latest(fiscal_year, current_period)
                     st.session_state['app_flash'] = f"{selected_key} reopened and removed from saved history. Its beginning layers and known value variance were restored."
@@ -119,7 +119,7 @@ def render_sidebar(layer_store):
                     st.error(str(exc))
 
         confirm_reset = st.checkbox("Confirm complete layer-history reset", key="confirm_layer_reset")
-        if st.button("⚠️ Reset All FIFO Layers", disabled=not confirm_reset):
+        if st.button("Reset All FIFO Layers", disabled=not confirm_reset):
             layer_store.reset_all()
             st.session_state['period12_autoseeded'] = True
             st.session_state['app_flash'] = "All FIFO layers, closed-period history, and known value variances were cleared."
@@ -130,7 +130,7 @@ def render_sidebar(layer_store):
         st.caption(f"The embedded opening seed belongs to FY{OPENING_SEED_FISCAL_YEAR} Period 12 only.")
         if fiscal_year == OPENING_SEED_FISCAL_YEAR and current_period == 12:
             confirm_seed = st.checkbox("Confirm opening-layer re-seed", key="confirm_seed")
-            if st.button("🌱 Re-Seed Period 12 Opening Layers", disabled=not confirm_seed):
+            if st.button("Re-Seed Period 12 Opening Layers", disabled=not confirm_seed):
                 overwritten = layer_store.seed_opening_layers(PERIOD_12_OPENING_LAYERS)
                 st.session_state['period12_autoseeded'] = True
                 st.session_state.pop('staged_fifo_run', None)

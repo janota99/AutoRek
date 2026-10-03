@@ -10,6 +10,10 @@
  *   - #anchor links scroll the Streamlit page to their target.
  * Moving to another hub page brings the top of the frame back into view.
  *
+ * It also runs "suite mode": the Invoice Hub page holds the Service and My Dashboard tabs, the
+ * Reviews & Feedback page is its own page in the suite's navigation bar, and the simulated sign-in is
+ * shared with the suite's account strip through sessionStorage (see the Suite mode section below).
+ *
  * Opened on its own (not inside Streamlit) it does nothing.
  */
 (function () {
@@ -17,6 +21,111 @@
 
   if (window.parent === window) return;
 
+  // ---- Suite mode -------------------------------------------------------------------------------
+  // The Invoice Lifecycle Hub page is index.html (Service) and dashboard.html (My Dashboard) with a
+  // tab bar between them. feedback.html is the suite's Reviews & Feedback page, opened there with
+  // invoice_hub(page="feedback.html"). styles.css keys off these classes ("in-suite" everywhere,
+  // plus "workspace" on dashboard.html and feedback.html).
+  var WORKSPACE_PAGES = ['dashboard.html', 'feedback.html'];
+  var SESSION_KEY = 'invoiceHub.session.v1';  // hub-access.js's signed-in email (sessionStorage)
+  var PROFILE_KEY = 'pp.suite.profile.v1';    // read by the suite account strip (shared/suite_banner.js)
+  var HUB_PAGE_KEY = 'pp.suite.hubPage';      // set by the account strip: open the hub on this page
+  var page = location.pathname.split('/').pop() || 'index.html';
+  var root = document.documentElement;
+  root.classList.add('in-suite');
+  if (WORKSPACE_PAGES.indexOf(page) !== -1) root.classList.add('workspace');
+
+  // The component always opens index.html. On the first render Streamlit sends the page's
+  // arguments; a `page` argument naming a hub page opens that page instead, and so does the one
+  // page the account strip asked for (consumed here, so it applies once). index.html stays
+  // invisible until then so it doesn't flash. Later renders (every Streamlit rerun) are ignored,
+  // so moving between hub pages isn't undone.
+  if (page === 'index.html') {
+    root.style.visibility = 'hidden';
+    var reveal = function () { root.style.visibility = ''; };
+    var revealFallback = setTimeout(reveal, 1500);
+    window.addEventListener('message', function onFirstRender(event) {
+      var data = event.data || {};
+      if (data.type !== 'streamlit:render') return;
+      window.removeEventListener('message', onFirstRender);
+      clearTimeout(revealFallback);
+      var target = data.args && data.args.page;
+      if (!target) {
+        try {
+          target = window.sessionStorage.getItem(HUB_PAGE_KEY);
+          window.sessionStorage.removeItem(HUB_PAGE_KEY);
+        } catch (e) { /* storage unavailable */ }
+      }
+      if (target === 'dashboard.html' || target === 'feedback.html') location.replace(target + location.search);
+      else reveal();
+    });
+  }
+
+  // My Dashboard, signed out: put the cursor in the email box so the sign-in prompt is obvious.
+  if (page === 'dashboard.html') {
+    window.addEventListener('load', function () {
+      var panel = document.getElementById('signInView');
+      var email = document.getElementById('signInEmail');
+      if (panel && !panel.hidden && email) email.focus({ preventScroll: true });
+    });
+  }
+
+  // Reviews & Feedback: start the form with the signed-in person's name and role.
+  if (page === 'feedback.html') {
+    window.addEventListener('DOMContentLoaded', function () {
+      var person = null;
+      try { person = readSession(SESSION_KEY) && JSON.parse(readSession(PROFILE_KEY) || 'null'); } catch (e) { /* ignore */ }
+      if (!person) return;
+      var name = document.getElementById('customerName');
+      var role = document.getElementById('department');
+      if (name && !name.value) name.value = person.name || '';
+      if (role && !role.value) role.value = person.eyebrow || '';
+    });
+  }
+
+  function readSession(key) {
+    try { return window.sessionStorage.getItem(key); } catch (e) { return null; }
+  }
+
+  // Keep the suite account strip's copy of the signed-in person current, and tell the Streamlit page.
+  function syncProfile() {
+    var Hub = window.InvoiceHub;
+    if (!Hub || !Hub.Access) return;
+    var user = Hub.Access.currentUser();
+    try {
+      if (user) {
+        var role = (Hub.ROLES && Hub.ROLES[user.role]) || {};
+        var intro = document.getElementById('dashboardIntro');
+        window.sessionStorage.setItem(PROFILE_KEY, JSON.stringify({
+          name: user.name,
+          email: user.email,
+          eyebrow: (role.label || '') + (user.department ? ' · ' + user.department : ''),
+          intro: intro ? intro.textContent : ''
+        }));
+      } else {
+        window.sessionStorage.removeItem(PROFILE_KEY);
+      }
+    } catch (e) { /* storage unavailable: the strip just shows Sign in */ }
+    try { window.parent.postMessage({ type: 'pp-suite:session' }, location.origin); } catch (e) { /* ignore */ }
+  }
+
+  // hub-access.js loads deferred, after this script, so hook it once the page has parsed.
+  document.addEventListener('DOMContentLoaded', function () {
+    var Hub = window.InvoiceHub;
+    if (!Hub || !Hub.Access) return;
+    ['signIn', 'signOut'].forEach(function (name) {
+      var original = Hub.Access[name];
+      Hub.Access[name] = function () {
+        var result = original.apply(this, arguments);
+        setTimeout(syncProfile, 0);  // after the dashboard has drawn, so its intro line is current
+        return result;
+      };
+    });
+    syncProfile();
+  });
+  window.addEventListener('load', syncProfile);  // the intro line can change once sample mail loads
+
+  // ---- Frame sizing -----------------------------------------------------------------------------
   var MIN_HEIGHT = 400;
   var DIALOG_GAP = 16;  // space kept between a dialog and the edge of the visible area
   var lastHeight = 0;

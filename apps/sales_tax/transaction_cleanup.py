@@ -261,33 +261,33 @@ def render_transaction_cleanup():
         st.markdown(f"""
         <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
             <div style="background-color: #fff3f3; padding: 15px; border-radius: 5px; border-left: 5px solid #ff4b4b; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Removed - Prefixes</div>
+                <div style="font-size: 0.95rem; color: #444;">Removed - Prefixes</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">{stats['letter_rows_deleted']:,}</div>
             </div>
             <div style="background-color: #fff3f3; padding: 15px; border-radius: 5px; border-left: 5px solid #ff4b4b; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Removed - Duplicates</div>
+                <div style="font-size: 0.95rem; color: #444;">Removed - Duplicates</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">{stats['duplicate_rows_deleted']:,}</div>
             </div>
             <div style="background-color: #fff3f3; padding: 15px; border-radius: 5px; border-left: 5px solid #ff4b4b; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Removed - Excluded</div>
+                <div style="font-size: 0.95rem; color: #444;">Removed - Excluded</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">{stats['excluded_rows_deleted']:,}</div>
             </div>
             <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Rows Kept</div>
+                <div style="font-size: 0.95rem; color: #444;">Rows Kept</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">{len(result_df):,}</div>
             </div>
         </div>
         <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
             <div style="background-color: #f2f9f2; padding: 15px; border-radius: 5px; border-left: 5px solid #4caf50; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Vendors Matched</div>
+                <div style="font-size: 0.95rem; color: #444;">Vendors Matched</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">{stats['matched_vendor_rows']:,}</div>
             </div>
             <div style="background-color: #f2f9f2; padding: 15px; border-radius: 5px; border-left: 5px solid #4caf50; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">GL Accounts Matched</div>
+                <div style="font-size: 0.95rem; color: #444;">GL Accounts Matched</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">{stats['matched_gl_rows']:,}</div>
             </div>
             <div style="background-color: #fff8e1; padding: 15px; border-radius: 5px; border-left: 5px solid #ffc107; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">New Vendors</div>
+                <div style="font-size: 0.95rem; color: #444;">New Vendors</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">{stats['new_vendor_rows']:,}</div>
             </div>
         </div>
@@ -303,19 +303,19 @@ def render_transaction_cleanup():
         st.markdown(f"""
         <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
             <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Original Total</div>
+                <div style="font-size: 0.95rem; color: #444;">Original Total</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">${stats['original_amount_total']:,.2f}</div>
             </div>
             <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Retained Total</div>
+                <div style="font-size: 0.95rem; color: #444;">Retained Total</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">${stats['retained_amount_total']:,.2f}</div>
             </div>
             <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Removed Total</div>
+                <div style="font-size: 0.95rem; color: #444;">Removed Total</div>
                 <div style="font-size: 1.5rem; font-weight: bold;">${stats['removed_amount_total']:,.2f}</div>
             </div>
             <div style="background-color: {control_bg}; padding: 15px; border-radius: 5px; border-left: 5px solid {control_color}; flex: 1; min-width: 150px;">
-                <div style="font-size: 0.85rem; color: #555;">Control Difference</div>
+                <div style="font-size: 0.95rem; color: #444;">Control Difference</div>
                 <div style="font-size: 1.5rem; font-weight: bold; color: {control_color};">${stats['control_difference']:,.2f}</div>
             </div>
         </div>

@@ -17,13 +17,19 @@
       </a>
       <nav class="main-nav" aria-label="Primary navigation">
         <a class="active" href="index.html" aria-current="page">Service</a>
-        <a href="feedback.html">Reviews &amp; Feedback</a>
-        <a href="dashboard.html">My Dashboard</a>
+        <a class="standalone-only" href="feedback.html">Reviews &amp; Feedback</a>
+        <a class="standalone-only" href="dashboard.html">My Dashboard</a>
       </nav>
     </div>
   </header>
 
   <main>
+    <div class="page-width">
+      <nav class="workspace-nav suite-only" aria-label="Invoice Lifecycle Hub">
+        <a class="active" aria-current="page" href="index.html">Service</a>
+        <a href="dashboard.html">My Dashboard</a>
+      </nav>
+    </div>
     <section class="hero page-width">
       <div class="hero-copy">
         <span class="eyebrow">B2B accounting workflow service</span>
@@ -31,7 +37,7 @@
         <p class="lead">Identify invoices from designated Outlook folders, route them into the correct processing queue, and monitor how long each item remains at every approval stage.</p>
         <div class="hero-actions">
           <a class="button button-primary" href="#prototype-preview">View Prototype Workflow</a>
-          <a class="button button-secondary" href="feedback.html">Reviews &amp; Feedback</a>
+          <a class="button button-secondary standalone-only" href="feedback.html">Reviews &amp; Feedback</a>
         </div>
         <p class="prototype-note">This initial prototype uses fictitious information and does not connect to a real Outlook mailbox.</p>
                 <p id="greeting" class="prototype-note"></p>
@@ -101,7 +107,7 @@
         <div><span>Offering type</span><strong>Internal B2B workflow service</strong></div>
         <div><span>Primary customers</span><strong>Accounting and department approvers</strong></div>
         <div><span>Prototype data</span><strong>Fictitious and nonconfidential</strong></div>
-        <a class="text-link" href="feedback.html">Read reviews and provide feedback <span aria-hidden="true">→</span></a>
+        <a class="text-link standalone-only" href="feedback.html">Read reviews and provide feedback <span aria-hidden="true">→</span></a>
       </aside>
     </section>
         <section class="workflow-section page-width" id="savings-estimator">

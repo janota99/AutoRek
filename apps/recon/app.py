@@ -66,6 +66,7 @@ from apps.recon.utils import (
     run_id_for_inputs,
 )
 from apps.recon.assets.ui_assets import INFOR_LOGO_URI, QUICKBOOKS_LOGO_URI
+from shared.layout import use_logo_on_dark_sidebar
 from apps.recon.uploads import (
     render_uploaded_dataset_summary,
     cached_build_source_validation_report,
@@ -84,10 +85,11 @@ def main() -> None:
     run_started = time.perf_counter()
     # Page title and wide layout come from st.navigation in the root app.py.
     load_app_css()
+    use_logo_on_dark_sidebar()  # this page's sidebar is navy
     st.markdown(
         """
         <div class="rec-title">
-            <h1>Panhandle Pure Sales Reconciliation</h1>
+            <h1>Sales Reconciliation</h1>
             <p>QuickBooks-to-Infinium matching, data summarization, and reconciliation analytics</p>
         </div>
         """,
@@ -246,6 +248,7 @@ def main() -> None:
             f"Upload the Panhandle Pure {next_source} sales export to continue. Files are processed within the active application session.",
             tone="info",
             icon="→",
+            contained=True,
         )
 
         render_notice_panel(
@@ -262,6 +265,7 @@ def main() -> None:
             tone="success",
             icon="✓",
             body_is_html=True,
+            contained=True,
         )
         return
 

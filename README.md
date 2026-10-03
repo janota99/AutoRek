@@ -61,7 +61,9 @@ each time you open a new terminal.
 ## Using the app
 
 The app opens on a **Dashboard** with one card per tool. Use the navigation bar at the top to
-switch tools. Uploaded files are cleared when you switch to another tool, but finished results
+switch tools; **Reviews & Feedback** is the last item in that bar. The top-right corner of every
+page shows your account: a **Sign in** button (a demo account works), or, once you're signed in, a
+greeting with your role and a menu with your profile, your invoice workspace, and sign out. Uploaded files are cleared when you switch to another tool, but finished results
 (FIFO layers and the latest reconciliation) stay available until you close the browser session.
 
 ### FIFO Inventory
@@ -152,11 +154,12 @@ build an updated mapping file.
 ### Invoice Lifecycle Hub
 
 A **prototype** of an Outlook invoice tracker. It uses fictitious data and doesn't connect to
-any real mailbox. It shows a service overview, a feedback page, and a dashboard where invoices
-and vendor bills move through approval queues, with the time spent at each stage tracked.
+any real mailbox. Its page has two tabs: the service overview and **My Dashboard**, where
+invoices and vendor bills move through approval queues with the time at each stage tracked
+(sign in to use it). The feedback page is **Reviews & Feedback** in the navigation bar.
 
-> **Note:** The sign-in on this page is simulated in your browser. It isn't real security or
-> access control.
+> **Note:** Sign-in is simulated in your browser. It isn't real security or access control, and
+> it doesn't restrict any of the tools.
 
 ---
 

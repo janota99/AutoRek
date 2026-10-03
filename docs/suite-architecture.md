@@ -8,15 +8,41 @@ template, or touching anything that crosses app boundaries.
 ```
 streamlit run app.py
   app.py                    set_page_config(wide) → build_navigation() → apply_template() → page.run()
-  shared/layout.py          APPS registry, st.navigation(position="top"), st.logo, theme injection
-  shared/theme.css          suite chrome; injected before each app's own CSS
-  apps/dashboard.py         landing page: one card per APPS entry, one st.html block
+  shared/layout.py          APPS registry, st.navigation(position="top") (the apps plus Reviews & Feedback),
+                            st.logo, theme injection, and the account strip (st.html + shared/suite_banner.js)
+  shared/theme.css          suite chrome (incl. the account strip, larger captions/labels); injected before each app's own CSS
+  apps/dashboard.py         landing page: one card per APPS entry (one st.html block)
+  apps/feedback.py          Reviews & Feedback page: the Invoice Hub's feedback.html, embedded
   apps/dashboard.css|.js    its styling and behavior (spotlight, entrance, animated Recon logo, client-side nav)
   apps/<pkg>/app.py         one page script per application
 ```
 
 Streamlit runs the root `app.py` on every interaction. That registers all pages, draws the
 shared chrome, and then runs the selected page script top to bottom.
+
+## Sign-in, the invoice workspace, and the account strip
+
+Sign-in is the Invoice Hub's **simulated, browser-only** sign-in. It personalizes; it restricts
+nothing, and every application stays open to anyone. Never describe it as access control.
+
+- The Invoice Lifecycle Hub page has two tabs inside the embedded hub: Service and My Dashboard
+  (the invoice workspace). Signed out, My Dashboard is the sign-in panel. Reviews & Feedback is its
+  own page in the navigation bar (`apps/feedback.py`, `invoice_hub(page="feedback.html")`); it needs no sign-in.
+- The hub keeps the signed-in email in sessionStorage (`invoiceHub.session.v1`). Its
+  `streamlit-bridge.js` copies name, role line, and intro to `pp.suite.profile.v1` and posts a
+  `pp-suite:session` message to the page. Same origin, same tab, so the pages share both keys.
+- `apply_template()` draws the account strip on every page, fixed in the top-right of the navigation
+  bar's row so it takes no room from a page; `shared/suite_banner.js` fills it from those keys.
+  Signed in: a greeting (US Central time, like the hub), the role, and an avatar menu with the
+  profile, **My invoice workspace** (opens the hub on My Dashboard), and **Sign out** (clears both
+  keys). Signed out: a **Sign in** button that opens the same place. Because sessionStorage survives
+  page switches, the same person follows you through every application; the Reviews & Feedback form
+  starts with their name and role.
+- The strip asks the hub for a page through sessionStorage `pp.suite.hubPage` (read once by
+  `streamlit-bridge.js` on the hub's first render). A CSS rule in `theme.css` narrows Streamlit's
+  nav overflow so a page link is never covered by the strip.
+- Scripts inlined through `st.html` must not contain `<` followed by a letter, even in a comment:
+  Streamlit's sanitizer drops the whole script. `suite_banner.js` avoids `<` entirely.
 
 ## Adding an application
 

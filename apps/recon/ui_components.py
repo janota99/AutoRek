@@ -105,13 +105,19 @@ def render_notice_panel(
     tone: str = "info",
     icon: str = "i",
     body_is_html: bool = False,
+    contained: bool = False,
 ) -> None:
-    """Render a neutral notice panel with a restrained semantic accent."""
+    """Render a neutral notice panel with a restrained semantic accent.
+
+    ``contained`` limits the panel to the upload cards' width (``--rec-content-width``) so a
+    page-level callout lines up with them; leave it off beside full-width results tables.
+    """
     allowed_tones = {"info", "success", "warning", "danger"}
     safe_tone = tone if tone in allowed_tones else "info"
     body_markup = body if body_is_html else html.escape(body)
+    width_class = " contained" if contained else ""
     st.markdown(
-        f'<div class="notice-panel {safe_tone}">'
+        f'<div class="notice-panel {safe_tone}{width_class}">'
         f'<div class="notice-icon" aria-hidden="true">{html.escape(icon)}</div>'
         f'<div class="notice-content">'
         f'<div class="notice-title">{html.escape(title)}</div>'

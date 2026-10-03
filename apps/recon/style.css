@@ -23,6 +23,9 @@
     --rec-radius-small: 9px;
     --rec-shadow: 0 8px 24px rgba(20, 32, 51, 0.07);
     --rec-shadow-hover: 0 12px 30px rgba(20, 32, 51, 0.11);
+    /* The upload cards' row. The title, stepper, and pre-upload callouts share its left edge,
+       and the stepper and callouts its right edge, so the page reads as one column. */
+    --rec-content-width: 1120px;
 }
 
 /* Canvas and global typography */
@@ -65,7 +68,7 @@ p {
 
 [data-testid="stCaptionContainer"] p {
     color: var(--rec-text-muted) !important;
-    font-size: 0.79rem !important;
+    font-size: 0.95rem !important;
     line-height: 1.45 !important;
 }
 
@@ -108,7 +111,7 @@ p {
 .rec-section-subtitle {
     margin: 0.42rem 0 0 !important;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.93rem !important;
+    font-size: 1rem !important;
     line-height: 1.5 !important;
 }
 
@@ -122,14 +125,16 @@ p {
 
 /* Single horizontal workflow stepper */
 
+/* Left-aligned: each step's node and text start on the step's left edge, and the first node sits
+   on the page's left grid line (its halo may extend past it). */
 .rec-stepper {
     display: grid;
     grid-template-columns: repeat(4, minmax(130px, 1fr));
     gap: 0;
+    max-width: var(--rec-content-width);
     margin: 0.25rem 0 0;
-    padding: 0.9rem 0.65rem 0.72rem;
+    padding: 0.9rem 0 0.72rem;
     position: relative;
-    overflow-x: auto;
 }
 
 .stepper-item {
@@ -137,17 +142,19 @@ p {
     display: flex;
     min-width: 130px;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    padding-right: 1rem;
+    text-align: left;
     z-index: 1;
 }
 
+/* Connector from this step's node to the next step's node. */
 .stepper-item:not(:last-child)::after {
     content: "";
     position: absolute;
     top: 18px;
-    left: calc(50% + 23px);
-    width: calc(100% - 46px);
+    left: calc(38px + 10px);
+    width: calc(100% - 38px - 20px);
     height: 2px;
     background: var(--rec-border-strong);
     z-index: -1;
@@ -166,7 +173,7 @@ p {
     border-radius: 999px;
     background: var(--rec-surface);
     color: var(--rec-text-muted);
-    font-size: 0.86rem;
+    font-size: 0.9rem;
     font-weight: 800;
     box-shadow: 0 0 0 5px var(--rec-canvas);
 }
@@ -177,30 +184,38 @@ p {
     color: #ffffff;
 }
 
+/* The current step is the only high-contrast one: a filled navy node with a halo, navy title,
+   and blue status. Upcoming steps stay muted gray; completed steps are green. */
 .stepper-item.active .stepper-node {
     border-color: var(--rec-navy);
-    color: var(--rec-navy);
-    box-shadow: 0 0 0 5px var(--rec-canvas), 0 0 0 7px rgba(25, 54, 93, 0.13);
+    background: var(--rec-navy);
+    color: #ffffff;
+    box-shadow: 0 0 0 5px var(--rec-canvas), 0 0 0 7px rgba(25, 54, 93, 0.22);
 }
 
 .stepper-copy {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     margin-top: 0.72rem;
 }
 
 .stepper-title {
-    color: var(--rec-text) !important;
-    font-size: 0.83rem;
-    font-weight: 700;
+    color: var(--rec-text-muted) !important;
+    font-size: 0.9rem;
+    font-weight: 600;
     line-height: 1.25;
+}
+
+.stepper-item.complete .stepper-title {
+    color: var(--rec-text) !important;
+    font-weight: 700;
 }
 
 .stepper-status {
     margin-top: 0.22rem;
     color: var(--rec-text-muted) !important;
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-weight: 500;
     line-height: 1.3;
 }
@@ -211,14 +226,20 @@ p {
 
 .stepper-item.active .stepper-title {
     color: var(--rec-navy) !important;
+    font-weight: 800;
+}
+
+.stepper-item.active .stepper-status {
+    color: var(--rec-blue) !important;
+    font-weight: 600;
 }
 
 /* Upload cards and integrated brand treatment */
 
 [data-testid="stHorizontalBlock"]:has(.upload-source-heading) {
-    max-width: 1120px;
+    max-width: var(--rec-content-width);
     margin-right: auto !important;
-    margin-left: auto !important;
+    margin-left: 0 !important;
     gap: 1rem !important;
 }
 
@@ -270,7 +291,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
 
 .upload-source-context {
     color: var(--rec-text-muted) !important;
-    font-size: 0.68rem;
+    font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.075em;
     line-height: 1.2;
@@ -289,7 +310,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     flex: 0 0 auto;
     padding: 0.28rem 0.5rem;
     border-radius: 999px;
-    font-size: 0.66rem;
+    font-size: 0.8rem;
     font-weight: 750;
     letter-spacing: 0.035em;
 }
@@ -308,7 +329,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     min-height: 2.6rem;
     margin: 0 0 0.75rem !important;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.84rem !important;
+    font-size: 0.9rem !important;
     line-height: 1.5 !important;
 }
 
@@ -338,7 +359,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     border-radius: 7px;
     background: var(--rec-surface-soft);
     color: var(--rec-navy) !important;
-    font-size: 0.76rem !important;
+    font-size: 0.875rem !important;
     line-height: 1.25;
 }
 
@@ -352,26 +373,19 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     font-weight: 750;
 }
 
-/* Native Streamlit uploader restyled as a full drop target */
+/* Native Streamlit uploader, unframed: the upload card is the only box, so the drop target has no
+   border or background of its own (no "box within a box"). The whole area still accepts drops. */
 
 [data-testid="stFileUploader"] {
     margin-top: 0.1rem;
 }
 
 [data-testid="stFileUploaderDropzone"] {
-    min-height: 146px;
-    padding: 1.2rem !important;
-    border: 1.5px dashed #9eacbd !important;
-    border-radius: 12px !important;
-    background: var(--rec-surface-soft) !important;
+    padding: 0.35rem 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
     box-shadow: none !important;
-    transition: background-color 160ms ease, border-color 160ms ease;
-}
-
-[data-testid="stFileUploaderDropzone"]:hover,
-[data-testid="stFileUploaderDropzone"]:focus-within {
-    border-color: var(--rec-blue) !important;
-    background: #f3f7fd !important;
 }
 
 [data-testid="stFileUploaderDropzone"]::before {
@@ -394,7 +408,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     content: "Drag and Drop Files Here";
     display: block;
     color: var(--rec-text) !important;
-    font-size: 0.88rem !important;
+    font-size: 0.95rem !important;
     font-weight: 750 !important;
     line-height: 1.35;
 }
@@ -405,7 +419,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
 
 [data-testid="stFileUploaderDropzoneInstructions"] small {
     color: var(--rec-text-muted) !important;
-    font-size: 0.72rem !important;
+    font-size: 0.8rem !important;
 }
 
 [data-testid="stFileUploaderDropzone"] button {
@@ -427,8 +441,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
    hook without coupling the application logic to Streamlit's file-row markup. */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     [data-testid="stFileUploaderDropzone"] {
-    min-height: 76px;
-    padding: 0.65rem 0.8rem !important;
+    padding: 0.2rem 0 !important;
 }
 
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
@@ -438,7 +451,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     flex-basis: 28px;
     margin-right: 0.6rem;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
 }
 
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
@@ -460,7 +473,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     padding: 0.4rem 0.55rem;
     border-radius: 7px;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.74rem;
+    font-size: 0.875rem;
     font-weight: 600;
     line-height: 1.25;
 }
@@ -511,6 +524,11 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     box-shadow: 0 3px 12px rgba(20, 32, 51, 0.04);
 }
 
+/* Page-level callouts that sit under the upload cards share the cards' edges. */
+.notice-panel.contained {
+    max-width: var(--rec-content-width);
+}
+
 .notice-panel.info {
     border-left-color: var(--rec-blue);
 }
@@ -536,7 +554,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     border-radius: 999px;
     background: #edf3fb;
     color: var(--rec-blue);
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     font-weight: 850;
 }
 
@@ -561,7 +579,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 
 .notice-title {
     color: var(--rec-text) !important;
-    font-size: 0.88rem;
+    font-size: 0.95rem;
     font-weight: 750;
     line-height: 1.3;
 }
@@ -569,7 +587,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 .notice-body {
     margin-top: 0.25rem;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     line-height: 1.5;
 }
 
@@ -588,7 +606,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 .notice-footnote {
     margin: 0.35rem 0 0 !important;
     color: var(--rec-text-muted) !important;
-    font-size: 0.76rem !important;
+    font-size: 0.875rem !important;
 }
 
 [data-testid="stAlert"] {
@@ -607,7 +625,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     border-radius: var(--rec-radius-small);
     background: var(--rec-surface);
     color: var(--rec-text-secondary);
-    font-size: 0.82rem;
+    font-size: 0.9rem;
 }
 
 /* KPI cards */
@@ -623,7 +641,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 
 .rec-kpi-label {
     color: var(--rec-text-muted) !important;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     font-weight: 750;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -640,7 +658,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 .rec-kpi-sub {
     margin-top: 0.48rem;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.76rem;
+    font-size: 0.875rem;
     line-height: 1.35;
 }
 
@@ -811,6 +829,8 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 
     .rec-stepper {
         grid-template-columns: repeat(4, minmax(118px, 1fr));
+        padding-left: 7px;  /* room for the active node's halo inside the scroll box */
+        overflow-x: auto;
     }
 
     .stepper-status {
