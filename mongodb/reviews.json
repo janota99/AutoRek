@@ -1,0 +1,52 @@
+[
+  {
+    "_id": { "$oid": "65f000000000000000000001" },
+    "name": "Jane Doe",
+    "role": "Accounts Payable Clerk",
+    "rating": 5,
+    "recommend": true,
+    "text": "The separate AP and AR queues make it much easier to identify which invoices still require action. The stage-aging information would be especially useful during month-end.",
+    "isSample": true,
+    "submittedAt": null
+  },
+  {
+    "_id": { "$oid": "65f000000000000000000002" },
+    "name": "Michael Torres",
+    "role": "Operations Manager",
+    "rating": 4,
+    "recommend": true,
+    "text": "The invoice detail view clearly shows what my department needs to approve. A notification for invoices held more than five days would make the workflow even stronger.",
+    "isSample": true,
+    "submittedAt": null
+  },
+  {
+    "_id": { "$oid": "65f000000000000000000003" },
+    "name": "Priya Raman",
+    "role": "Controller",
+    "rating": 5,
+    "recommend": true,
+    "text": "Reconciling QuickBooks to Infinium used to take most of a day. The exact-to-the-cent matching and the exceptions list save real time at close.",
+    "isSample": false,
+    "submittedAt": { "$date": "2026-09-14T15:22:08.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f000000000000000000004" },
+    "name": "Sam Whitfield",
+    "role": null,
+    "rating": 3,
+    "recommend": false,
+    "text": "Useful, but I would like to export the preview tables straight from the page instead of waiting for the workbook.",
+    "isSample": false,
+    "submittedAt": { "$date": "2026-09-18T19:41:55.000Z" }
+  },
+  {
+    "_id": { "$oid": "65f000000000000000000005" },
+    "name": "Alicia Moreno",
+    "role": "Accounts Receivable",
+    "rating": 4,
+    "recommend": true,
+    "text": "The sales tax cleanup flags new vendors clearly, and the control check gives me confidence nothing was dropped.",
+    "isSample": false,
+    "submittedAt": { "$date": "2026-09-29T13:05:30.000Z" }
+  }
+]

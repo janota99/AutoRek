@@ -1,0 +1,59 @@
+[
+  {
+    "_id": "starter",
+    "name": "Starter",
+    "positioning": "Basic",
+    "audience": "Small businesses and single-focus accountants",
+    "monthlyPriceUsd": 20,
+    "annualPriceUsd": 200,
+    "inherits": null,
+    "features": [
+      "Sales Tax Review: tax classification and vendor reconciliation",
+      "Standard CSV and Excel file uploads",
+      "Basic reporting and email support"
+    ],
+    "featured": false,
+    "requiresQuote": false,
+    "active": true,
+    "ctaLabel": "Choose plan",
+    "toolIds": ["sales-tax"]
+  },
+  {
+    "_id": "professional",
+    "name": "Professional",
+    "positioning": "Most popular",
+    "audience": "Growing businesses and mid-sized accounting teams",
+    "monthlyPriceUsd": 100,
+    "annualPriceUsd": 1000,
+    "inherits": "Everything in Starter",
+    "features": [
+      "FIFO Inventory: inventory costs, control reviews, and fiscal period closes",
+      "Sales Reconciliation: QuickBooks and Infinium sales matching, with exception reviews",
+      "Multi-user workspace access and session history"
+    ],
+    "featured": true,
+    "requiresQuote": false,
+    "active": true,
+    "ctaLabel": "Choose plan",
+    "toolIds": ["fifo-inventory", "recon"]
+  },
+  {
+    "_id": "enterprise",
+    "name": "Enterprise",
+    "positioning": "Premium",
+    "audience": "Large organizations that need end-to-end automation",
+    "monthlyPriceUsd": null,
+    "annualPriceUsd": null,
+    "inherits": "Everything in Professional",
+    "features": [
+      "Invoice Lifecycle Hub: full tracking from Outlook through payment, with an analytics dashboard",
+      "Priority API integrations, such as custom QuickBooks or ERP sync",
+      "Advanced audit logs, custom user roles, and dedicated support"
+    ],
+    "featured": false,
+    "requiresQuote": true,
+    "active": true,
+    "ctaLabel": "Contact sales",
+    "toolIds": ["invoice-hub"]
+  }
+]

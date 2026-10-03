@@ -66,6 +66,15 @@ from the layers in the session (`apps/fifo_inventory/sample_data.py`) so they re
 is disabled while one is loaded, so demo numbers can never become the official layers. The Sales Tax trial balance is download-only, because the real one is
 a shared on-disk cache. Recon reads QuickBooks column A as the fiscal period, so its sample keeps one there.
 
+## Hover previews and the MongoDB samples
+
+The Dashboard cards and the Plans page cards each fill a preview bar on `mouseenter` and clear it on `mouseleave`
+(`apps/dashboard.js`; the script in `apps/sales_page.py`). Their data is not hard-coded in the script: a card's inputs
+and outputs come from `AppEntry` in `shared/layout.py`, and a plan's tools from `Tier.tool_ids`, both passed as JSON
+data attributes. `mongodb/` holds the matching collections (`reviews`, `plans`, `tools`) with `$jsonSchema`
+validators and sample documents, and `mongodb/test_samples.py` fails if they drift from `TIERS` or `APPS`.
+The site is not connected to MongoDB.
+
 ## Adding an application
 
 1. Create `apps/<pkg>/` with an empty `__init__.py` and an `app.py` page script.

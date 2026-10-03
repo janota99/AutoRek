@@ -46,6 +46,46 @@
     });
   });
 
+  // Hover preview: pointing at (or tabbing to) a card fills the preview bar with what that tool takes in
+  // and produces, read from the card's data-facts JSON; leaving the card puts the hint back.
+  var preview = root.querySelector(".pp-preview");
+  var hint = preview ? preview.innerHTML : "";
+  function group(label, items) {
+    var box = document.createElement("span");
+    box.className = "pp-preview-group";
+    var strong = document.createElement("b");
+    strong.textContent = label;
+    box.appendChild(strong);
+    box.appendChild(document.createTextNode(" " + items.join("  ·  ")));
+    return box;
+  }
+  function showFacts(card) {
+    if (!preview) return;
+    var facts;
+    try { facts = JSON.parse(card.dataset.facts); } catch (e) { return; }
+    card.classList.add("pp-hover");
+    preview.textContent = "";
+    var title = document.createElement("strong");
+    title.className = "pp-preview-title";
+    title.textContent = facts.title;
+    preview.appendChild(title);
+    if (facts.inputs.length) preview.appendChild(group("Takes in", facts.inputs));
+    if (facts.outputs.length) preview.appendChild(group("Produces", facts.outputs));
+    preview.classList.add("pp-preview-active");
+  }
+  function clearFacts(card) {
+    card.classList.remove("pp-hover");
+    if (!preview) return;
+    preview.innerHTML = hint;
+    preview.classList.remove("pp-preview-active");
+  }
+  cards.forEach(function (card) {
+    card.addEventListener("mouseenter", function () { showFacts(card); });
+    card.addEventListener("mouseleave", function () { clearFacts(card); });
+    card.addEventListener("focus", function () { showFacts(card); });
+    card.addEventListener("blur", function () { clearFacts(card); });
+  });
+
   // Open an app through Streamlit's own top navigation link so the session is kept and the page
   // does not reload. If that link cannot be found, the card's href navigates normally.
   cards.forEach(function (card) {

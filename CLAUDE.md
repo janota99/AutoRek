@@ -21,7 +21,7 @@ auditability, and "never silently change the books" beat convenience everywhere.
 ```powershell
 pip install -r requirements.txt
 streamlit run app.py                          # always from this folder (C:\AutoRek)
-py -m pytest                                  # Recon's 355 tests; keep them free of FutureWarnings
+py -m pytest                                  # Recon's 355 tests plus the mongodb/ sample-data checks; keep them free of FutureWarnings
 node apps/invoice_hub/tests/test_layers.js    # Invoice Hub; prints ALL TESTS PASSED
 ```
 
@@ -60,6 +60,7 @@ for that app.
 | Area | Read |
 |---|---|
 | Navigation, the shared template, adding an app, cross-app rules, testing/verification | [docs/suite-architecture.md](docs/suite-architecture.md) |
+| MongoDB collections (`reviews`, `plans`, `tools`): schemas, sample documents, field types | [mongodb/README.md](mongodb/README.md) |
 | **FIFO**: module map, how to verify engine/UI changes | [apps/fifo_inventory/docs/architecture.md](apps/fifo_inventory/docs/architecture.md) |
 | FIFO math, layers, usage, variances, vocabulary | [apps/fifo_inventory/docs/fifo-accounting.md](apps/fifo_inventory/docs/fifo-accounting.md) |
 | FIFO upload formats, column detection, period parsing, templates | [apps/fifo_inventory/docs/data-inputs.md](apps/fifo_inventory/docs/data-inputs.md) |

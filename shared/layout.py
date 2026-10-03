@@ -51,6 +51,8 @@ class AppEntry:
     summary: str    # one short sentence for the Dashboard card: what someone can accomplish
     action: str = "Open workspace"  # the card button's label; the same on every card
     badge: str = ""  # optional maturity label on the card, e.g. "Prototype"
+    inputs: tuple[str, ...] = ()   # what the tool takes in; shown when the Dashboard card is hovered
+    outputs: tuple[str, ...] = ()  # what it produces; shown with the inputs
 
 
 APPS: list[AppEntry] = [
@@ -60,6 +62,8 @@ APPS: list[AppEntry] = [
         script="apps/fifo_inventory/app.py",
         url_path="fifo-inventory",
         summary="Calculate inventory costs, review controls, and close fiscal periods.",
+        inputs=("Master Grid: ending inventory by period", "Current-period receipts"),
+        outputs=("PASS / REVIEW / FAIL controls", "Master Excel report", "Closed-period snapshot"),
     ),
     AppEntry(
         title="Sales Reconciliation",
@@ -67,6 +71,8 @@ APPS: list[AppEntry] = [
         script="apps/recon/app.py",
         url_path="recon",
         summary="Match QuickBooks and Infinium sales and review exceptions.",
+        inputs=("QuickBooks sales export", "Infinium sales export", "Optional historical files"),
+        outputs=("Matched and unmatched transactions", "Exceptions for review", "Reconciliation workpaper (Excel)"),
     ),
     AppEntry(
         title="Sales Tax Review",
@@ -74,6 +80,8 @@ APPS: list[AppEntry] = [
         script="apps/sales_tax/app.py",
         url_path="sales-tax",
         summary="Review tax classifications and reconcile vendor transactions.",
+        inputs=("Source transactions (11 columns)", "Vendor mapping", "Cached trial balance"),
+        outputs=("Cleaned transactions workbook", "Updated vendor mapping", "Vendor list comparison"),
     ),
     AppEntry(
         title="Invoice Lifecycle Hub",
@@ -83,6 +91,8 @@ APPS: list[AppEntry] = [
         # One page, two tabs: the service overview and the signed-in person's invoice dashboard.
         summary="See how invoices are tracked from Outlook through payment, and open your invoice dashboard.",
         badge="Prototype",
+        inputs=("Outlook invoice mail (simulated in this prototype)",),
+        outputs=("AP and AR stage tracking", "Personal invoice dashboard", "Reviews and feedback"),
     ),
 ]
 

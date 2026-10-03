@@ -1,0 +1,58 @@
+[
+  {
+    "_id": "fifo-inventory",
+    "title": "FIFO Inventory",
+    "route": "/fifo-inventory",
+    "summary": "Calculate inventory costs, review controls, and close fiscal periods.",
+    "actionLabel": "Open workspace",
+    "badge": null,
+    "isPrototype": false,
+    "minimumPlanId": "professional",
+    "inputs": ["Master Grid: ending inventory by period", "Current-period receipts"],
+    "outputs": ["PASS / REVIEW / FAIL controls", "Master Excel report", "Closed-period snapshot"],
+    "sortOrder": 1,
+    "active": true
+  },
+  {
+    "_id": "recon",
+    "title": "Sales Reconciliation",
+    "route": "/recon",
+    "summary": "Match QuickBooks and Infinium sales and review exceptions.",
+    "actionLabel": "Open workspace",
+    "badge": null,
+    "isPrototype": false,
+    "minimumPlanId": "professional",
+    "inputs": ["QuickBooks sales export", "Infinium sales export", "Optional historical files"],
+    "outputs": ["Matched and unmatched transactions", "Exceptions for review", "Reconciliation workpaper (Excel)"],
+    "sortOrder": 2,
+    "active": true
+  },
+  {
+    "_id": "sales-tax",
+    "title": "Sales Tax Review",
+    "route": "/sales-tax",
+    "summary": "Review tax classifications and reconcile vendor transactions.",
+    "actionLabel": "Open workspace",
+    "badge": null,
+    "isPrototype": false,
+    "minimumPlanId": "starter",
+    "inputs": ["Source transactions (11 columns)", "Vendor mapping", "Cached trial balance"],
+    "outputs": ["Cleaned transactions workbook", "Updated vendor mapping", "Vendor list comparison"],
+    "sortOrder": 3,
+    "active": true
+  },
+  {
+    "_id": "invoice-hub",
+    "title": "Invoice Lifecycle Hub",
+    "route": "/invoice-hub",
+    "summary": "See how invoices are tracked from Outlook through payment, and open your invoice dashboard.",
+    "actionLabel": "Open workspace",
+    "badge": "Prototype",
+    "isPrototype": true,
+    "minimumPlanId": "enterprise",
+    "inputs": ["Outlook invoice mail (simulated in this prototype)"],
+    "outputs": ["AP and AR stage tracking", "Personal invoice dashboard", "Reviews and feedback"],
+    "sortOrder": 4,
+    "active": true
+  }
+]

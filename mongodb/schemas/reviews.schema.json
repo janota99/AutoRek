@@ -1,0 +1,40 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "title": "Review",
+    "description": "One customer review: the sample reviews on the Reviews & Feedback page and anything submitted through its form.",
+    "required": ["name", "role", "rating", "recommend", "text", "isSample", "submittedAt"],
+    "additionalProperties": false,
+    "properties": {
+      "_id": { "bsonType": "objectId" },
+      "name": {
+        "bsonType": "string", "minLength": 2, "maxLength": 80,
+        "description": "Reviewer's name. feedback.js LIMITS.name = 2-80 characters."
+      },
+      "role": {
+        "bsonType": ["string", "null"], "maxLength": 80,
+        "description": "Department or role. The form field is optional: blank in JavaScript is null here."
+      },
+      "rating": {
+        "bsonType": "number", "minimum": 1, "maximum": 5, "multipleOf": 1,
+        "description": "Whole number 1-5. JavaScript reads it with Number(select.value)."
+      },
+      "recommend": {
+        "bsonType": "bool",
+        "description": "Would recommend. feedback.js stores 'yes' / 'no'; here that is true / false."
+      },
+      "text": {
+        "bsonType": "string", "minLength": 10, "maxLength": 1000,
+        "description": "Review text. feedback.js LIMITS.feedback = 10-1000 characters."
+      },
+      "isSample": {
+        "bsonType": "bool",
+        "description": "true for the built-in sample reviews, false for ones a visitor submitted."
+      },
+      "submittedAt": {
+        "bsonType": ["date", "null"],
+        "description": "When it was submitted (JavaScript: new Date().toISOString()). null for sample reviews, which have no date."
+      }
+    }
+  }
+}

@@ -64,8 +64,11 @@ _GENERIC = _SVG.format('<rect x="3" y="3" width="18" height="18" rx="3"/>')
 
 def _card(app) -> str:
     badge = f'<span class="pp-badge">{html.escape(app.badge)}</span>' if app.badge else ""
+    # The hover preview (dashboard.js) reads these as data, not as markup.
+    facts = json.dumps({"title": app.title, "inputs": list(app.inputs), "outputs": list(app.outputs)})
     return (
-        f'<a class="pp-card" href="/{html.escape(app.url_path)}" target="_self">'
+        f'<a class="pp-card" href="/{html.escape(app.url_path)}" target="_self" '
+        f'data-facts="{html.escape(facts, quote=True)}">'
         f'<div class="pp-icon" data-icon="{html.escape(app.url_path)}"></div>'
         f'<h3 class="pp-title">{html.escape(app.title)}{badge}</h3>'
         f'<p class="pp-summary">{html.escape(app.summary)}</p>'
@@ -93,6 +96,8 @@ page = (
     '<p><strong>Uploaded files:</strong> Switching applications clears uploads '
     "from the application you leave. Open applications in separate browser tabs to retain each session.</p>"
     '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
+    '<div class="pp-preview" role="status" aria-live="polite">'
+    '<span class="pp-preview-hint">Hover over an application to preview what it takes in and produces.</span></div>'
     f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
     "</div>"
     f"<script>window.PP_ICONS = {_icons_json()};\n"

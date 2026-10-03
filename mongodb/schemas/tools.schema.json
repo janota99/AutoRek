@@ -1,0 +1,35 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "title": "Tool",
+    "description": "One accounting utility: a Dashboard card (shared/layout.py APPS).",
+    "required": [
+      "_id", "title", "route", "summary", "actionLabel", "badge", "isPrototype",
+      "minimumPlanId", "inputs", "outputs", "sortOrder", "active"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "_id": { "bsonType": "string", "description": "The page's URL segment, e.g. fifo-inventory." },
+      "title": { "bsonType": "string" },
+      "route": { "bsonType": "string", "pattern": "^/[a-z0-9-]+$" },
+      "summary": { "bsonType": "string", "description": "The one sentence shown on the Dashboard card." },
+      "actionLabel": { "bsonType": "string", "description": "The card button's label." },
+      "badge": { "bsonType": ["string", "null"], "description": "Maturity label such as Prototype; null when there is none." },
+      "isPrototype": { "bsonType": "bool" },
+      "minimumPlanId": {
+        "bsonType": "string", "enum": ["starter", "professional", "enterprise"],
+        "description": "The lowest plan that includes the tool (a plans _id)."
+      },
+      "inputs": {
+        "bsonType": "array", "items": { "bsonType": "string" },
+        "description": "What the tool takes in. Shown when the card is hovered."
+      },
+      "outputs": {
+        "bsonType": "array", "items": { "bsonType": "string" },
+        "description": "What the tool produces. Shown when the card is hovered."
+      },
+      "sortOrder": { "bsonType": "number", "multipleOf": 1, "description": "Position on the Dashboard, from 1." },
+      "active": { "bsonType": "bool" }
+    }
+  }
+}

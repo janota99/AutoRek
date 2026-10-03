@@ -14,7 +14,11 @@ import re
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
+import json
+
 import streamlit as st
+
+from shared.layout import APPS
 
 VIEW_KEY = "pp_view"          # session_state: "pricing" while the sales page is showing
 PRICING_VIEW = "pricing"
@@ -38,6 +42,7 @@ class Tier:
     inherits: str = ""               # "Everything in Starter", shown as the first line
     featured: bool = False
     action: str = "Choose plan"
+    tool_ids: tuple[str, ...] = ()   # the applications this tier adds (shared.layout.APPS url_paths)
 
 
 TIERS: tuple[Tier, ...] = (
@@ -50,6 +55,7 @@ TIERS: tuple[Tier, ...] = (
             "Standard CSV and Excel file uploads",
             "Basic reporting and email support",
         ),
+        tool_ids=("sales-tax",),
     ),
     Tier(
         id="professional", name="Professional", positioning="Most popular",
@@ -61,6 +67,7 @@ TIERS: tuple[Tier, ...] = (
             "Multi-user workspace access and session history",
         ),
         featured=True,
+        tool_ids=("fifo-inventory", "recon"),
     ),
     Tier(
         id="enterprise", name="Enterprise", positioning="Premium",
@@ -72,6 +79,7 @@ TIERS: tuple[Tier, ...] = (
             "Advanced audit logs, custom user roles, and dedicated support",
         ),
         action="Contact sales",
+        tool_ids=("invoice-hub",),
     ),
 )
 
@@ -112,6 +120,14 @@ _CSS = """
 [class*="st-key-pp-plan-"] { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
 [class*="st-key-pp-plan-"]:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0, 0, 0, .1);
     border-color: #2563eb; }
+.pp-compare { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1.5rem; min-height: 3.4rem;
+    margin: 0 0 1rem; padding: .7rem 1rem; border: 1px dashed #b9cadb; border-radius: .6rem;
+    background: rgba(255, 255, 255, .6); color: #3b5266; font-size: .97rem; line-height: 1.45;
+    transition: background .2s ease, border-color .2s ease; }
+.pp-compare-active { border-style: solid; border-color: #2f70a8; background: #fff; }
+.pp-compare-name { color: #153d68; font-size: 1.05rem; }
+.pp-compare-group b { margin-right: .35rem; color: #2f70a8; font-weight: 700; }
+.pp-plan-hover { border-color: #2563eb; }
 """
 
 
@@ -135,6 +151,82 @@ def _tier_html(tier: Tier, annual: bool) -> str:
         f'<p class="pp-price">{headline} {f"<small>{html.escape(unit)}</small>" if unit else ""}</p>'
         f'<ul class="pp-feats">{"".join(items)}</ul>'
     )
+
+
+_HOVER_JS = r"""
+(function () {
+  if (window.__ppPlanHover) return;           // Streamlit re-runs this block; bind the document once
+  window.__ppPlanHover = true;
+  var CARD = '[class*="st-key-pp-plan-"]';
+  function bar() { return document.querySelector(".pp-compare"); }
+  function plans() {
+    var el = bar();
+    try { return el ? JSON.parse(el.dataset.plans) : []; } catch (e) { return []; }
+  }
+  function money(n) { return "$" + n.toLocaleString("en-US"); }
+  function line(label, text) {
+    var span = document.createElement("span");
+    span.className = "pp-compare-group";
+    var b = document.createElement("b");
+    b.textContent = label;
+    span.appendChild(b);
+    span.appendChild(document.createTextNode(" " + text));
+    return span;
+  }
+  function show(card) {
+    var el = bar();
+    if (!el) return;
+    var id = (card.className.match(/st-key-pp-plan-([a-z]+)/) || [])[1];
+    var plan = plans().filter(function (p) { return p.id === id; })[0];
+    if (!plan) return;
+    el.textContent = "";
+    var name = document.createElement("strong");
+    name.className = "pp-compare-name";
+    name.textContent = plan.name;
+    el.appendChild(name);
+    if (plan.monthly === null) {
+      el.appendChild(line("Price", "Quoted to your organization"));
+    } else {
+      var saved = plan.monthly * 12 - plan.annual;
+      el.appendChild(line("Price", money(plan.monthly) + " per month, or " + money(plan.annual) +
+        " per year (saves " + money(saved) + ")"));
+    }
+    var count = plan.tools.length;
+    el.appendChild(line("Adds", count + (count === 1 ? " application: " : " applications: ") + plan.tools.join(", ")));
+    if (plan.inherits) el.appendChild(line("Includes", plan.inherits.replace("Everything in ", "all of ")));
+    el.classList.add("pp-compare-active");
+    card.classList.add("pp-plan-hover");
+  }
+  function reset(card) {
+    var el = bar();
+    card.classList.remove("pp-plan-hover");
+    if (!el) return;
+    el.textContent = el.dataset.hint;
+    el.classList.remove("pp-compare-active");
+  }
+  // mouseenter and mouseleave do not bubble, so listen in the capture phase and act only on the card itself.
+  document.addEventListener("mouseenter", function (ev) {
+    if (ev.target.matches && ev.target.matches(CARD)) show(ev.target);
+  }, true);
+  document.addEventListener("mouseleave", function (ev) {
+    if (ev.target.matches && ev.target.matches(CARD)) reset(ev.target);
+  }, true);
+})();
+"""
+
+
+def _compare_bar() -> str:
+    """The bar a hovered plan card fills in. Plans travel as JSON (strings, numbers, booleans, null),
+    the same shape as the `plans` collection in mongodb/plans.json."""
+    titles = {app.url_path: app.title for app in APPS}
+    plans = [{
+        "id": t.id, "name": t.name, "monthly": t.monthly_price,
+        "annual": None if t.monthly_price is None else t.monthly_price * _ANNUAL_MONTHS_BILLED,
+        "tools": [titles[i] for i in t.tool_ids], "inherits": t.inherits or None, "featured": t.featured,
+    } for t in TIERS]
+    hint = "Hover over a plan to see its price and the applications it adds."
+    return (f'<div class="pp-compare" role="status" aria-live="polite" data-hint="{hint}" '
+            f'data-plans="{html.escape(json.dumps(plans), quote=True)}">{hint}</div>')
 
 
 def _money(cents: int) -> str:
@@ -204,6 +296,7 @@ def render() -> None:
 
     cycle = st.segmented_control("Billing", [_MONTHLY, _ANNUAL], default=_MONTHLY, key=_CYCLE_KEY)
     annual = cycle == _ANNUAL
+    st.html(f"{_compare_bar()}<script>{_HOVER_JS}</script>", unsafe_allow_javascript=True)
 
     for tier, col in zip(TIERS, st.columns(len(TIERS), gap="large")):
         with col, st.container(key=f"pp-plan-{tier.id}", border=True):

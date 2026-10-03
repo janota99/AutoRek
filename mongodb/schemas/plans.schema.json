@@ -1,0 +1,39 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "title": "Plan",
+    "description": "One purchase tier on the Plans & Pricing page (apps/sales_page.py TIERS).",
+    "required": [
+      "_id", "name", "positioning", "audience", "monthlyPriceUsd", "annualPriceUsd",
+      "inherits", "features", "featured", "requiresQuote", "active", "ctaLabel", "toolIds"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "_id": { "bsonType": "string", "description": "The tier id: starter, professional, enterprise." },
+      "name": { "bsonType": "string" },
+      "positioning": { "bsonType": "string", "description": "Label above the name: Basic, Most popular, Premium." },
+      "audience": { "bsonType": "string" },
+      "monthlyPriceUsd": {
+        "bsonType": ["number", "null"], "minimum": 0,
+        "description": "Whole US dollars per month. null = custom quote (no list price)."
+      },
+      "annualPriceUsd": {
+        "bsonType": ["number", "null"], "minimum": 0,
+        "description": "Whole US dollars per year: twelve months for the price of ten. null = custom quote."
+      },
+      "inherits": {
+        "bsonType": ["string", "null"],
+        "description": "Text of the first feature line, e.g. 'Everything in Starter'. null for the lowest tier."
+      },
+      "features": { "bsonType": "array", "items": { "bsonType": "string" } },
+      "featured": { "bsonType": "bool", "description": "true for the highlighted (Most popular) tier." },
+      "requiresQuote": { "bsonType": "bool", "description": "true when the price is a custom quote." },
+      "active": { "bsonType": "bool", "description": "false hides the tier from the page." },
+      "ctaLabel": { "bsonType": "string", "description": "The tier's button label." },
+      "toolIds": {
+        "bsonType": "array", "items": { "bsonType": "string" },
+        "description": "_id values of the tools in this tier (not counting the tiers it inherits from)."
+      }
+    }
+  }
+}
