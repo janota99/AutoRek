@@ -1,4 +1,4 @@
-"""FIFO Insights & Settings tabs: layer aging, closed-period trends, product lookup, tolerances.
+"""FIFO Inventory Analysis tabs: layer aging, closed-period trends, product lookup, tolerances.
 
 Everything here reads the official layers and closed-period history; nothing requires a preview.
 """
@@ -9,30 +9,57 @@ import streamlit as st
 
 from . import app_settings
 from .excel_export import parse_layer_date
-from .user_inputs import PRODUCTS
+from .user_inputs import OPENING_SEED_FISCAL_YEAR, PRODUCTS
 
 
 def render_insights(layer_store):
-    with st.container(border=True):
-        st.subheader(":material/insights: Insights & Settings")
-        st.caption("Reads directly from the FIFO layers and closed-period history on record — none of this requires "
-                   "running a preview first.")
+    tabs = st.tabs([":material/calendar_month: Inventory Aging", ":material/show_chart: Trends",
+                    ":material/search: Product Lookup", ":material/tune: Settings"])
+    with tabs[0]:
+        _aging_tab(layer_store)
+    with tabs[1]:
+        _trends_tab(layer_store)
+    with tabs[2]:
+        _product_lookup_tab(layer_store)
+    with tabs[3]:
+        _settings_tab()
 
-        tabs = st.tabs([":material/calendar_month: Inventory Aging", ":material/show_chart: Trends", ":material/search: Product Lookup", ":material/tune: Settings"])
-        with tabs[0]:
-            _aging_tab(layer_store)
-        with tabs[1]:
-            _trends_tab(layer_store)
-        with tabs[2]:
-            _product_lookup_tab(layer_store)
-        with tabs[3]:
-            _settings_tab()
+
+def _layer_source_label():
+    """Where the saved FIFO layers came from: the last closed period, else the opening seed."""
+    last_closed = st.session_state.get('fifo_last_closed_period')
+    if last_closed:
+        return f"Ending balances of closed period {last_closed['period_key']}"
+    if st.session_state.get('period12_autoseeded'):
+        return (f"Period 12 opening seed (FY{OPENING_SEED_FISCAL_YEAR}); no period has been closed yet")
+    return "Layers loaded from a snapshot; no period has been closed in this session"
+
+
+def _money_styler(df, money_cols, qty_cols=(), unit_cols=(), total_label_col=None):
+    """Thousands separators, fixed decimals, and a bold Total row (the last row) when total_label_col is set."""
+    formats = {c: "{:,.2f}" for c in money_cols}
+    formats.update({c: "{:,.2f}" for c in qty_cols})
+    formats.update({c: "{:,.4f}" for c in unit_cols})
+    styler = df.style.format(formats, na_rep="")
+    if total_label_col:
+        styler = styler.apply(
+            lambda row: ["font-weight: bold" if row[total_label_col] == "Total" else "" for _ in row], axis=1
+        )
+    return styler
 
 
 def _aging_tab(layer_store):
-    st.caption("Ages every currently on-hand FIFO layer as of a chosen date, bucketed the way most inventory "
-               "systems report aging: 0–30 / 31–60 / 61–90 / 90+ days.")
-    aging_as_of = st.date_input("Age layers as of", value=date.today(), key="aging_as_of_date")
+    st.caption("Ages each on-hand FIFO layer into 0–30 / 31–60 / 61–90 / 90+ day buckets.")
+    with st.expander("Help: what this shows"):
+        st.markdown(
+            "- Reads the **saved FIFO layers** only; no preview is needed.\n"
+            "- Age = valuation date minus the layer's receipt date.\n"
+            "- Percentages show each bucket's share of total inventory value. They are not a change or a trend.\n"
+            "- Layers with a date that can't be read go to *Unknown / unparsed date*."
+        )
+    aging_as_of = st.date_input("Valuation date (age layers as of)", value=date.today(), key="aging_as_of_date")
+    st.markdown(f"**Inventory source:** Saved FIFO layers  \n**Source period:** {_layer_source_label()}  \n"
+                f"**Valuation date:** {aging_as_of:%b %d, %Y}")
 
     aging_rows = []
     for alias, prod_name in PRODUCTS.items():
@@ -52,7 +79,7 @@ def _aging_tab(layer_store):
             aging_rows.append({
                 'Alias': alias, 'Product': prod_name, 'Layer Date': layer.get('date'),
                 'Age (Days)': age_days, 'Age Bucket': bucket,
-                'Quantity': layer['qty'], 'Unit Cost': layer['unit_cost'], 'Value': layer['total_value'],
+                'Quantity': layer['qty'], 'Unit Cost ($)': layer['unit_cost'], 'Value ($)': layer['total_value'],
             })
 
     if not aging_rows:
@@ -62,30 +89,41 @@ def _aging_tab(layer_store):
         bucket_order = ["0–30 days", "31–60 days", "61–90 days", "90+ days", "Unknown / unparsed date"]
         aging_df['Age Bucket'] = pd.Categorical(aging_df['Age Bucket'], categories=bucket_order, ordered=True)
 
-        bucket_totals = aging_df.groupby('Age Bucket', observed=True)['Value'].sum().reindex(bucket_order).fillna(0.0)
+        bucket_totals = aging_df.groupby('Age Bucket', observed=True)['Value ($)'].sum().reindex(bucket_order).fillna(0.0)
         total_value = bucket_totals.sum()
 
-        st.markdown("**By age bucket — total on-hand value**")
+        st.markdown("**By age bucket — total on-hand value ($)**")
         st.bar_chart(bucket_totals)
 
         metric_cols = st.columns(len(bucket_order))
         for col, bucket in zip(metric_cols, bucket_order):
             val = float(bucket_totals.get(bucket, 0.0))
             pct = (val / total_value * 100) if total_value else 0.0
-            col.metric(bucket, f"${val:,.0f}", f"{pct:.0f}% of on-hand")
+            col.metric(bucket, f"${val:,.0f}", f"{pct:.0f}% of inventory value",
+                       delta_color="off", delta_arrow="off")
 
-        st.markdown("**By product**")
+        st.markdown("**By product — on-hand value ($)**")
         pivot = aging_df.pivot_table(
-            index=['Alias', 'Product'], columns='Age Bucket', values='Value',
+            index=['Alias', 'Product'], columns='Age Bucket', values='Value ($)',
             aggfunc='sum', observed=True, fill_value=0.0
         ).reindex(columns=bucket_order, fill_value=0.0)
         pivot['Total'] = pivot.sum(axis=1)
-        st.dataframe(pivot.reset_index(), width="stretch", hide_index=True)
+        pivot = pivot.reset_index()
+        pivot.columns = [str(c) for c in pivot.columns]
+        value_cols = bucket_order + ['Total']
+        total_row = {'Alias': None, 'Product': 'Total', **{c: pivot[c].sum() for c in value_cols}}
+        pivot = pd.concat([pivot, pd.DataFrame([total_row])], ignore_index=True)
+        pivot = pivot.rename(columns={c: f"{c} ($)" for c in value_cols})
+        st.dataframe(
+            _money_styler(pivot, [f"{c} ($)" for c in value_cols], total_label_col='Product'),
+            width="stretch", hide_index=True,
+        )
 
-        with st.expander("🔍 Layer-level detail"):
+        with st.expander("Layer-level detail"):
+            detail = aging_df.sort_values(['Alias', 'Age (Days)'], na_position='last')
             st.dataframe(
-                aging_df.sort_values(['Alias', 'Age (Days)'], na_position='last'),
-                width="stretch", hide_index=True
+                _money_styler(detail, ['Value ($)'], qty_cols=['Quantity'], unit_cols=['Unit Cost ($)']),
+                width="stretch", hide_index=True,
             )
 
 
