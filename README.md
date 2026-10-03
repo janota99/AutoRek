@@ -1,4 +1,4 @@
-# AutoRek: Panhandle Pure Accounting Apps
+# AutoRek: Janota Fin Automatations Accounting Apps
 
 AutoRek collects accounting tools for a bottling and packaging operation in one
 [Streamlit](https://streamlit.io) web app. It runs on your own computer: you open it in a

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 
+import html
+
 import pandas as pd
 import streamlit as st
 
@@ -38,37 +40,106 @@ from .excel_output import (
 )
 
 
-def _drop_zone(title: str, hint: str, key: str, sample_file: str):
-    """A file uploader under a headline, with a status pill (Uploaded / Sample Loaded / Missing)."""
+@st.cache_data(show_spinner=False, max_entries=8)
+def _upload_summary(data: bytes, kind: str) -> dict:
+    """Facts for the check-your-file strip under an upload. Display only: nothing here feeds the cleanup."""
+    try:
+        df = read_excel_upload(data)
+    except IngestionError as exc:
+        return {"error": str(exc)}
+    summary = {"rows": len(df), "columns": df.shape[1], "missing": []}
+    if kind == "source":
+        if df.shape[1] != 11:
+            summary["missing"].append(f"11 columns (found {df.shape[1]})")
+        if df.shape[1] > AMOUNT_COL_IDX:
+            amounts = pd.to_numeric(df.iloc[:, AMOUNT_COL_IDX], errors="coerce")
+            bad = int(amounts.isna().sum())
+            if bad:
+                summary["missing"].append(f"{bad} blank or non-numeric Amount")
+            summary["total_cents"] = int((amounts.dropna() * 100).round().sum())
+    elif df.shape[1] < 5:
+        summary["missing"].append(f"5 columns (found {df.shape[1]})")
+    for column in df.columns:
+        if "date" in str(column).casefold():
+            dates = pd.to_datetime(df[column], errors="coerce").dropna()
+            if not dates.empty:
+                summary["dates"] = f"{dates.min():%b %d, %Y} to {dates.max():%b %d, %Y}"
+                break
+    return summary
+
+
+def _render_upload_summary(uploaded, kind: str) -> None:
+    summary = _upload_summary(uploaded.getvalue(), kind)
+    if "error" in summary:
+        st.markdown(
+            f"<div class='st-chips'><span class='st-chip st-chip-warn'><b>Could not read</b> "
+            f"{html.escape(summary['error'])}</span></div>",
+            unsafe_allow_html=True,
+        )
+        return
+    chips = [("File", uploaded.name), ("Rows", f"{summary['rows']:,}"), ("Columns", str(summary["columns"]))]
+    if "dates" in summary:
+        chips.append(("Dates", summary["dates"]))
+    if "total_cents" in summary:
+        cents = summary["total_cents"]
+        chips.append(("Signed total", f"{'-' if cents < 0 else ''}${abs(cents) / 100:,.2f}"))
+    markup = "".join(
+        f"<span class='st-chip'><b>{label}</b> {html.escape(value)}</span>" for label, value in chips
+    )
+    if summary["missing"]:
+        markup += (
+            "<span class='st-chip st-chip-warn'><b>Missing</b> "
+            + html.escape("; ".join(summary["missing"])) + "</span>"
+        )
+    else:
+        markup += "<span class='st-chip st-chip-ok'><b>Required fields</b> &#10003; Found</span>"
+    st.markdown(f"<div class='st-chips'>{markup}</div>", unsafe_allow_html=True)
+
+
+def _drop_zone(title: str, hint: str, key: str, sample_file: str, kind: str):
+    """A file uploader under a headline, with a status pill (Uploaded / Demo data / Missing) and,
+    once a file is in, a strip of facts to check it against the export it came from."""
     status = st.empty()
     uploaded, is_sample = sample_uploader(
         title, key=key, sample_file=sample_file, types=["xlsx"], show_badge=False,
     )
     if is_sample:
-        pill = "<span class='st-pill st-pill-sample'>&#9679; Sample Loaded</span>"
+        pill = "<span class='st-pill st-pill-sample'>&#9679; Demo data</span>"
     elif uploaded is not None:
         pill = "<span class='st-pill st-pill-ok'>&#10003; Uploaded</span>"
     else:
         pill = "<span class='st-pill st-pill-missing'>Missing</span>"
     status.markdown(
-        f"<div class='st-drop-head'><div class='st-drop-icon'>&#8682;</div>"
-        f"<div class='st-drop-title'>{title} {pill}</div>"
-        f"<div class='st-drop-sub'>{hint} &middot; drag and drop or browse</div></div>",
+        f"<div class='st-drop-head'><div class='st-drop-title'>{title} {pill}</div>"
+        f"<div class='st-drop-sub'>{hint}</div></div>",
         unsafe_allow_html=True,
     )
+    if uploaded is not None:
+        _render_upload_summary(uploaded, kind)
     return uploaded
 
 
 def render_transaction_cleanup():
     st.header("Transaction Cleanup")
     st.markdown(
-        "<div class='instruction-text'>"
-        "Upload the source transactions and vendor mapping files. "
-        "Column positions are assumed to match the original layout: "
-        "Vendor = A, Transaction ID = C, Account # = E, Cost Center = F, Amount = G, Code = J."
-        "</div>",
+        "<div class='instruction-text'>Clean the source transactions against the vendor mapping and "
+        "trial balance. Nothing is changed silently: every removed row is kept on its own sheet, "
+        "and the download stays locked until the dollar control check is $0.00.</div>",
         unsafe_allow_html=True
     )
+    with st.expander("How the cleanup works"):
+        st.markdown(
+            "Columns are read **by position**, so the source file must keep the original layout: "
+            "Vendor = A, Transaction ID = C, Account # = E, Cost Center = F, Amount = G, Code = J.\n\n"
+            "1. Rows whose Code starts with a letter are removed.\n"
+            "2. Rows for excluded vendor IDs are removed.\n"
+            "3. A repeated Transaction ID is a duplicate: the first row is kept, the rest are removed.\n"
+            "4. Each kept row gets Taxability and Grouping from the vendor mapping. Vendors not in the "
+            "mapping are flagged as new, to classify.\n"
+            "5. The GL account is built from Cost Center and Account #, and its Account Name comes from the "
+            "cached trial balance.\n\n"
+            "Original total = retained total + removed total, to the cent."
+        )
 
     left, right = st.columns(2, gap="large")
     with left:
@@ -76,11 +147,11 @@ def render_transaction_cleanup():
             st.markdown("<div class='st-card-title'>Upload files</div>", unsafe_allow_html=True)
             source_file = _drop_zone(
                 "Source Transactions", "XLSX with 11 columns (A-K)", "source_file",
-                "sales_tax_source_transactions.xlsx",
+                "sales_tax_source_transactions.xlsx", "source",
             )
             mapping_file = _drop_zone(
                 "Vendor Mapping", "XLSX vendor mapping file", "mapping_file",
-                "sales_tax_vendor_mapping.xlsx",
+                "sales_tax_vendor_mapping.xlsx", "mapping",
             )
 
             sample_downloads([
@@ -531,6 +602,6 @@ def render_transaction_cleanup():
             st.markdown(
                 "<div class='st-empty'><div class='st-empty-icon'>&#128196;</div>"
                 "<b>Upload files to preview cleaned transactions</b>"
-                "<span>Add the source transactions and vendor mapping, then click Run Cleanup.</span></div>",
+                "<span>Cleaned transactions, the summary and the download appear here after Run Cleanup.</span></div>",
                 unsafe_allow_html=True,
             )

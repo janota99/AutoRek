@@ -1,4 +1,4 @@
-"""Panhandle Pure Accounting Apps: one Streamlit app hosting every tool in this folder.
+"""Janota Fin Automatations Accounting Apps: one Streamlit app hosting every tool in this folder.
 
 Run from this folder:
     streamlit run app.py

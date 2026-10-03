@@ -206,12 +206,12 @@ button[kind="secondary"],
 /* Expander header text ('Replace or clear cached file') sits directly on
    the dark sidebar background (unlike the file uploader dropzone above,
    which has its own light box) - so it needs bold white text, not dark. */
-[data-testid="stExpander"] summary p,
-[data-testid="stExpander"] summary span {
+[data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary span {
     color: #ffffff !important;
     font-weight: 700 !important;
 }
-[data-testid="stExpander"] summary svg {
+[data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
     fill: #ffffff !important;
     color: #ffffff !important;
 }
@@ -264,4 +264,51 @@ button[kind="secondary"],
           box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3); }
 
 /* Sample-data controls (shared/sample_data.py) */
-.st-pill-sample { background: #e1ecf9; color: #1f4e79; }
+
+/* Transaction Cleanup, round 2: wider canvas, larger text, one prominent drop zone per card. */
+.stApp:has(.st-key-st-card-uploads) .block-container { max-width: 1500px; }
+.instruction-text { font-size: 1.1rem; line-height: 1.5; }
+.st-card-title { font-size: 1.15rem; }
+.st-drop-title { font-size: 1.1rem; }
+.st-drop-sub { font-size: 0.95rem; }
+.st-pill { font-size: 0.8rem; }
+.st-pill-sample { background: #fdecc8; color: #8a4b00; border: 1px solid #f0c36d; text-transform: uppercase; letter-spacing: 0.05em; }
+.st-empty { font-size: 1rem; }
+.st-empty b { font-size: 1.15rem; }
+.st-status-badge { font-size: 0.97rem; }
+
+/* Drop zone: dashed box, one navy "Choose file" button, then a short "or drag and drop" line. */
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] {
+    border: 2px dashed #9fb3cc;
+    background: #f6f9fd;
+    padding: 1.2rem 1rem;
+}
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] svg,
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] [data-testid="stIconMaterial"] { display: none !important; }
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] button {
+    order: -1;
+    min-width: 11rem;
+    padding: 0.55rem 1.4rem;
+    background: #19365d !important;
+    border: 1px solid #19365d !important;
+    font-size: 0 !important;
+}
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] button * { display: none !important; }
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] button::after {
+    content: "Choose file"; color: #ffffff; font-size: 1.05rem; font-weight: 700;
+}
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzoneInstructions"] { align-items: center; text-align: center; }
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzoneInstructions"]::before {
+    content: "or drag and drop a file here"; display: block; font-size: 0.95rem; font-weight: 600;
+}
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzoneInstructions"] span { display: none !important; }
+
+/* Check-your-file strip under an upload */
+.st-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0.25rem; }
+.st-chip { padding: 0.25rem 0.6rem; border: 1px solid #dfe5ec; border-radius: 7px; background: #f8fafc;
+           color: #19365d; font-size: 0.92rem; }
+.st-chip b { color: #5b6b7c; font-weight: 600; margin-right: 0.25rem; }
+.st-chip-ok { background: #eaf6f1; border-color: #b7dfcf; color: #116447; }
+.st-chip-ok b { color: #116447; }
+.st-chip-warn { background: #fdecea; border-color: #f3b9b4; color: #c2413b; }
+.st-chip-warn b { color: #c2413b; }

@@ -82,7 +82,7 @@ def _icons_json() -> str:
 page = (
     f"<style>{(_HERE / 'dashboard.css').read_text(encoding='utf-8')}</style>"
     '<div class="pp-dash">'
-    '<header class="pp-hero"><p class="pp-brand">Panhandle Pure</p>'
+    '<header class="pp-hero"><p class="pp-brand">Janota Fin Automatations</p>'
     "<h1>Accounting Workspace</h1><p>Pick an application to get started.</p>"
     "</header>"
     '<div class="pp-stats">'

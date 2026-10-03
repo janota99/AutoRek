@@ -192,7 +192,7 @@ def render() -> None:
     """Draw the sales page. Call only from the Dashboard."""
     st.html(
         f"<style>{_CSS}</style>"
-        '<div class="pp-sales"><p class="pp-eyebrow">Panhandle Pure</p>'
+        '<div class="pp-sales"><p class="pp-eyebrow">Janota Fin Automatations</p>'
         "<h1>Plans &amp; Pricing</h1>"
         '<p class="pp-lede">Pick the tier that fits your accounting team. Every plan includes the '
         "applications of the tiers below it.</p></div>"

@@ -66,7 +66,6 @@ from apps.recon.utils import (
     run_id_for_inputs,
 )
 from apps.recon.assets.ui_assets import INFOR_LOGO_URI, QUICKBOOKS_LOGO_URI
-from shared.layout import use_logo_on_dark_sidebar
 from shared.sample_data import sample_downloads, sample_uploader
 from apps.recon.uploads import (
     render_uploaded_dataset_summary,
@@ -87,7 +86,6 @@ def main() -> None:
     run_started = time.perf_counter()
     # Page title and wide layout come from st.navigation in the root app.py.
     load_app_css()
-    use_logo_on_dark_sidebar()  # this page's sidebar is navy
     st.markdown(
         """
         <div class="rec-title">

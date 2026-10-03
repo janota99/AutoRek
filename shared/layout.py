@@ -11,13 +11,10 @@ from pathlib import Path
 
 import streamlit as st
 
-SUITE_NAME = "Panhandle Pure Accounting Apps"
+SUITE_NAME = "Janota Fin Automatations Accounting Apps"
 
 _SHARED_DIR = Path(__file__).resolve().parent
-_LOGO_PATH = _SHARED_DIR / "assets" / "ppl_logo.jpg"
-# Transparent variant for dark sidebars: white lettering, the light-blue drop, no white box.
-# Derived from ppl_logo.jpg (background keyed out, lettering recoloured white).
-_LOGO_ON_DARK_PATH = _SHARED_DIR / "assets" / "ppl_logo_on_dark.png"
+_LOGO_PATH = _SHARED_DIR / "assets" / "janota_fin_logo.png"
 _THEME_PATH = _SHARED_DIR / "theme.css"
 _BANNER_JS_PATH = _SHARED_DIR / "suite_banner.js"
 
@@ -130,11 +127,3 @@ def apply_template() -> None:
         return  # No banner; every page still works.
     st.html(f"{_BANNER_HTML}<script>{banner_js}</script>", unsafe_allow_javascript=True)
 
-
-def use_logo_on_dark_sidebar() -> None:
-    """Call from a page whose sidebar is dark: shows the transparent white-lettered logo there.
-
-    The collapsed-sidebar icon sits on the white top bar, so it keeps the standard logo.
-    """
-    if _LOGO_ON_DARK_PATH.is_file() and _LOGO_PATH.is_file():
-        st.logo(str(_LOGO_ON_DARK_PATH), size="large", icon_image=str(_LOGO_PATH))
