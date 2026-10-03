@@ -20,9 +20,18 @@ _DOC = '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><p
 # Card icons, keyed by the app's url_path. Streamlit strips inline SVG from HTML, so dashboard.js
 # inserts these into each card's .pp-icon tile. An app without an entry gets a generic tile.
 _ICONS = {
-    "fifo-inventory": _SVG.format(
-        '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>'
-        '<path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/><path d="M8 3.5 16 8"/>'),
+    # Boxes advance along a track toward the arrow, first in, first out: a new box fades in on the
+    # left while the oldest fades out on the right. Animated in dashboard.css.
+    "fifo-inventory": (
+        '<svg class="pp-fifo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        '<path d="M2 16h20M19 13l3 3-3 3"/>'
+        '<g class="pp-fifo-queue">'
+        '<rect class="pp-fifo-in" x="2" y="9" width="4" height="4" rx="1"/>'
+        '<rect x="8" y="9" width="4" height="4" rx="1"/>'
+        '<rect x="14" y="9" width="4" height="4" rx="1"/>'
+        '<rect class="pp-fifo-out" x="20" y="9" width="4" height="4" rx="1"/>'
+        '</g></svg>'),
     # Two documents slide together, merge into one, and get a check mark. Animated in dashboard.css.
     "recon": (
         '<span class="pp-logo" title="Click to replay">'
@@ -32,12 +41,17 @@ _ICONS = {
         '<path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
         '<polyline fill="none" points="14 2 14 8 20 8"/>'
         '<path class="pp-check" fill="none" stroke-width="3" d="M9 13l2 2 4-4"/></svg></span>'),
+    # A magnifying glass sweeps the list and a transaction line flashes red as it passes.
     "sales-tax": _SVG.format(
-        '<path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2l-2 2-2-2-2 2-2-2-2 2-2-2-2 2Z"/>'
-        '<path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17V7"/>'),
+        '<path d="M4 6h12 M4 12h16 M4 18h10" stroke="#93c5fd"/>'
+        '<path class="pp-flag" d="M12 12h4"/>'
+        '<g class="pp-glass"><circle class="pp-mask" cx="9" cy="9" r="4"/><path d="M11.8 11.8L15 15"/></g>'),
+    # Invoice -> approval -> payment light up in turn.
     "invoice-hub": _SVG.format(
-        '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'
-        '<circle cx="17" cy="17" r="4" fill="#ffffff"/><path d="m15 17 1.5 1.5 2.5-2.5" stroke="#16a34a"/>'),
+        '<path d="M6 12h12" stroke="#93c5fd" stroke-dasharray="2 2"/>'
+        '<g class="pp-stage pp-stage-1"><rect class="pp-mask" x="2" y="9" width="6" height="4" rx="1"/><path d="M2 9l3 2 3-2"/></g>'
+        '<g class="pp-stage pp-stage-2"><circle class="pp-mask" cx="12" cy="12" r="3"/><path d="M10.5 12l1 1 2-2"/></g>'
+        '<g class="pp-stage pp-stage-3"><rect class="pp-mask" x="16" y="9" width="6" height="4" rx="1"/><circle cx="19" cy="11" r="1.5"/></g>'),
 }
 
 

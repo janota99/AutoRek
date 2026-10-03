@@ -130,19 +130,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 3rem;
-    height: 3rem;
+    width: 3.75rem;
+    height: 3.75rem;
     margin-bottom: 1.5rem;
     border-radius: 0.75rem;
-    background: var(--tile);
+    --bg: var(--tile);
+    background: var(--bg);
     color: var(--navy);
     overflow: hidden;
     transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.pp-card:hover .pp-icon { transform: scale(1.08) rotate(-3deg); background: #dbe8f3; }
+.pp-card:hover .pp-icon { transform: scale(1.08) rotate(-3deg); --bg: #dbe8f3; }
 
-.pp-icon > svg { width: 1.5rem; height: 1.5rem; }
+.pp-icon > svg { width: 2.25rem; height: 2.25rem; }
 
 .pp-title {
     display: flex;
@@ -205,16 +206,16 @@
 /* Animated Sales Reconciliation logo: two documents slide together, merge, and get a check. */
 .pp-logo {
     position: relative;
-    width: 2rem;
-    height: 2rem;
+    width: 2.5rem;
+    height: 2.5rem;
     --anim: 4s;
 }
 
 .pp-logo svg {
     position: absolute;
-    inset: 0.25rem;
-    width: 1.5rem;
-    height: 1.5rem;
+    inset: 0.3rem;
+    width: 1.9rem;
+    height: 1.9rem;
     transform-origin: center;
 }
 
@@ -251,7 +252,59 @@
     95%, 100% { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; }
 }
 
+/* Animated FIFO Inventory logo: the boxes shift one slot toward the arrow while a new box fades in
+   at the left and the oldest fades out at the right. SVG transforms are in viewBox units. */
+.pp-fifo { overflow: visible; }  /* the rightmost box sits on the viewBox edge; don't clip it */
+.pp-fifo-queue { animation: pp-fifo-shift 2.5s ease-in-out infinite; }
+.pp-fifo-in    { animation: pp-fifo-fade-in 2.5s ease-in-out infinite; }
+.pp-fifo-out   { animation: pp-fifo-fade-out 2.5s ease-in-out infinite; }
+
+@keyframes pp-fifo-shift {
+    0%, 15%   { transform: translateX(0); }
+    85%, 100% { transform: translateX(6px); }
+}
+
+@keyframes pp-fifo-fade-in {
+    0%, 15%   { opacity: 0; }
+    85%, 100% { opacity: 1; }
+}
+
+@keyframes pp-fifo-fade-out {
+    0%, 15%   { opacity: 1; }
+    85%, 100% { opacity: 0; }
+}
+
+/* Animated Sales Tax Review logo: a magnifying glass scans the lines and flags one in red. */
+.pp-mask { fill: var(--bg); }  /* hides the lines behind a shape; tracks the tile's hover color */
+.pp-glass { animation: pp-scan 3s ease-in-out infinite; }
+.pp-flag  { animation: pp-flash 3s ease-in-out infinite; }
+
+@keyframes pp-scan {
+    0%, 10%   { transform: translate(-3px, -4px); }
+    50%, 60%  { transform: translate(6px, 4px); }
+    100%      { transform: translate(-3px, -4px); }
+}
+
+@keyframes pp-flash {
+    0%, 35%   { stroke: #93c5fd; }
+    45%, 70%  { stroke: #ef4444; }
+    80%, 100% { stroke: #93c5fd; }
+}
+
+/* Animated Invoice Lifecycle Hub logo: the three pipeline stages highlight in sequence. */
+.pp-stage   { stroke: #93c5fd; animation: pp-stage 3s infinite; }
+.pp-stage-2 { animation-delay: 1s; }
+.pp-stage-3 { animation-delay: 2s; }
+
+@keyframes pp-stage {
+    0%, 100% { stroke: #93c5fd; stroke-width: 1.5; }
+    10%, 40% { stroke: #1e3a8a; stroke-width: 2; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+    .pp-glass, .pp-flag, .pp-stage { animation: none; }
+    .pp-fifo-queue, .pp-fifo-out { animation: none; }
+    .pp-fifo-in { animation: none; opacity: 0; }
     .pp-card, .pp-icon, .pp-action, .pp-card::before { transition: none; }
     .pp-js .pp-card, .pp-js .pp-hero, .pp-js .pp-notice { opacity: 1; transform: none; }
     .pp-doc-left, .pp-doc-right { animation: none; opacity: 0; }
