@@ -32,6 +32,8 @@ import streamlit as st
 from openpyxl import Workbook
 from openpyxl.styles import Border, Font, Side
 
+from shared.sample_data import sample_downloads, sample_uploader
+
 # ID normalization is the same rule Transaction Cleanup uses: strip ALL internal
 # whitespace, surrounding quotes, and Excel .0 float artifacts, then uppercase.
 from .cleanup import clean_key_series as clean_id_key_series
@@ -334,9 +336,21 @@ def render_vendor_reconciliation():
 
     col1, col2 = st.columns(2)
     with col1:
-        old_file = st.file_uploader("Previous Vendor Listing", type=["xlsx"], key="old_vendor_file")
+        st.markdown("**Previous Vendor Listing**")
+        old_file, _ = sample_uploader(
+            "Previous Vendor Listing", key="old_vendor_file",
+            sample_file="vendor_listing_previous.xlsx", types=["xlsx"],
+        )
     with col2:
-        new_file = st.file_uploader("Updated Vendor Listing", type=["xlsx"], key="new_vendor_file")
+        st.markdown("**Updated Vendor Listing**")
+        new_file, _ = sample_uploader(
+            "Updated Vendor Listing", key="new_vendor_file",
+            sample_file="vendor_listing_updated.xlsx", types=["xlsx"],
+        )
+    sample_downloads([
+        ("Previous Vendor Listing (.xlsx)", "vendor_listing_previous.xlsx"),
+        ("Updated Vendor Listing (.xlsx)", "vendor_listing_updated.xlsx"),
+    ], key="vendor_rec")
 
     if old_file and new_file:
         try:

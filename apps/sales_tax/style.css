@@ -262,3 +262,6 @@ button[kind="secondary"],
 .st-status-badge small { display: block; opacity: 0.8; }
 .st-dot { width: 10px; height: 10px; border-radius: 50%; background: #4caf50; flex: none;
           box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3); }
+
+/* Sample-data controls (shared/sample_data.py) */
+.st-pill-sample { background: #e1ecf9; color: #1f4e79; }

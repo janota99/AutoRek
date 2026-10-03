@@ -6,6 +6,8 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from shared.sample_data import sample_downloads, sample_uploader
+
 from .ingestion import (
     clear_trial_balance_cache,
     IngestionError,
@@ -36,15 +38,18 @@ from .excel_output import (
 )
 
 
-def _drop_zone(title: str, hint: str, key: str):
-    """A file uploader under a headline, with a status pill (Uploaded / Missing)."""
+def _drop_zone(title: str, hint: str, key: str, sample_file: str):
+    """A file uploader under a headline, with a status pill (Uploaded / Sample Loaded / Missing)."""
     status = st.empty()
-    uploaded = st.file_uploader(title, type=["xlsx"], key=key, label_visibility="collapsed")
-    pill = (
-        f"<span class='st-pill st-pill-ok'>&#10003; Uploaded</span>"
-        if uploaded is not None else
-        "<span class='st-pill st-pill-missing'>Missing</span>"
+    uploaded, is_sample = sample_uploader(
+        title, key=key, sample_file=sample_file, types=["xlsx"], show_badge=False,
     )
+    if is_sample:
+        pill = "<span class='st-pill st-pill-sample'>&#9679; Sample Loaded</span>"
+    elif uploaded is not None:
+        pill = "<span class='st-pill st-pill-ok'>&#10003; Uploaded</span>"
+    else:
+        pill = "<span class='st-pill st-pill-missing'>Missing</span>"
     status.markdown(
         f"<div class='st-drop-head'><div class='st-drop-icon'>&#8682;</div>"
         f"<div class='st-drop-title'>{title} {pill}</div>"
@@ -71,9 +76,21 @@ def render_transaction_cleanup():
             st.markdown("<div class='st-card-title'>Upload files</div>", unsafe_allow_html=True)
             source_file = _drop_zone(
                 "Source Transactions", "XLSX with 11 columns (A-K)", "source_file",
+                "sales_tax_source_transactions.xlsx",
             )
             mapping_file = _drop_zone(
                 "Vendor Mapping", "XLSX vendor mapping file", "mapping_file",
+                "sales_tax_vendor_mapping.xlsx",
+            )
+
+            sample_downloads([
+                ("Source Transactions (.xlsx)", "sales_tax_source_transactions.xlsx"),
+                ("Vendor Mapping (.xlsx)", "sales_tax_vendor_mapping.xlsx"),
+                ("Trial Balance (.xlsx)", "sales_tax_trial_balance.xlsx"),
+            ], key="st_cleanup")
+            st.caption(
+                "The sample trial balance is a download only, because the real one is cached on "
+                "disk and shared. Sample GL accounts will show no Account Name unless you load it."
             )
 
         with st.container(key="st-card-options", border=True):

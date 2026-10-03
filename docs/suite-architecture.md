@@ -55,6 +55,16 @@ and no navigation-bar entry. The Dashboard's "View Plans" button in the top-righ
 returning from another app lands on the normal Dashboard. Choosing a plan only shows an order
 summary: no payment processor is connected and nothing is charged.
 
+## Sample data
+
+`sample_data/` holds synthetic files (made-up vendors, customers, POs, amounts; never real data) in each
+tool's expected layout. `build_samples.py` regenerates them. `shared/sample_data.py` provides
+`sample_uploader` (a file uploader plus a "Use Sample Data" button; a real upload always wins) and
+`sample_downloads` (the "Download Sample Templates" drawer). Wired into Sales Tax (Transaction Cleanup,
+Vendor Reconciliation) and Recon (all four uploads). FIFO is not wired: its samples would have to
+reconcile with the seeded P12 layers. The Sales Tax trial balance is download-only, because the real one is
+a shared on-disk cache. Recon reads QuickBooks column A as the fiscal period, so its sample keeps one there.
+
 ## Adding an application
 
 1. Create `apps/<pkg>/` with an empty `__init__.py` and an `app.py` page script.

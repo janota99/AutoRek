@@ -67,6 +67,7 @@ from apps.recon.utils import (
 )
 from apps.recon.assets.ui_assets import INFOR_LOGO_URI, QUICKBOOKS_LOGO_URI
 from shared.layout import use_logo_on_dark_sidebar
+from shared.sample_data import sample_downloads, sample_uploader
 from apps.recon.uploads import (
     render_uploaded_dataset_summary,
     cached_build_source_validation_report,
@@ -120,12 +121,11 @@ def main() -> None:
                 '<p class="upload-card-copy">Current-period sales detail used as the QuickBooks side of the reconciliation.</p>',
                 unsafe_allow_html=True,
             )
-            qb_file = st.file_uploader(
+            qb_file, _ = sample_uploader(
                 "Upload primary QuickBooks sales data",
-                type=["xlsx", "csv"],
-                key="qb_file",
+                key="qb_file", sample_file="recon_quickbooks_sales.xlsx",
+                types=["xlsx", "csv"],
                 help="Drag and drop or click to upload the current QuickBooks sales export.",
-                label_visibility="collapsed",
             )
             render_source_status(
                 qb_file.name if qb_file else None,
@@ -146,12 +146,11 @@ def main() -> None:
                 '<p class="upload-card-copy">Current-period sales detail used as the Infinium side of the reconciliation.</p>',
                 unsafe_allow_html=True,
             )
-            inf_file = st.file_uploader(
+            inf_file, _ = sample_uploader(
                 "Upload primary Infinium sales data",
-                type=["xlsx", "csv"],
-                key="inf_file",
+                key="inf_file", sample_file="recon_infinium_sales.xlsx",
+                types=["xlsx", "csv"],
                 help="Drag and drop or click to upload the current Infinium sales export.",
-                label_visibility="collapsed",
             )
             render_source_status(
                 inf_file.name if inf_file else None,
@@ -159,6 +158,13 @@ def main() -> None:
                 pending=not qb_file and not inf_file,
             )
             render_uploaded_dataset_summary(inf_file, "INF", "inf_sheet")
+
+    sample_downloads([
+        ("QuickBooks sales (.xlsx)", "recon_quickbooks_sales.xlsx"),
+        ("Infinium sales (.xlsx)", "recon_infinium_sales.xlsx"),
+        ("Historical QuickBooks (.xlsx)", "recon_quickbooks_historical.xlsx"),
+        ("Historical Infinium (.xlsx)", "recon_infinium_historical.xlsx"),
+    ], key="recon")
 
     # These variables must exist on every Streamlit rerun, including before
     # both primary files have been uploaded.
@@ -188,12 +194,11 @@ def main() -> None:
                         '<p class="upload-card-copy">May clear unresolved primary Infinium items; unused rows are excluded.</p>',
                         unsafe_allow_html=True,
                     )
-                    qb_secondary_file = st.file_uploader(
+                    qb_secondary_file, _ = sample_uploader(
                         "Upload historical QuickBooks data",
-                        type=["xlsx", "csv"],
-                        key="qb_secondary_file",
+                        key="qb_secondary_file", sample_file="recon_quickbooks_historical.xlsx",
+                        types=["xlsx", "csv"],
                         help="Drag and drop or click to upload optional historical QuickBooks data.",
-                        label_visibility="collapsed",
                     )
                     if qb_secondary_file:
                         render_source_status(qb_secondary_file.name, "")
@@ -213,12 +218,11 @@ def main() -> None:
                         '<p class="upload-card-copy">May clear unresolved primary QuickBooks items; unused rows are excluded.</p>',
                         unsafe_allow_html=True,
                     )
-                    inf_secondary_file = st.file_uploader(
+                    inf_secondary_file, _ = sample_uploader(
                         "Upload historical Infinium data",
-                        type=["xlsx", "csv"],
-                        key="inf_secondary_file",
+                        key="inf_secondary_file", sample_file="recon_infinium_historical.xlsx",
+                        types=["xlsx", "csv"],
                         help="Drag and drop or click to upload optional historical Infinium data.",
-                        label_visibility="collapsed",
                     )
                     if inf_secondary_file:
                         render_source_status(inf_secondary_file.name, "")
