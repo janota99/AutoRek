@@ -10,7 +10,9 @@ charges nothing. The prices below are placeholders: change them here, in one pla
 from __future__ import annotations
 
 import html
+import re
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 
 import streamlit as st
 
@@ -20,6 +22,9 @@ PLAN_KEY = "pp_plan"         # session_state: id of the plan the visitor chose
 _CYCLE_KEY = "pp_cycle"       # session_state: billing selector
 _MONTHLY, _ANNUAL = "Monthly", "Annual (2 months free)"
 _ANNUAL_MONTHS_BILLED = 10    # twelve months for the price of ten
+TAX_RATE = Decimal("0.0825")  # placeholder sales tax rate shown in the order summary
+_SENT_KEY = "pp_contact_sent"  # session_state: contact form submitted (stub)
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 @dataclass(frozen=True)
@@ -98,6 +103,15 @@ _CSS = """
 .pp-order { margin: 1.5rem 0 0; padding: 1rem 1.2rem; border-left: 3px solid #2f70a8; border-radius: .2rem .5rem .5rem .2rem;
     background: #eaf1f7; color: #3b5266; font-size: .95rem; line-height: 1.55; }
 .pp-order strong { color: #153d68; }
+.pp-order { animation: pp-fade .3s ease; }
+@keyframes pp-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.pp-lines { width: 100%; margin: 0 0 .8rem; border-collapse: collapse; }
+.pp-lines td { padding: .3rem 0; border: 0; }
+.pp-lines td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.pp-lines tr.pp-total td { border-top: 1px solid #b9cadb; color: #153d68; font-weight: 800; font-size: 1.05rem; }
+[class*="st-key-pp-plan-"] { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+[class*="st-key-pp-plan-"]:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0, 0, 0, .1);
+    border-color: #2563eb; }
 """
 
 
@@ -123,16 +137,55 @@ def _tier_html(tier: Tier, annual: bool) -> str:
     )
 
 
+def _money(cents: int) -> str:
+    return f"${cents // 100:,}.{cents % 100:02d}"
+
+
+def _totals(tier: Tier, annual: bool) -> tuple[int, int, int]:
+    """(base, tax, total) in cents. Tax is rounded half-up to the penny."""
+    base = tier.monthly_price * 100 * (_ANNUAL_MONTHS_BILLED if annual else 1)
+    tax = int((Decimal(base) * TAX_RATE).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return base, tax, base + tax
+
+
 def _order_summary(tier: Tier, annual: bool) -> str:
+    note = ("Online checkout is not connected yet, so nothing has been charged and no order "
+            "has been placed.")
     if tier.monthly_price is None:
-        body = ("<strong>Enterprise</strong> is quoted to your organization. Our team will scope the "
-                "integrations, user roles, and support before agreeing a price.")
-    else:
-        headline, unit = _price(tier, annual)
-        body = (f"<strong>{html.escape(tier.name)}</strong>, billed {'annually' if annual else 'monthly'}: "
-                f"<strong>{headline}</strong> {html.escape(unit)}.")
-    return (f'<div class="pp-order">{body}<br>Online checkout is not connected yet, so nothing has been '
-            "charged and no order has been placed.</div>")
+        return ('<div class="pp-order"><strong>Enterprise</strong> is quoted to your organization. Our '
+                "team will scope the integrations, user roles, and support before agreeing a price."
+                f"<br>{note}</div>")
+    base, tax, total = _totals(tier, annual)
+    cycle = "year" if annual else "month"
+    rows = (f"<tr><td>{html.escape(tier.name)} base price (per {cycle})</td><td>{_money(base)}</td></tr>"
+            f"<tr><td>Sales tax ({TAX_RATE * 100:.2f}%)</td><td>{_money(tax)}</td></tr>"
+            f'<tr class="pp-total"><td>Total</td><td>{_money(total)}</td></tr>')
+    # Keyed by plan and cycle so the browser re-runs the fade-in each time the total changes.
+    return (f'<div class="pp-order" data-k="{tier.id}-{cycle}"><table class="pp-lines">{rows}</table>'
+            f"{note}</div>")
+
+
+@st.dialog("Contact sales")
+def _contact_dialog() -> None:
+    """Enterprise enquiry form. Submission is a stub: nothing is sent or stored."""
+    if st.session_state.get(_SENT_KEY):
+        st.success("Thanks. Your inquiry has been noted. Inquiries are responded to within 2-3 business days.")
+        st.caption("Contact delivery is not connected yet, so no message was actually sent.")
+        if st.button("Close", key="pp-contact-close"):
+            st.session_state.pop(_SENT_KEY, None)
+            st.rerun()
+        return
+    with st.form("pp-contact-form", border=False):
+        email = st.text_input("Email (required)", placeholder="you@company.com")
+        message = st.text_area("Message", placeholder="Tell us about your organization and needs.")
+        st.caption("Inquiries are responded to within 2-3 business days.")
+        submitted = st.form_submit_button("Submit", type="primary")
+    if submitted:
+        if not _EMAIL_RE.match(email.strip()):
+            st.error("Enter a valid email address.")
+        else:
+            st.session_state[_SENT_KEY] = True
+            st.rerun(scope="fragment")
 
 
 def render() -> None:
@@ -158,6 +211,9 @@ def render() -> None:
             if st.button(tier.action, key=f"pp-choose-{tier.id}", width="stretch",
                          type="primary" if tier.featured else "secondary"):
                 st.session_state[PLAN_KEY] = tier.id
+                if tier.monthly_price is None:
+                    st.session_state.pop(_SENT_KEY, None)
+                    _contact_dialog()
 
     chosen = next((t for t in TIERS if t.id == st.session_state.get(PLAN_KEY)), None)
     if chosen:
