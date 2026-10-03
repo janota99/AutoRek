@@ -10,6 +10,7 @@ builders from the Downloads tab and displays the result.
 from __future__ import annotations
 
 import html
+import re
 import time
 import traceback
 from pathlib import Path
@@ -311,11 +312,83 @@ def render_ingestion_flow(
     st.markdown(flow_html, unsafe_allow_html=True)
 
 
+def _parse_summary_date(value: Optional[str]) -> Optional[pd.Timestamp]:
+    if not value:
+        return None
+    parsed = pd.to_datetime(value, errors="coerce")
+    return None if pd.isna(parsed) else parsed
+
+
+def render_source_period_alignment(
+    qb_summary: Optional[dict[str, Any]],
+    inf_summary: Optional[dict[str, Any]],
+    fiscal_period: Optional[int],
+    fiscal_year: Optional[int],
+    selected_period_rows: Optional[int],
+    qb_rows: int,
+) -> None:
+    """Show each source's date coverage beside the selected period, flagging disagreement.
+
+    Informational only: it never changes a match or a total. The suite has no fiscal
+    calendar, so the person confirms the dates against the intended period.
+    """
+    def coverage(summary: Optional[dict[str, Any]]) -> str:
+        if not summary or not summary.get("date_start"):
+            return "No date column detected"
+        start, end = summary["date_start"], summary["date_end"]
+        return start if start == end else f"{start} – {end}"
+
+    period_name = "All periods" if fiscal_period is None else f"Period {int(fiscal_period):02d}"
+    period_label = f"{period_name}, fiscal year {int(fiscal_year)}" if fiscal_year else period_name
+
+    qb_start = _parse_summary_date((qb_summary or {}).get("date_start"))
+    qb_end = _parse_summary_date((qb_summary or {}).get("date_end"))
+    inf_start = _parse_summary_date((inf_summary or {}).get("date_start"))
+    inf_end = _parse_summary_date((inf_summary or {}).get("date_end"))
+    if None in (qb_start, qb_end, inf_start, inf_end):
+        agreement = "Date coverage could not be compared for both sources; confirm the dates manually."
+        tone = "warning"
+    elif qb_start == inf_start and qb_end == inf_end:
+        agreement = "QuickBooks and Infinium cover the same date range."
+        tone = "success"
+    else:
+        agreement = (
+            "QuickBooks and Infinium date ranges <strong>differ</strong> "
+            f"(start {abs((qb_start - inf_start).days)} day(s) apart, "
+            f"end {abs((qb_end - inf_end).days)} day(s) apart). "
+            "Rows outside the other source's range will surface as exceptions; confirm this is intended."
+        )
+        tone = "warning"
+
+    if selected_period_rows is None:
+        period_rows = "No fiscal period selected; every primary QuickBooks period is included in the aggregates."
+    elif selected_period_rows == qb_rows:
+        period_rows = f"All {qb_rows:,} retained QuickBooks rows carry {period_name} in the first column."
+    else:
+        period_rows = (
+            f"<strong>{selected_period_rows:,} of {qb_rows:,}</strong> retained QuickBooks rows carry "
+            f"{period_name} in the first column; the rest belong to other periods."
+        )
+    render_notice_panel(
+        "Source period alignment",
+        (
+            f"<strong>Selected scope:</strong> {html.escape(period_label)}<br>"
+            f"<strong>QuickBooks dates:</strong> {html.escape(coverage(qb_summary))}<br>"
+            f"<strong>Infinium dates:</strong> {html.escape(coverage(inf_summary))}<br>"
+            f"{agreement}<br>{period_rows}"
+        ),
+        tone=tone,
+        icon="✓" if tone == "success" else "!",
+        body_is_html=True,
+    )
+
+
 def render_pre_execution_controls(
     qb_raw: pd.DataFrame,
     inf_raw: pd.DataFrame,
     qb_mapping: dict[str, Optional[str]],
     inf_mapping: dict[str, Optional[str]],
+    period_alignment: Optional[dict[str, Any]] = None,
 ) -> None:
     qb_total = numeric_sum(qb_raw[qb_mapping["amount"]])
     inf_total = numeric_sum(inf_raw[inf_mapping["amount"]])
@@ -335,6 +408,70 @@ def render_pre_execution_controls(
     st.caption(
         "Pre-reconciliation control totals include only QuickBooks rows populated in every field other than Quantity and Amount. "
         "Retained rows with invalid amounts are flagged and remain unreconciled."
+    )
+    if period_alignment is not None:
+        render_source_period_alignment(qb_rows=len(qb_raw), **period_alignment)
+
+
+_COUNT_CHECK = re.compile(r"row completeness|source quickbooks rows|source row", re.IGNORECASE)
+
+
+def render_controls_table(controls: pd.DataFrame) -> None:
+    """Controls as a wrapping table: counts as integers, money with separators and cents."""
+    def fmt(check: str, value: Any) -> str:
+        number = float(value)
+        if _COUNT_CHECK.search(check):
+            return f"{int(round(number)):,}"
+        return f"{number:,.2f}"
+
+    rows = []
+    for record in controls.to_dict("records"):
+        check = str(record["Check"])
+        status = str(record["Status"])
+        rows.append(
+            "<tr>"
+            f"<td>{html.escape(check)}</td>"
+            f'<td class="num">{fmt(check, record["Expected"])}</td>'
+            f'<td class="num">{fmt(check, record["Actual"])}</td>'
+            f'<td class="num">{fmt(check, record["Difference"])}</td>'
+            f'<td class="status {"pass" if status == "PASS" else "fail"}">{html.escape(status)}</td>'
+            "</tr>"
+        )
+    st.markdown(
+        '<table class="rec-controls-table"><thead><tr>'
+        "<th>Check</th><th>Expected</th><th>Actual</th><th>Difference</th><th>Status</th>"
+        f"</tr></thead><tbody>{''.join(rows)}</tbody></table>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_row_accounting(metrics: dict[str, Any]) -> None:
+    """Spell out how the retained QuickBooks rows divide into final dispositions."""
+    qb_rows = int(metrics["QuickBooks Rows"])
+    parts = [
+        ("matched", int(metrics.get("Final Disposition - Matched Rows", 0))),
+        ("true unmatched", int(metrics.get("Final Disposition - True Unmatched Rows", 0))),
+        ("review holds", int(metrics.get("Final Disposition - Review Hold Rows", 0))),
+        ("confirmed duplicates excluded", int(metrics.get("Final Disposition - Duplicate Excluded Rows", 0))),
+    ]
+    total = sum(count for _, count in parts)
+    equation = " + ".join(f"{count:,} {label}" for label, count in parts)
+    tie = "ties exactly" if total == qb_rows else f"does <strong>not</strong> tie (off by {qb_rows - total:,})"
+    render_notice_panel(
+        "How the rows add up",
+        (
+            f"<strong>QuickBooks:</strong> {equation} = {total:,}, which {tie} to the "
+            f"{qb_rows:,} retained QuickBooks source rows. Every row has exactly one final disposition.<br>"
+            "<strong>Counts are source rows, not match groups:</strong> one match group can pair several rows. "
+            f"{int(metrics['Matched QuickBooks Rows']):,} QuickBooks and "
+            f"{int(metrics['Matched Infinium Rows']):,} Infinium rows are matched, out of "
+            f"{int(metrics['Infinium Rows']):,} Infinium source rows. "
+            f"{int(metrics['Unmatched Infinium Rows']):,} Infinium-only exceptions are reported separately "
+            "and never offset the journal entry."
+        ),
+        tone="info",
+        icon="i",
+        body_is_html=True,
     )
 
 
@@ -404,7 +541,7 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
             render_kpi(
                 "QB match rate",
                 f"{metrics['QuickBooks Match Rate by Row']:.1%}",
-                f"{metrics['Matched QuickBooks Rows']:,} of {metrics['QuickBooks Rows']:,} rows",
+                f"{metrics['Matched QuickBooks Rows']:,} of {metrics['QuickBooks Rows']:,} QuickBooks source rows",
             )
         with cols[1]:
             render_kpi(
@@ -420,12 +557,28 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
             )
         with cols[3]:
             render_kpi(
-                "Control status",
+                "Automated controls",
                 control_status,
                 f"{len(result.controls)} required controls",
             )
+        review_holds = int(metrics.get("Final Disposition - Review Hold Rows", 0))
+        if posting_status == "REVIEW REQUIRED":
+            pending = f"{review_holds:,} hold(s)" if review_holds else "posting blockers remain"
+            st.markdown(
+                f'<div class="rec-review-status"><strong>Review status: Pending — {pending}.</strong> '
+                "Passing automated controls does not approve this reconciliation; "
+                "a person must disposition the items on hold before posting.</div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div class="rec-review-status clear"><strong>Review status: No holds.</strong> '
+                "No review holds or posting blockers were raised.</div>",
+                unsafe_allow_html=True,
+            )
+        render_row_accounting(metrics)
         st.markdown("#### Required controls")
-        st.dataframe(result.controls, width="stretch", hide_index=True)
+        render_controls_table(result.controls)
         if metrics.get("Historical Clearances", 0):
             render_notice_panel(
                 "Historical timing differences cleared",

@@ -72,6 +72,7 @@ from apps.recon.uploads import (
     cached_build_source_validation_report,
     cached_filter_qb_subtotal_rows,
     cached_fiscal_period_column_profile,
+    cached_dataset_summary,
     get_true_file_hash,
 )
 
@@ -627,7 +628,25 @@ def main() -> None:
     if validation_failed:
         return
 
-    render_pre_execution_controls(qb_detail, inf_raw, qb_mapping, inf_mapping)
+    def _coverage(file_obj: Any, source: str, sheet_prefix: str, sheet: Optional[str]) -> Optional[dict]:
+        try:
+            chosen = st.session_state.get(f"{sheet_prefix}_{get_true_file_hash(file_obj)[:12]}", sheet)
+            return cached_dataset_summary(file_obj.getvalue(), file_obj.name, source, chosen)
+        except Exception:
+            return None
+
+    render_pre_execution_controls(
+        qb_detail, inf_raw, qb_mapping, inf_mapping,
+        period_alignment={
+            "qb_summary": _coverage(qb_file, "QB", "qb_sheet", qb_sheet_name),
+            "inf_summary": _coverage(inf_file, "INF", "inf_sheet", inf_sheet_name),
+            "fiscal_period": fiscal_period,
+            "fiscal_year": fiscal_year,
+            "selected_period_rows": (
+                None if fiscal_period is None else selected_period_rows
+            ),
+        },
+    )
     if qb_secondary_detail is not None or inf_secondary_raw is not None:
         st.caption(
             "Secondary historical scope: "

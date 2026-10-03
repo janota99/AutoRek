@@ -36,7 +36,8 @@
 }
 
 .block-container {
-    max-width: 1380px !important;
+    /* One centered column the width of the upload cards, so nothing is pinned to the sidebar edge. */
+    max-width: calc(var(--rec-content-width) + 10rem) !important;
     margin: 0 auto !important;
     padding-top: 2.35rem !important;
     padding-bottom: 3.5rem !important;
@@ -239,7 +240,7 @@ p {
 [data-testid="stHorizontalBlock"]:has(.upload-source-heading) {
     max-width: var(--rec-content-width);
     margin-right: auto !important;
-    margin-left: 0 !important;
+    margin-left: auto !important;
     gap: 1rem !important;
 }
 
@@ -786,40 +787,69 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     font-weight: 700 !important;
 }
 
-/* Main-page historical uploads: distinct but intentionally restrained */
+/* Main-page historical uploads: optional, so quieter than the required source sections */
 
 [data-testid="stExpander"]:has(.historical-upload-intro) {
     overflow: hidden;
-    border: 2px solid rgba(25, 54, 93, 0.88) !important;
-    border-radius: 11px !important;
-    background: rgba(25, 54, 93, 0.045) !important;
-    box-shadow: 0 2px 8px rgba(25, 54, 93, 0.05) !important;
+    border: 1px solid var(--rec-border) !important;
+    border-radius: 10px !important;
+    background: var(--rec-surface) !important;
+    box-shadow: none !important;
 }
 
 [data-testid="stExpander"]:has(.historical-upload-intro) > details,
 [data-testid="stExpander"]:has(.historical-upload-intro) summary {
-    background: rgba(25, 54, 93, 0.045) !important;
+    background: transparent !important;
 }
 
-[data-testid="stExpander"]:has(.historical-upload-intro) summary {
-    color: var(--rec-navy) !important;
-    font-weight: 800 !important;
-}
-
+[data-testid="stExpander"]:has(.historical-upload-intro) summary,
 [data-testid="stExpander"]:has(.historical-upload-intro) summary p,
 [data-testid="stExpander"]:has(.historical-upload-intro) summary span {
-    color: var(--rec-navy) !important;
-    font-weight: 800 !important;
+    color: var(--rec-text-secondary) !important;
+    font-weight: 600 !important;
 }
 
 [data-testid="stExpander"]:has(.historical-upload-intro) summary svg {
-    color: var(--rec-navy) !important;
-    fill: var(--rec-navy) !important;
+    color: var(--rec-text-muted) !important;
+    fill: var(--rec-text-muted) !important;
 }
 
 [data-testid="stExpander"]:has(.historical-upload-intro):hover {
-    border-color: var(--rec-navy) !important;
-    background: rgba(25, 54, 93, 0.065) !important;
+    border-color: #bcc8d6 !important;
+}
+
+/* Review-status indicator beside the automated-controls KPI */
+.rec-review-status {
+    margin: 0.2rem 0 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid #e8c77a;
+    border-left-width: 4px;
+    border-radius: 9px;
+    background: #fff8e6;
+    color: #5c4300;
+    font-size: 0.95rem;
+}
+
+.rec-review-status.clear {
+    border-color: #9fd3b0;
+    background: #eefaf1;
+    color: #17552b;
+}
+
+/* Row-accounting and source-period explanations */
+.rec-explain {
+    margin: 0.5rem 0 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--rec-border);
+    border-radius: 10px;
+    background: var(--rec-surface);
+    color: var(--rec-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.rec-explain strong {
+    color: var(--rec-text);
 }
 
 @media (max-width: 900px) {
