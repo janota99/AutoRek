@@ -224,3 +224,46 @@
 }
 
 /* The Dashboard is styled by apps/dashboard.css (it is one HTML block, not Streamlit widgets). */
+
+/* Dashboard "View Plans" button (apps/dashboard.py): a pill pinned in the top-right of the navigation bar,
+   left of the account strip. suite_banner.js sets its `right`; this is the fallback. */
+.st-key-pp-open-pricing {
+    position: fixed;
+    top: 0.65rem;
+    right: 16rem;
+    z-index: 1000001;
+    width: auto;
+}
+
+.st-key-pp-open-pricing button {
+    min-height: 2.25rem;
+    padding: 0.3rem 1.1rem;
+    border: none;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease-in-out;
+}
+
+.st-key-pp-open-pricing button,
+.st-key-pp-open-pricing button p {
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.st-key-pp-open-pricing button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    filter: brightness(1.08);
+    color: #fff;
+}
+
+/* Room for the button in the navigation row so it never covers a page link. */
+.stApp:has(.st-key-pp-open-pricing) [data-testid="stHeader"] .rc-overflow {
+    max-width: calc(100% - 29rem);
+}
+
+.stApp:has(.st-key-pp-open-pricing):has(.pp-suite-banner[data-state="in"]) [data-testid="stHeader"] .rc-overflow {
+    max-width: calc(100% - 44rem);
+}

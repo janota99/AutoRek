@@ -39,7 +39,7 @@ TIERS: tuple[Tier, ...] = (
     Tier(
         id="starter", name="Starter", positioning="Basic",
         audience="Small businesses and single-focus accountants",
-        monthly_price=49,
+        monthly_price=20,
         features=(
             "Sales Tax Review: tax classification and vendor reconciliation",
             "Standard CSV and Excel file uploads",
@@ -49,7 +49,7 @@ TIERS: tuple[Tier, ...] = (
     Tier(
         id="professional", name="Professional", positioning="Most popular",
         audience="Growing businesses and mid-sized accounting teams",
-        monthly_price=149, inherits="Everything in Starter",
+        monthly_price=100, inherits="Everything in Starter",
         features=(
             "FIFO Inventory: inventory costs, control reviews, and fiscal period closes",
             "Sales Reconciliation: QuickBooks and Infinium sales matching, with exception reviews",

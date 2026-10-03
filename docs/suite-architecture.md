@@ -49,7 +49,7 @@ nothing, and every application stays open to anyone. Never describe it as access
 
 `apps/sales_page.py` holds the three tiers (Starter, Professional, Enterprise) and their placeholder
 prices (`TIERS`, edit there). It is deliberately **not** passed to `st.navigation`, so it has no URL
-and no navigation-bar entry. The Dashboard's "See Pricing and Features" button sets
+and no navigation-bar entry. The Dashboard's "View Plans" button in the top-right corner sets
 `st.session_state["pp_view"]`; `apps/dashboard.py` then draws the sales page instead of the cards.
 `app.py` clears the flag whenever another page is selected, so a fresh visit, a direct URL, or
 returning from another app lands on the normal Dashboard. Choosing a plan only shows an order

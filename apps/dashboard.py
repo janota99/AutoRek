@@ -98,6 +98,7 @@ if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
 
 st.html(page, unsafe_allow_javascript=True)
 # The only way into the sales page: it is not a registered page, so it has no URL or nav entry.
-if st.button("See Pricing and Features", icon=":material/sell:", key="pp-open-pricing", type="primary"):
+# theme.css pins this button in the top-right corner and suite_banner.js keeps it left of the account strip.
+if st.button("View Plans", icon=":material/auto_awesome:", key="pp-open-pricing"):
     st.session_state[sales_page.VIEW_KEY] = sales_page.PRICING_VIEW
     st.rerun()

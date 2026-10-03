@@ -62,6 +62,9 @@
       });
     var right = isFinite(left) ? window.innerWidth - left + 16 : 16;
     banner.style.setProperty('--pp-sb-right', Math.max(16, right) + 'px');
+    // The Dashboard's "View Plans" button sits just left of the strip, whatever its width.
+    var plans = document.querySelector('.st-key-pp-open-pricing');
+    if (plans) plans.style.right = (window.innerWidth - banner.getBoundingClientRect().left + 12) + 'px';
   }
 
   function closeMenu(banner) {
