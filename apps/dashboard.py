@@ -85,8 +85,14 @@ page = (
     '<header class="pp-hero"><p class="pp-brand">Panhandle Pure</p>'
     "<h1>Accounting Workspace</h1><p>Pick an application to get started.</p>"
     "</header>"
-    '<div class="pp-notice"><strong>Uploaded files:</strong> Switching applications clears uploads '
-    "from the application you leave. Open applications in separate browser tabs to retain each session.</div>"
+    '<div class="pp-stats">'
+    '<span class="pp-stat"><span class="pp-dot"></span>Session <strong>Active</strong></span>'
+    f'<span class="pp-stat">Applications <strong>{len(APPS)} available</strong></span>'
+    '<span class="pp-stat">Plan <strong>None selected</strong></span></div>'
+    '<div class="pp-notice" role="note"><span class="pp-notice-icon" aria-hidden="true">i</span>'
+    '<p><strong>Uploaded files:</strong> Switching applications clears uploads '
+    "from the application you leave. Open applications in separate browser tabs to retain each session.</p>"
+    '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
     f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
     "</div>"
     f"<script>window.PP_ICONS = {_icons_json()};\n"

@@ -189,6 +189,16 @@
   }, 1000);
   setInterval(render, 60000);
 
+  // "Reviews & Feedback" is a one-page dropdown section in the navigation bar; clicking its label
+  // goes straight to the page instead of opening a menu with a single entry.
+  document.addEventListener('click', function (event) {
+    var section = event.target.closest && event.target.closest('[data-testid="stTopNavSection"]');
+    if (!section || section.textContent.trim() !== 'Reviews & Feedback') return;
+    var link = Array.prototype.slice.call(document.querySelectorAll('a[data-testid="stTopNavDropdownLink"]'))
+      .find(function (a) { return /\/feedback\/?$/.test(a.pathname); });
+    if (link) { event.preventDefault(); event.stopPropagation(); link.click(); }
+  }, true);
+
   window.ppSuiteBanner = { render: render };
   render();
 })();

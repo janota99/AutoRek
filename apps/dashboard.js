@@ -11,6 +11,15 @@
     tile.innerHTML = (window.PP_ICONS || {})[tile.dataset.icon] || "";
   });
 
+  // Dismissible notice; the choice is remembered for this browser tab only.
+  var notice = root.querySelector(".pp-notice");
+  var closeBtn = notice && notice.querySelector(".pp-notice-close");
+  try { if (sessionStorage.getItem("pp-notice-dismissed")) notice.hidden = true; } catch (e) {}
+  if (closeBtn) closeBtn.addEventListener("click", function () {
+    notice.hidden = true;
+    try { sessionStorage.setItem("pp-notice-dismissed", "1"); } catch (e) {}
+  });
+
   var cards = Array.prototype.slice.call(root.querySelectorAll(".pp-card"));
   var reveal = Array.prototype.slice.call(root.querySelectorAll(".pp-hero, .pp-notice")).concat(cards);
 

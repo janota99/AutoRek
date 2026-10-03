@@ -238,25 +238,25 @@
 .st-key-pp-open-pricing button {
     min-height: 2.25rem;
     padding: 0.3rem 1.1rem;
-    border: none;
+    border: 1px solid #2563eb;
     border-radius: 9999px;
-    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    background: #eff6ff;
+    box-shadow: none;
     transition: all 0.2s ease-in-out;
 }
 
 .st-key-pp-open-pricing button,
 .st-key-pp-open-pricing button p {
-    color: #fff;
+    color: #1d4ed8;
     font-size: 0.875rem;
     font-weight: 600;
 }
 
 .st-key-pp-open-pricing button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    filter: brightness(1.08);
-    color: #fff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    background: #dbeafe;
+    color: #1d4ed8;
 }
 
 /* Room for the button in the navigation row so it never covers a page link. */

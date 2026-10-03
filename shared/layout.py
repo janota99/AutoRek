@@ -52,7 +52,7 @@ class AppEntry:
     script: str     # page script, relative to the repository root
     url_path: str   # the page's URL segment, e.g. /fifo-inventory
     summary: str    # one short sentence for the Dashboard card: what someone can accomplish
-    action: str = "Open application"  # the card button's label, e.g. "Open inventory"
+    action: str = "Open workspace"  # the card button's label; the same on every card
     badge: str = ""  # optional maturity label on the card, e.g. "Prototype"
 
 
@@ -62,7 +62,6 @@ APPS: list[AppEntry] = [
         icon=":material/inventory_2:",
         script="apps/fifo_inventory/app.py",
         url_path="fifo-inventory",
-        action="Open inventory",
         summary="Calculate inventory costs, review controls, and close fiscal periods.",
     ),
     AppEntry(
@@ -70,7 +69,6 @@ APPS: list[AppEntry] = [
         icon=":material/compare_arrows:",
         script="apps/recon/app.py",
         url_path="recon",
-        action="Open reconciliation",
         summary="Match QuickBooks and Infinium sales and review exceptions.",
     ),
     AppEntry(
@@ -78,7 +76,6 @@ APPS: list[AppEntry] = [
         icon=":material/receipt_long:",
         script="apps/sales_tax/app.py",
         url_path="sales-tax",
-        action="Open sales tax review",
         summary="Review tax classifications and reconcile vendor transactions.",
     ),
     AppEntry(
@@ -86,7 +83,6 @@ APPS: list[AppEntry] = [
         icon=":material/mark_email_unread:",
         script="apps/invoice_hub/app.py",
         url_path="invoice-hub",
-        action="Open prototype",
         # One page, two tabs: the service overview and the signed-in person's invoice dashboard.
         summary="See how invoices are tracked from Outlook through payment, and open your invoice dashboard.",
         badge="Prototype",
@@ -98,16 +94,25 @@ DASHBOARD_SCRIPT = "apps/dashboard.py"
 FEEDBACK_SCRIPT = "apps/feedback.py"
 
 
+WIDGETS_MENU = "Accountant Widgets"
+FEEDBACK_MENU = "Reviews & Feedback"
+
+
 def build_navigation():
-    """Register every page and return the one the visitor selected."""
-    pages = [st.Page(DASHBOARD_SCRIPT, title="Dashboard", icon=":material/dashboard:", default=True)]
-    pages += [
+    """Register every page and return the one the visitor selected.
+
+    Top navigation: Dashboard, an "Accountant Widgets" dropdown holding the four tools, then
+    Reviews & Feedback. Streamlit renders a named section as a dropdown. Feedback sits in a one-page
+    section only to keep its place after the dropdown; suite_banner.js makes that label a direct link.
+    """
+    dashboard = st.Page(DASHBOARD_SCRIPT, title="Dashboard", icon=":material/dashboard:", default=True)
+    widgets = [
         st.Page(app.script, title=app.title, icon=app.icon, url_path=app.url_path)
         for app in APPS
     ]
-    pages.append(st.Page(FEEDBACK_SCRIPT, title="Reviews & Feedback", icon=":material/rate_review:",
-                         url_path="feedback"))
-    return st.navigation(pages, position="top")
+    feedback = st.Page(FEEDBACK_SCRIPT, title="Reviews & Feedback", icon=":material/rate_review:",
+                       url_path="feedback")
+    return st.navigation({"": [dashboard], WIDGETS_MENU: widgets, FEEDBACK_MENU: [feedback]}, position="top")
 
 
 def apply_template() -> None:
