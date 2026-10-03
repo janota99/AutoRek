@@ -215,3 +215,50 @@ button[kind="secondary"],
     fill: #ffffff !important;
     color: #ffffff !important;
 }
+
+/* ============================================================
+   Transaction Cleanup: two-column cards, drop zones, badges
+   ============================================================ */
+[class*="st-key-st-card-"] {
+    background: #ffffff;
+    border: 1px solid #e6ebf1;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.st-card-title { font-size: 1.05rem; font-weight: 700; color: var(--accent); margin-bottom: 0.6rem; }
+
+/* Drop zones: headline block above a centered, dashed upload area */
+.st-drop-head { text-align: center; padding-top: 0.4rem; }
+.st-drop-icon { font-size: 1.8rem; line-height: 1; color: var(--accent); }
+.st-drop-title { font-weight: 700; color: #1e1e1e; margin-top: 0.2rem; }
+.st-drop-sub { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem; }
+[class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+.st-pill { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.55rem;
+           border-radius: 999px; margin-left: 0.4rem; vertical-align: middle; }
+.st-pill-ok { background: #e3f4e5; color: #2e7d32; }
+.st-pill-missing { background: #fdeccd; color: #8a5300; }
+
+/* Run Cleanup: large, high-contrast; visibly inactive while disabled */
+.st-key-st-run-cleanup button { padding: 0.7rem 1rem; font-size: 1.05rem; box-shadow: 0 4px 10px rgba(0, 0, 128, 0.25); }
+.st-key-st-run-cleanup button:disabled { background-color: #c9d1dc !important; color: #6b7785 !important; box-shadow: none; }
+
+/* Output & Preview empty state */
+.st-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.4rem;
+            padding: 3.5rem 1rem; color: var(--text-muted); }
+.st-empty b { color: #1e1e1e; font-size: 1.05rem; }
+.st-empty-icon { font-size: 2.6rem; opacity: 0.6; }
+
+/* Sidebar cache badge */
+.st-status-badge { display: flex; align-items: center; gap: 0.6rem; background: rgba(76, 175, 80, 0.16);
+                   border: 1px solid rgba(76, 175, 80, 0.45); border-radius: 10px; padding: 0.55rem 0.75rem; }
+.st-status-badge small { display: block; opacity: 0.8; }
+.st-dot { width: 10px; height: 10px; border-radius: 50%; background: #4caf50; flex: none;
+          box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3); }
