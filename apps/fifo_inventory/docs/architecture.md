@@ -4,7 +4,7 @@
 
 | File | Owns |
 |---|---|
-| `app.py` | The page, top to bottom: disk recovery, P12 auto-seed, uploads, Master Grid, Batch Processing (preview → close). |
+| `app.py` | The page, top to bottom: disk recovery, P12 auto-seed, uploads, Master Grid, Batch Processing (preview → close), then the Insights tabs. |
 | `sidebar.py` | `render_sidebar(layer_store)`: period selection, closed-period history, snapshots (save/restore), reopen/reset, the P12 re-seed. Returns `(fiscal_year, current_period, period_end_date, selected_key)`. |
 | `insights.py` | `render_insights(layer_store)`: the Aging, Trends, Product Lookup, and Settings tabs. Reads official layers and history only. |
 | `fifo_calculations.py` | Pure FIFO math: `calculate_fifo`, receipt-layer consolidation, `stage_batch_calculation` across all products, run-signature hashing. No UI. |

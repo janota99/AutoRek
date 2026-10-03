@@ -15,7 +15,15 @@ It's a static HTML/JavaScript site in `site/` with three pages:
   with correct MIME types, and the site's own links (`dashboard.html`, `#anchors`) work inside the iframe.
 - `app.py` (the page) just renders that component.
 - `site/streamlit-bridge.js` is loaded last on every page. It sends `componentReady` and sizes the
-  frame to the browser window, so modal dialogs and anchor links behave as in a normal tab.
+  frame to the page's full content height (kept current with a `ResizeObserver`), so the Streamlit
+  page scrolls the hub and nothing is hidden in an inner scroll box. Because the frame is that tall,
+  the bridge also:
+  - pins open modal `<dialog>`s to the visible part of the frame, below Streamlit's top bar, while the page scrolls;
+  - makes `#anchor` links scroll the Streamlit page (its scroller is `section.stMain`, not the window);
+  - scrolls back to the top of the frame when you move to another hub page.
+
+  These need the parent page to be readable (same origin, as when Streamlit serves `site/`). If it
+  isn't, the frame still fits its content but dialogs use the browser's default placement.
   It's a no-op when a page is opened straight from disk.
 - **A new page in `site/` needs** `<script src="streamlit-bridge.js"></script>` before `</body>`.
 

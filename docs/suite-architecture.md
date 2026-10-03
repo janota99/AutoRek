@@ -9,8 +9,9 @@ template, or touching anything that crosses app boundaries.
 streamlit run app.py
   app.py                    set_page_config(wide) → build_navigation() → apply_template() → page.run()
   shared/layout.py          APPS registry, st.navigation(position="top"), st.logo, theme injection
-  shared/theme.css          suite chrome + Dashboard cards; injected before each app's own CSS
-  apps/dashboard.py         landing page: one card per APPS entry (st.page_link)
+  shared/theme.css          suite chrome; injected before each app's own CSS
+  apps/dashboard.py         landing page: one card per APPS entry, one st.html block
+  apps/dashboard.css|.js    its styling and behavior (spotlight, entrance, animated Recon logo, client-side nav)
   apps/<pkg>/app.py         one page script per application
 ```
 
@@ -60,7 +61,7 @@ shared chrome, and then runs the selected page script top to bottom.
 AppTest caveats:
 
 - Run page scripts directly. `AppTest.switch_page` doesn't follow `st.navigation` routes, and
-  `apps/dashboard.py` only works under the root `app.py` (its `st.page_link`s need the registered pages).
+  `apps/dashboard.py` only works under the root `app.py` (its card links are routed through the registered pages' nav links).
 - AppTest can't drive `file_uploader`. Selectboxes with a `format_func` (FIFO's product lookup)
   fail under `select_index` and `set_value`.
 - Set `FIFO_SNAPSHOT_DIR` to a scratch folder so a headless FIFO run can't write real snapshots.

@@ -23,7 +23,9 @@ class AppEntry:
     icon: str       # Material icon, e.g. ":material/inventory_2:"
     script: str     # page script, relative to the repository root
     url_path: str   # the page's URL segment, e.g. /fifo-inventory
-    summary: str    # one or two sentences for the Dashboard card
+    summary: str    # one short sentence for the Dashboard card: what someone can accomplish
+    action: str = "Open application"  # the card button's label, e.g. "Open inventory"
+    badge: str = ""  # optional maturity label on the card, e.g. "Prototype"
 
 
 APPS: list[AppEntry] = [
@@ -32,32 +34,33 @@ APPS: list[AppEntry] = [
         icon=":material/inventory_2:",
         script="apps/fifo_inventory/app.py",
         url_path="fifo-inventory",
-        summary="13-period strict FIFO costing for raw materials: upload the Master Grid and "
-                "receipts, preview PASS/REVIEW/FAIL controls, and close periods in sequence.",
+        action="Open inventory",
+        summary="Calculate inventory costs, review controls, and close fiscal periods.",
     ),
     AppEntry(
         title="Sales Reconciliation",
         icon=":material/compare_arrows:",
         script="apps/recon/app.py",
         url_path="recon",
-        summary="Match QuickBooks sales to Infinium by PO, invoice, and exact signed amount, "
-                "then export the reconciliation workpaper.",
+        action="Open reconciliation",
+        summary="Match QuickBooks and Infinium sales and review exceptions.",
     ),
     AppEntry(
         title="Sales Tax Review",
         icon=":material/receipt_long:",
         script="apps/sales_tax/app.py",
         url_path="sales-tax",
-        summary="Clean up sales-tax transactions against the vendor mapping and trial balance, "
-                "and reconcile two vendor listings.",
+        action="Open sales tax review",
+        summary="Review tax classifications and reconcile vendor transactions.",
     ),
     AppEntry(
         title="Invoice Lifecycle Hub",
         icon=":material/mark_email_unread:",
         script="apps/invoice_hub/app.py",
         url_path="invoice-hub",
-        summary="Prototype Outlook invoice tracker: route customer invoices and vendor bills into "
-                "queues and track how long each sits at every approval stage.",
+        action="Open prototype",
+        summary="Track invoices and vendor bills through approval and payment.",
+        badge="Prototype",
     ),
 ]
 

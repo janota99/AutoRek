@@ -109,9 +109,6 @@ if (fiscal_year == OPENING_SEED_FISCAL_YEAR and current_period == 12
     st.session_state['app_flash'] = "Period 12 opening FIFO layers were seeded automatically."
     st.rerun()
 
-render_insights(layer_store)
-
-
 with st.container(border=True):
     st.subheader("📥 Data Uploads")
     st.caption("These uploads create a non-mutating preview. FIFO history changes only when the period is closed.")
@@ -522,3 +519,7 @@ if last_report and last_report.get('period_key') == selected_key and already_clo
         file_name=f"FIFO_Master_{selected_key}_COMMITTED.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+# Insights read official layers and history only, so they sit below the period
+# workflow; the uploads stay the first thing on the page.
+render_insights(layer_store)

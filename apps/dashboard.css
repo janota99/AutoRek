@@ -1,0 +1,260 @@
+/* Dashboard styling. Injected by apps/dashboard.py together with dashboard.js.
+   Everything is scoped under .pp-dash so nothing leaks into the other pages. */
+
+.pp-dash {
+    --navy: #153d68;
+    --blue: #2f70a8;
+    --blue-dark: #255a87;
+    --tile: #e8eff5;
+    --ink: #475569;
+    --line: #e2e8f0;
+    font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    max-width: 1024px;
+    margin: 0 auto;
+}
+
+/* Page chrome: pale background, no Streamlit gaps around the single HTML block. */
+.stApp:has(.pp-dash) {
+    background: radial-gradient(1200px 500px at 50% -10%, #e4edf8 0%, #f0f4f8 60%);
+}
+
+.stApp:has(.pp-dash) .block-container {
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.pp-hero {
+    margin-bottom: 1.75rem;
+}
+
+.pp-brand {
+    margin: 0 0 0.5rem;
+    color: #4b81b8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.pp-hero h1 {
+    margin: 0 0 0.6rem;
+    padding: 0;
+    color: var(--navy);
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+.pp-hero p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.pp-notice {
+    margin-bottom: 2rem;
+    padding: 0.9rem 1.1rem;
+    border-left: 3px solid var(--blue);
+    border-radius: 0.2rem 0.4rem 0.4rem 0.2rem;
+    background: #eaf1f7;
+    color: #3b5266;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    box-shadow: 0 1px 2px rgba(15, 35, 65, 0.06);
+}
+
+.pp-notice strong {
+    color: var(--navy);
+}
+
+.pp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+}
+
+@media (max-width: 720px) {
+    .pp-grid { grid-template-columns: 1fr; }
+    .pp-hero h1 { font-size: 2rem; }
+}
+
+/* Card ------------------------------------------------------------------ */
+.pp-card {
+    --mx: 50%;
+    --my: 50%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    border: 1px solid #edf1f6;
+    border-radius: 0.9rem;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 35, 65, 0.06);
+    color: inherit;
+    text-decoration: none;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+/* Soft spotlight that follows the pointer (position set from dashboard.js). */
+.pp-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(320px circle at var(--mx) var(--my), rgba(47, 112, 168, 0.10), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.pp-card:hover,
+.pp-card:focus-visible {
+    transform: translateY(-3px);
+    border-color: #cfe0f0;
+    box-shadow: 0 14px 30px rgba(15, 35, 65, 0.13);
+}
+
+.pp-card:hover::before { opacity: 1; }
+
+.pp-card:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+}
+
+.pp-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.75rem;
+    background: var(--tile);
+    color: var(--navy);
+    overflow: hidden;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.pp-card:hover .pp-icon { transform: scale(1.08) rotate(-3deg); background: #dbe8f3; }
+
+.pp-icon > svg { width: 1.5rem; height: 1.5rem; }
+
+.pp-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0 0 0.75rem;
+    color: var(--navy);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.pp-badge {
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.25rem;
+    background: #ffedd5;
+    color: #b45309;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.pp-summary {
+    flex: 1;
+    margin: 0 0 2rem;
+    color: #5b6a7c;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.pp-action {
+    align-self: flex-start;
+    padding: 0.6rem 1.25rem;
+    border-radius: 0.5rem;
+    background: var(--blue);
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background 0.2s ease, padding-right 0.2s ease;
+}
+
+.pp-card:hover .pp-action { background: var(--blue-dark); padding-right: 1.6rem; }
+
+/* Entrance: JS adds .pp-in as each card scrolls into view. Without JS the cards just show. */
+.pp-js .pp-card,
+.pp-js .pp-hero,
+.pp-js .pp-notice {
+    opacity: 0;
+    transform: translateY(14px);
+}
+
+.pp-js .pp-in {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pp-js .pp-card.pp-in:hover { transform: translateY(-3px); }
+
+/* Animated Sales Reconciliation logo: two documents slide together, merge, and get a check. */
+.pp-logo {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    --anim: 4s;
+}
+
+.pp-logo svg {
+    position: absolute;
+    inset: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    transform-origin: center;
+}
+
+.pp-doc-left   { animation: pp-left  var(--anim) cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.pp-doc-right  { animation: pp-right var(--anim) cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.pp-doc-merged { animation: pp-merge var(--anim) cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.pp-check      { animation: pp-draw  var(--anim) ease-out infinite; stroke: #16a34a; }
+
+/* Hovering the card speeds the loop up; clicking the logo replays it (see dashboard.js). */
+.pp-card:hover .pp-logo { --anim: 2.2s; }
+
+@keyframes pp-left {
+    0%, 5%   { transform: translateX(-15px) scale(0.8); opacity: 0; }
+    15%, 30% { transform: translateX(-4px) scale(0.8); opacity: 1; }
+    31%, 100% { transform: translateX(-4px) scale(0.8); opacity: 0; }
+}
+
+@keyframes pp-right {
+    0%, 5%   { transform: translateX(15px) scale(0.8); opacity: 0; }
+    15%, 30% { transform: translateX(4px) scale(0.8); opacity: 1; }
+    31%, 100% { transform: translateX(4px) scale(0.8); opacity: 0; }
+}
+
+@keyframes pp-merge {
+    0%, 30%  { transform: scale(0.5); opacity: 0; }
+    35%      { transform: scale(1.1); opacity: 1; }
+    40%, 85% { transform: scale(1); opacity: 1; }
+    95%, 100% { transform: scale(0.8); opacity: 0; }
+}
+
+@keyframes pp-draw {
+    0%, 40%  { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; }
+    45%, 85% { stroke-dashoffset: 0; opacity: 1; }
+    95%, 100% { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pp-card, .pp-icon, .pp-action, .pp-card::before { transition: none; }
+    .pp-js .pp-card, .pp-js .pp-hero, .pp-js .pp-notice { opacity: 1; transform: none; }
+    .pp-doc-left, .pp-doc-right { animation: none; opacity: 0; }
+    .pp-doc-merged { animation: none; opacity: 1; transform: none; }
+    .pp-check { animation: none; stroke-dasharray: none; opacity: 1; }
+}

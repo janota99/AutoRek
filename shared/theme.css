@@ -7,28 +7,31 @@
     padding-top: 3rem !important;
 }
 
-/* Dashboard */
-.suite-hero h1 {
-    margin-bottom: 0.25rem;
-    color: #19365d;
+/* Sidebar logo: span the sidebar's content width, so its left and right edges line up with the
+   sidebar's widgets. The collapse (<<) button, which only appears on hover, floats over the
+   sidebar's top-right corner instead of taking a share of the logo's row. */
+[data-testid="stSidebarHeader"] {
+    position: relative;
+    height: auto !important;
+    padding: 1.75rem 0 0.25rem;  /* clears the collapse button above the logo */
 }
 
-.suite-hero p {
-    max-width: 46rem;
-    color: #475569;
-    font-size: 1.05rem;
+[data-testid="stSidebarHeader"] [data-testid="stLogoLink"] {
+    width: 100%;
+    height: auto !important;
 }
 
-.suite-card-title {
-    margin: 0 0 0.35rem;
-    color: #19365d;
-    font-size: 1.2rem;
-    font-weight: 700;
+[data-testid="stSidebarLogo"] {
+    width: 100%;
+    height: auto !important;
+    max-width: none !important;
+    max-height: none !important;
 }
 
-.suite-card-summary {
-    min-height: 4.5rem;
-    color: #475569;
-    font-size: 0.95rem;
-    line-height: 1.5;
+[data-testid="stSidebarCollapseButton"] {
+    position: absolute;
+    top: 0;
+    right: -1.25rem;
 }
+
+/* The Dashboard is styled by apps/dashboard.css (it is one HTML block, not Streamlit widgets). */
