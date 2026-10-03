@@ -50,10 +50,17 @@
     return (parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '')).toUpperCase();
   }
 
-  // Keep the strip just left of Streamlit's own menu so it never covers it.
+  // Keep the strip just left of Streamlit's own toolbar (Share, star, edit, menu) so it never covers it.
+  // Use the leftmost control right of the navigation links; Share and star can mount after the strip does (re-placed every second below).
   function place(banner) {
-    var menu = document.querySelector('[data-testid="stMainMenu"]');
-    var right = menu ? window.innerWidth - menu.getBoundingClientRect().left + 8 : 16;
+    var left = Infinity;
+    document.querySelectorAll('[data-testid="stToolbar"] button, [data-testid="stToolbar"] a')
+      .forEach(function (el) {
+        if (el.closest('[data-testid^="stTopNav"], [data-testid="stHeaderLogo"]')) return;
+        var r = el.getBoundingClientRect();
+        if (r.width > 0) left = Math.min(left, r.left);
+      });
+    var right = isFinite(left) ? window.innerWidth - left + 16 : 16;
     banner.style.setProperty('--pp-sb-right', Math.max(16, right) + 'px');
   }
 
@@ -172,6 +179,11 @@
   });
   window.addEventListener('focus', render);
   window.addEventListener('resize', render);
+  // Streamlit mounts and removes toolbar controls (Deploy, Share, star) on its own schedule: keep the strip clear of them.
+  setInterval(function () {
+    var banner = document.querySelector('.pp-suite-banner');
+    if (banner) place(banner);
+  }, 1000);
   setInterval(render, 60000);
 
   window.ppSuiteBanner = { render: render };

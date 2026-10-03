@@ -13,6 +13,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from apps import sales_page
 from shared.layout import APPS
 
 _HERE = Path(__file__).resolve().parent
@@ -91,4 +92,12 @@ page = (
     f"<script>window.PP_ICONS = {_icons_json()};\n"
     f"{(_HERE / 'dashboard.js').read_text(encoding='utf-8')}</script>"
 )
+if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
+    sales_page.render()
+    st.stop()
+
 st.html(page, unsafe_allow_javascript=True)
+# The only way into the sales page: it is not a registered page, so it has no URL or nav entry.
+if st.button("See Pricing and Features", icon=":material/sell:", key="pp-open-pricing", type="primary"):
+    st.session_state[sales_page.VIEW_KEY] = sales_page.PRICING_VIEW
+    st.rerun()

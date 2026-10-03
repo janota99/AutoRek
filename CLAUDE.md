@@ -10,6 +10,7 @@ tools for a bottling/packaging operation behind a shared top navigation bar:
 | Sales Reconciliation (`/recon`) | `apps/recon/` | Matches QuickBooks sales to Infinium; builds the reconciliation workpaper. |
 | Sales Tax Review (`/sales-tax`) | `apps/sales_tax/` | VBA-macro port: transaction cleanup against a vendor mapping and trial balance, plus vendor-list reconciliation. |
 | Invoice Lifecycle Hub (`/invoice-hub`) | `apps/invoice_hub/` | Static HTML/JS prototype of an Outlook invoice tracker, embedded as a Streamlit component. Its page has two tabs: Service overview and My Dashboard (the signed-in person's invoice workspace). |
+| Sales page (no URL) | `apps/sales_page.py` | Three-tier pricing page reachable only from the Dashboard's "See Pricing and Features" button (session flag, not a registered page). Placeholder prices; no payment processing. |
 | Reviews & Feedback (`/feedback`) | `apps/feedback.py` | Navigation-bar page (not a Dashboard card): the hub's reviews and feedback form, embedded. |
 
 The audience is an accountant/inventory controller, not a developer. Accuracy,

@@ -12,6 +12,7 @@ streamlit run app.py
                             st.logo, theme injection, and the account strip (st.html + shared/suite_banner.js)
   shared/theme.css          suite chrome (incl. the account strip, larger captions/labels); injected before each app's own CSS
   apps/dashboard.py         landing page: one card per APPS entry (one st.html block)
+  apps/sales_page.py        Sales page (3 purchase tiers); NOT a registered page, drawn by the Dashboard only
   apps/feedback.py          Reviews & Feedback page: the Invoice Hub's feedback.html, embedded
   apps/dashboard.css|.js    its styling and behavior (spotlight, entrance, animated Recon logo, client-side nav)
   apps/<pkg>/app.py         one page script per application
@@ -43,6 +44,16 @@ nothing, and every application stays open to anyone. Never describe it as access
   nav overflow so a page link is never covered by the strip.
 - Scripts inlined through `st.html` must not contain `<` followed by a letter, even in a comment:
   Streamlit's sanitizer drops the whole script. `suite_banner.js` avoids `<` entirely.
+
+## Sales page (Dashboard-only)
+
+`apps/sales_page.py` holds the three tiers (Starter, Professional, Enterprise) and their placeholder
+prices (`TIERS`, edit there). It is deliberately **not** passed to `st.navigation`, so it has no URL
+and no navigation-bar entry. The Dashboard's "See Pricing and Features" button sets
+`st.session_state["pp_view"]`; `apps/dashboard.py` then draws the sales page instead of the cards.
+`app.py` clears the flag whenever another page is selected, so a fresh visit, a direct URL, or
+returning from another app lands on the normal Dashboard. Choosing a plan only shows an order
+summary: no payment processor is connected and nothing is charged.
 
 ## Adding an application
 
