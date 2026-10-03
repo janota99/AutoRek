@@ -37,7 +37,7 @@
 .pp-brand {
     margin: 0 0 0.5rem;
     color: #4b81b8;
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -55,8 +55,8 @@
 
 .pp-hero p {
     margin: 0;
-    color: #64748b;
-    font-size: 0.95rem;
+    color: #475569;
+    font-size: 1.05rem;
 }
 
 .pp-stats {
@@ -74,8 +74,8 @@
     border: 1px solid var(--line);
     border-radius: 9999px;
     background: #ffffff;
-    color: #64748b;
-    font-size: 0.85rem;
+    color: #475569;
+    font-size: 0.95rem;
 }
 
 .pp-stat strong { color: var(--navy); font-weight: 600; }
@@ -91,13 +91,13 @@
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     padding: 0.85rem 1rem;
     border: 1px solid #93b4d4;
     border-radius: 0.5rem;
     background: #eaf1f7;
-    color: #334a5f;
-    font-size: 0.95rem;
+    color: #26394d;
+    font-size: 1.02rem;
     font-weight: 500;
     line-height: 1.5;
 }
@@ -136,7 +136,7 @@
 .pp-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 @media (max-width: 720px) {
@@ -150,7 +150,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    padding: 2rem;
+    padding: 1.5rem 1.75rem;
     border: 1px solid #edf1f6;
     border-radius: 0.9rem;
     background: #ffffff;
@@ -194,7 +194,7 @@
     justify-content: center;
     width: 3rem;
     height: 3rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     border-radius: 12px;
     --bg: var(--tile);
     background: var(--bg);
@@ -212,9 +212,9 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.5rem;
     color: var(--navy);
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     font-weight: 700;
 }
 
@@ -223,7 +223,7 @@
     border-radius: 0.25rem;
     background: #ffedd5;
     color: #b45309;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -231,10 +231,10 @@
 
 .pp-summary {
     flex: 1;
-    margin: 0 0 2rem;
-    color: #5b6a7c;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    margin: 0 0 1.1rem;
+    color: #2f3e51;
+    font-size: 1.02rem;
+    line-height: 1.5;
 }
 
 .pp-action {
@@ -243,8 +243,8 @@
     border-radius: 0.5rem;
     background: var(--blue);
     color: #ffffff;
-    font-size: 0.95rem;
-    font-weight: 500;
+    font-size: 1.02rem;
+    font-weight: 600;
     transition: background 0.2s ease, padding-right 0.2s ease;
 }
 
@@ -373,4 +373,10 @@
     .pp-doc-left, .pp-doc-right { animation: none; opacity: 0; }
     .pp-doc-merged { animation: none; opacity: 1; transform: none; }
     .pp-check { animation: none; stroke-dasharray: none; opacity: 1; }
+}
+
+/* Navigation bar links: a little larger on the Dashboard, to sit better against the titles. */
+.stApp:has(.pp-dash) [data-testid="stHeader"] a,
+.stApp:has(.pp-dash) [data-testid="stHeader"] nav button {
+    font-size: 1rem;
 }

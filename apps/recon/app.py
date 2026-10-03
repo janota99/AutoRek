@@ -154,8 +154,7 @@ def main() -> None:
             )
             render_source_status(
                 inf_file.name if inf_file else None,
-                "Awaiting Infinium file" if qb_file else "Available after QuickBooks",
-                pending=not qb_file and not inf_file,
+                "Awaiting Infinium file",
             )
             render_uploaded_dataset_summary(inf_file, "INF", "inf_sheet")
 
@@ -236,6 +235,26 @@ def main() -> None:
     st.sidebar.markdown("## Configuration Settings")
 
     if qb_file is None or inf_file is None:
+        # Settings that don't depend on the files are usable before the upload. They are remembered
+        # under plain (non-widget) keys because Streamlit drops the state of widgets that are not
+        # rendered, and the post-upload controls below start from these values.
+        st.sidebar.markdown("### Reconciliation settings")
+        st.session_state["recon_fiscal_year"] = int(st.sidebar.number_input(
+            "Fiscal year", min_value=1900, max_value=2199,
+            value=st.session_state.get("recon_fiscal_year", datetime.now(CENTRAL_TIMEZONE).year),
+            step=1, key="pre_fiscal_year",
+            help="Optional input used only for fiscal period identification. This field never restricts matching.",
+        ))
+        pre_period = st.sidebar.selectbox(
+            "Current fiscal period", options=[None, *range(1, 14)],
+            index=st.session_state.get("recon_fiscal_period_index", min(datetime.now(CENTRAL_TIMEZONE).month, 13)),
+            format_func=lambda value: "All periods" if value is None else f"Period {value:02d}",
+            key="pre_fiscal_period",
+            help="Limits the Product Aggregate Summary to this period. Transaction matching stays unrestricted.",
+        )
+        st.session_state["recon_fiscal_period_index"] = 0 if pre_period is None else pre_period
+        st.sidebar.caption("Column mapping and worksheet choices appear here once both files are uploaded.")
+
         st.session_state.pop("reconciliation_result", None)
         clear_prepared_workbooks()
 
@@ -247,31 +266,21 @@ def main() -> None:
                 reconciliation_complete=False,
             )
 
-        next_source = "Infinium" if qb_file else "QuickBooks"
-        render_notice_panel(
-            "Action required",
-            f"Upload the Panhandle Pure {next_source} sales export to continue. Files are processed within the active application session.",
-            tone="info",
-            icon="→",
-            contained=True,
+        st.markdown(
+            '<p class="matching-summary">Amounts must agree exactly to the signed cent. '
+            'Ambiguous matches are never forced: they stay unresolved and available for review.</p>',
+            unsafe_allow_html=True,
         )
-
-        render_notice_panel(
-            "Automatic matching sequence",
-            (
-                '<ol class="notice-rule-list">'
-                '<li>Unique PO + invoice + exact signed amount</li>'
-                '<li>Unique PO + exact signed amount</li>'
-                '<li>Unique invoice + exact signed amount</li>'
-                '<li>Unique grouped aggregate by PO and/or invoice after one-to-one matching</li>'
-                '</ol>'
-                '<p class="notice-footnote">Amounts must agree exactly to the signed cent. Ambiguous combinations and invalid values remain unresolved for review.</p>'
-            ),
-            tone="success",
-            icon="✓",
-            body_is_html=True,
-            contained=True,
-        )
+        with st.expander("How matching works"):
+            st.markdown(
+                "Matching runs in this order, and each rule needs the amounts to agree exactly:\n\n"
+                "1. Unique PO + invoice + exact signed amount\n"
+                "2. Unique PO + exact signed amount\n"
+                "3. Unique invoice + exact signed amount\n"
+                "4. Unique grouped aggregate by PO and/or invoice, after one-to-one matching\n\n"
+                "Ambiguous combinations and invalid values remain unresolved for review. "
+                "Files are processed within the active application session."
+            )
         return
 
     # The guard above guarantees that both required UploadedFile objects are
@@ -478,13 +487,13 @@ def main() -> None:
     current_central = datetime.now(CENTRAL_TIMEZONE)
     fiscal_year = int(st.sidebar.number_input(
         "Fiscal year", min_value=1900, max_value=2199,
-        value=current_central.year, step=1,
+        value=st.session_state.get("recon_fiscal_year", current_central.year), step=1,
         help="Optional input used only for fiscal period identification. This field never restricts matching.",
         key=f"fiscal_year_{key_suffix}",
     ))
     fiscal_period = st.sidebar.selectbox(
         "Current fiscal period", options=[None, *range(1, 14)],
-        index=min(current_central.month, 13),
+        index=st.session_state.get("recon_fiscal_period_index", min(current_central.month, 13)),
         format_func=lambda value: "All periods" if value is None else f"Period {value:02d}",
         help=(
             "When selected, the Product Aggregate Summary includes only primary QuickBooks "
@@ -492,6 +501,8 @@ def main() -> None:
         ),
         key=f"fiscal_period_{key_suffix}",
     )
+    st.session_state["recon_fiscal_year"] = fiscal_year
+    st.session_state["recon_fiscal_period_index"] = 0 if fiscal_period is None else fiscal_period
 
     if fiscal_period is not None and len(qb_raw.columns):
         # The primary QuickBooks first column is the authoritative fiscal-period

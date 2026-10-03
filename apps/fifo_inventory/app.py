@@ -34,8 +34,13 @@ from apps.fifo_inventory.fifo_calculations import (
     stage_batch_calculation, summarize_control_counts
 )
 
+from apps.fifo_inventory.sample_data import (
+    build_master_grid_sample, build_receipts_sample, sample_token,
+)
+
 from apps.fifo_inventory.sidebar import render_sidebar, render_history
 from apps.fifo_inventory.insights import render_insights
+from shared.sample_data import sample_downloads, sample_uploader
 
 # ==========================================
 # UI LAYOUT & INGESTION
@@ -145,11 +150,24 @@ with tab_processing:
                     file_name="FIFO_Upload_Templates.zip", mime="application/zip",
                 )
 
+        # A sample is built from the layers as they are now, so it is rebuilt when the period, the
+        # as-of date, or the layers change.
+        _sample_token = sample_token(fiscal_year, current_period, period_end_date, layer_store)
+
+        def _reset_master_grid_state():
+            """A sample's numbers were merged into the session's Master Grid; drop them with it."""
+            st.session_state['master_grid'] = _blank_master_grid()
+            for stale in ('master_grid_upload_sig', 'master_grid_upload_debug',
+                          'master_grid_editor_widget', 'staged_fifo_run'):
+                st.session_state.pop(stale, None)
+
         upload_col1, upload_col2 = st.columns(2)
         with upload_col1:
             st.markdown("**Step 1: Ending Inventory**")
-            master_upload = st.file_uploader(
-                "Upload Ending Inventory Workbook", type=['csv', 'xlsx'], key='master_grid_upload'
+            master_upload, master_is_sample = sample_uploader(
+                "Upload Ending Inventory Workbook", key='master_grid_upload', types=['csv', 'xlsx'],
+                sample_builder=lambda: build_master_grid_sample(layer_store, fiscal_year, current_period, period_end_date),
+                cache_token=_sample_token, on_clear=_reset_master_grid_state, label_visibility="visible",
             )
             master_sheet_choice = None
             if master_upload is not None:
@@ -167,8 +185,10 @@ with tab_processing:
                     master_sheet_choice = master_sheets[0]
         with upload_col2:
             st.markdown("**Step 2: Current Period Receipts**")
-            upload_receipts = st.file_uploader(
-                "Upload Current Receipts", type=['csv', 'xlsx'], key='receipts_upload'
+            upload_receipts, receipts_is_sample = sample_uploader(
+                "Upload Current Receipts", key='receipts_upload', types=['csv', 'xlsx'],
+                sample_builder=lambda: build_receipts_sample(layer_store, fiscal_year, current_period, period_end_date),
+                cache_token=_sample_token, label_visibility="visible",
             )
             st.caption("PRICE/AMOUNT is read as the receipt's total value, not a unit rate.")
             receipts_sheet_choice = None
@@ -185,6 +205,18 @@ with tab_processing:
                     )
                 elif receipts_sheets:
                     receipts_sheet_choice = receipts_sheets[0]
+        sample_downloads([
+            ("Master Grid sample (.xlsx)", f"fifo_master_grid_P{current_period:02d}.xlsx",
+             build_master_grid_sample(layer_store, fiscal_year, current_period, period_end_date)[1]),
+            ("Receipts sample (.xlsx)", f"fifo_receipts_P{current_period:02d}.xlsx",
+             build_receipts_sample(layer_store, fiscal_year, current_period, period_end_date)[1]),
+        ], key="fifo")
+        if master_is_sample or receipts_is_sample:
+            st.warning(
+                "Demo data is loaded. The preview works as usual, but Close & Commit is disabled so demo "
+                "numbers can never become the official FIFO layers. Clear the sample files to close a period."
+            )
+
     with st.container(border=True):
         st.subheader(":material/table_chart: Master Inventory Quantities")
         st.caption("Products are matched by Alias.")
@@ -476,7 +508,8 @@ with tab_processing:
 
             commit_blocked = bool(
                 stale_preview or already_closed or sequence_error or staged['input_errors'] or
-                staged['processing_errors'] or counts['FAIL'] > 0 or not review_ack
+                staged['processing_errors'] or counts['FAIL'] > 0 or not review_ack or
+                master_is_sample or receipts_is_sample
             )
             commit_col, discard_col = st.columns(2)
             with commit_col:

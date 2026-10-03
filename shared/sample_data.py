@@ -11,7 +11,7 @@ from __future__ import annotations
 import io
 import mimetypes
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 import streamlit as st
 
@@ -24,12 +24,12 @@ class SampleUpload(io.BytesIO):
     """A sample file that quacks like Streamlit's UploadedFile (name, size, type, file_id,
     getvalue), so downstream code cannot tell it from a real upload."""
 
-    def __init__(self, path: Path):
-        super().__init__(path.read_bytes())
-        self.name = f"Sample - {path.name}"
-        self.size = len(self.getvalue())
-        self.type = mimetypes.guess_type(path.name)[0] or XLSX_MIME
-        self.file_id = f"sample:{path.name}"
+    def __init__(self, filename: str, data: bytes):
+        super().__init__(data)
+        self.name = f"Sample - {filename}"
+        self.size = len(data)
+        self.type = mimetypes.guess_type(filename)[0] or XLSX_MIME
+        self.file_id = f"sample:{filename}"
         self.is_sample = True
 
 
@@ -37,58 +37,90 @@ def _flag(key: str) -> str:
     return f"_sample_loaded_{key}"
 
 
+def _sample_bytes(key: str, sample_file, sample_builder, cache_token):
+    """(filename, bytes) for a sample. A built sample is cached in session state under `cache_token`,
+    so its bytes (and therefore the file digest downstream code keys on) stay identical across
+    reruns; it is rebuilt only when the token changes."""
+    if sample_builder is None:
+        return sample_file, (SAMPLE_DIR / sample_file).read_bytes()
+    slot = f"_sample_bytes_{key}"
+    cached = st.session_state.get(slot)
+    if cached is None or cached[0] != cache_token:
+        filename, data = sample_builder()
+        cached = (cache_token, filename, data)
+        st.session_state[slot] = cached
+    return cached[1], cached[2]
+
+
 def sample_uploader(
     label: str,
     *,
     key: str,
-    sample_file: str,
     types: list[str],
+    sample_file: Optional[str] = None,
+    sample_builder: Optional[Callable[[], tuple[str, bytes]]] = None,
+    cache_token: Optional[str] = None,
+    on_clear: Optional[Callable[[], None]] = None,
     help: Optional[str] = None,
+    label_visibility: str = "collapsed",
     show_badge: bool = True,
 ):
     """st.file_uploader plus a "Use Sample Data" button.
 
-    Returns (file, is_sample). `file` is the real upload if there is one, else the sample
-    when it has been loaded, else None. A real upload clears the sample.
+    The sample is either a file in sample_data/ (`sample_file`) or built on demand
+    (`sample_builder` returning (filename, bytes), with `cache_token` naming its inputs).
+    Returns (file, is_sample). `file` is the real upload if there is one, else the sample when it
+    has been loaded, else None. A real upload replaces the sample. `on_clear` runs whenever a
+    sample is cleared or replaced, for callers whose page state absorbed the sample's contents.
     """
     uploaded = st.file_uploader(
-        label, type=types, key=key, help=help, label_visibility="collapsed"
+        label, type=types, key=key, help=help, label_visibility=label_visibility
     )
     flag = _flag(key)
-    if uploaded is not None:
+
+    def clear():
         st.session_state.pop(flag, None)
+        if on_clear is not None:
+            on_clear()
+
+    if uploaded is not None:
+        if st.session_state.get(flag):
+            clear()
         return uploaded, False
 
     if st.session_state.get(flag):
-        sample = SampleUpload(SAMPLE_DIR / sample_file)
+        filename, data = _sample_bytes(key, sample_file, sample_builder, cache_token)
+        sample = SampleUpload(filename, data)
         if show_badge:
             st.markdown(
-                f"<span class='sample-badge'>&#9679; Sample Loaded</span> "
-                f"<span class='sample-badge-name'>{sample.name}</span>",
+                f"<span class='sample-badge'>&#9679; Demo data</span> "
+                f"<span class='sample-badge-name'>Sample loaded: {sample.name}</span>",
                 unsafe_allow_html=True,
             )
         st.button(
             "Clear sample", key=f"{key}_clear_sample", type="secondary", width="content",
-            icon=":material/close:", on_click=st.session_state.pop, args=(flag, None),
+            icon=":material/close:", on_click=clear,
         )
         return sample, True
 
     st.button(
         "Use Sample Data", key=f"{key}_use_sample", type="secondary", width="content",
-        icon=":material/science:", help=f"Loads the synthetic file {sample_file}.",
+        icon=":material/science:", help="Loads a synthetic demo file in place of an upload.",
         on_click=st.session_state.__setitem__, args=(flag, True),
     )
     return None, False
 
 
-def sample_downloads(files: Iterable[tuple[str, str]], *, key: str) -> None:
-    """A "Download Sample Templates" drawer. `files` is (button label, filename in sample_data/)."""
+def sample_downloads(files: Iterable[tuple], *, key: str) -> None:
+    """A "Download Sample Templates" drawer. Each entry is (button label, filename in sample_data/),
+    or (button label, filename, bytes) for a sample built on the fly."""
     with st.expander("Download Sample Templates"):
         st.caption("Synthetic files in the expected layout, for trying the tool out. They contain no real data.")
-        for i, (label, filename) in enumerate(files):
-            path = SAMPLE_DIR / filename
+        for i, entry in enumerate(files):
+            label, filename = entry[0], entry[1]
+            data = entry[2] if len(entry) > 2 else (SAMPLE_DIR / filename).read_bytes()
             st.download_button(
-                label, data=path.read_bytes(), file_name=filename,
+                label, data=data, file_name=filename,
                 mime=mimetypes.guess_type(filename)[0] or XLSX_MIME,
                 key=f"{key}_dl_{i}", icon=":material/download:", width="content",
             )

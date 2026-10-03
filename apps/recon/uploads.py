@@ -10,14 +10,18 @@ import pandas as pd
 import streamlit as st
 
 from .ingestion import (
+    INF_COLUMN_PATTERNS,
+    QB_COLUMN_PATTERNS,
     build_source_validation_report,
     detect_header_row,
     file_sha256,
     filter_qb_subtotal_rows,
     fiscal_period_column_profile,
+    infer_column,
     list_source_sheets,
     read_source_file,
 )
+from .matching import parse_amount_cents
 
 
 def render_dataset_summary(summary: dict[str, Any]) -> None:
@@ -37,13 +41,34 @@ def render_dataset_summary(summary: dict[str, Any]) -> None:
         date_value = date_start if date_start == date_end else f"{date_start}–{date_end}"
         items.append(("Dates", date_value))
 
-    item_markup = "".join(
+    if summary.get("amount_total_cents") is not None:
+        cents = int(summary["amount_total_cents"])
+        sign = "-" if cents < 0 else ""
+        items.append(("Signed total", f"{sign}${abs(cents) / 100:,.2f}"))
+
+    missing = summary.get("missing_fields") or []
+    found_label = "Required fields"
+    status_markup = (
+        f'<span class="dataset-summary-item dataset-summary-warn">'
+        f'<span class="dataset-summary-label">Missing</span>'
+        f'<strong>{html.escape(", ".join(missing))}</strong></span>'
+        if missing else
+        f'<span class="dataset-summary-item dataset-summary-ok">'
+        f'<span class="dataset-summary-label">{found_label}</span><strong>&#10003; Found</strong></span>'
+    )
+    filename = summary.get("filename")
+    name_markup = (
+        f'<span class="dataset-summary-item"><span class="dataset-summary-label">File</span>'
+        f'<strong>{html.escape(str(filename))}</strong></span>' if filename else ""
+    )
+
+    item_markup = name_markup + "".join(
         f'<span class="dataset-summary-item">'
         f'<span class="dataset-summary-label">{html.escape(label)}</span>'
         f'<strong>{html.escape(value)}</strong>'
         f'</span>'
         for label, value in items
-    )
+    ) + status_markup
     st.markdown(
         f'<div class="dataset-summary" aria-label="Uploaded dataset summary">'
         f'{item_markup}</div>',
@@ -108,9 +133,36 @@ def cached_dataset_summary(
         "worksheet": worksheet if len(sheets) > 0 else None,
     }
 
-    for column in frame.columns:
-        if "date" not in str(column).strip().casefold():
-            continue
+    summary["filename"] = filename
+
+    # Required fields (PO, invoice, amount), found the same way the mapping panel's defaults are.
+    patterns = QB_COLUMN_PATTERNS if source == "QB" else INF_COLUMN_PATTERNS
+    columns = list(frame.columns)
+    found = {field: infer_column(columns, patterns[field]) for field in ("po", "invoice", "amount")}
+    labels = {"po": "PO", "invoice": "Invoice", "amount": "Amount"}
+    summary["missing_fields"] = [labels[f] for f, col in found.items() if col is None]
+
+    # Signed total of the amount column. QuickBooks subtotal rows are dropped first (the same
+    # filter the reconciliation applies), or the total would double count. Display only.
+    if found["amount"]:
+        try:
+            detail = frame
+            if source == "QB":
+                detail, _ = filter_qb_subtotal_rows(
+                    frame, {"amount": found["amount"], "quantity": infer_column(columns, QB_COLUMN_PATTERNS["quantity"])}
+                )
+            cents = detail[found["amount"]].map(parse_amount_cents).dropna()
+            summary["amount_total_cents"] = int(cents.sum())
+        except Exception:
+            pass
+
+    date_columns = [
+        column for column in columns if "date" in str(column).strip().casefold()
+    ]
+    inferred_date = infer_column(columns, INF_COLUMN_PATTERNS["date"]) if source != "QB" else None
+    if inferred_date and inferred_date not in date_columns:
+        date_columns.append(inferred_date)
+    for column in date_columns:
         parsed_dates = pd.to_datetime(frame[column], errors="coerce")
         parsed_dates = parsed_dates.dropna()
         if parsed_dates.empty:

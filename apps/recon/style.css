@@ -25,7 +25,7 @@
     --rec-shadow-hover: 0 12px 30px rgba(20, 32, 51, 0.11);
     /* The upload cards' row. The title, stepper, and pre-upload callouts share its left edge,
        and the stepper and callouts its right edge, so the page reads as one column. */
-    --rec-content-width: 1120px;
+    --rec-content-width: 1240px;
 }
 
 /* Canvas and global typography */
@@ -203,7 +203,7 @@ p {
 
 .stepper-title {
     color: var(--rec-text-muted) !important;
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.25;
 }
@@ -216,7 +216,7 @@ p {
 .stepper-status {
     margin-top: 0.22rem;
     color: var(--rec-text-muted) !important;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 500;
     line-height: 1.3;
 }
@@ -292,7 +292,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
 
 .upload-source-context {
     color: var(--rec-text-muted) !important;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 0.075em;
     line-height: 1.2;
@@ -302,7 +302,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
 .upload-source-title {
     margin-top: 0.16rem;
     color: var(--rec-navy) !important;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 750;
     line-height: 1.25;
 }
@@ -311,7 +311,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     flex: 0 0 auto;
     padding: 0.28rem 0.5rem;
     border-radius: 999px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 750;
     letter-spacing: 0.035em;
 }
@@ -330,7 +330,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     min-height: 2.6rem;
     margin: 0 0 0.75rem !important;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.9rem !important;
+    font-size: 1rem !important;
     line-height: 1.5 !important;
 }
 
@@ -338,7 +338,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     max-width: 820px;
     margin: 0 0 1rem !important;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.91rem !important;
+    font-size: 1rem !important;
     line-height: 1.5 !important;
 }
 
@@ -360,7 +360,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     border-radius: 7px;
     background: var(--rec-surface-soft);
     color: var(--rec-navy) !important;
-    font-size: 0.875rem !important;
+    font-size: 0.95rem !important;
     line-height: 1.25;
 }
 
@@ -374,43 +374,79 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
     font-weight: 750;
 }
 
-/* Native Streamlit uploader, unframed: the upload card is the only box, so the drop target has no
-   border or background of its own (no "box within a box"). The whole area still accepts drops. */
+/* Native Streamlit uploader as one clearly bordered drop zone: a single prominent "Choose file"
+   button with a short "or drag and drop" line under it. The native icon and the button's own
+   label are hidden so only one action competes for attention. */
 
 [data-testid="stFileUploader"] {
     margin-top: 0.1rem;
 }
 
 [data-testid="stFileUploaderDropzone"] {
-    padding: 0.35rem 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.55rem !important;
+    padding: 1.4rem 1rem !important;
+    border: 2px dashed #9fb3cc !important;
+    border-radius: 12px !important;
+    background: #f6f9fd !important;
     box-shadow: none !important;
+    transition: border-color 160ms ease, background 160ms ease;
 }
 
-[data-testid="stFileUploaderDropzone"]::before {
-    content: "⇧";
-    display: grid;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    place-items: center;
-    margin-right: 0.8rem;
-    border: 1px solid #d4dce6;
-    border-radius: 9px;
-    background: #ffffff;
-    color: var(--rec-navy);
-    font-size: 1rem;
-    font-weight: 800;
+[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: var(--rec-navy) !important;
+    background: #eef4fb !important;
+}
+
+[data-testid="stFileUploaderDropzone"] svg,
+[data-testid="stFileUploaderDropzoneInstructions"] > svg,
+[data-testid="stFileUploaderDropzone"] [data-testid="stIconMaterial"] {
+    display: none !important;
+}
+
+/* The button comes first, and is the one thing to click. */
+[data-testid="stFileUploaderDropzone"] button {
+    order: -1;
+    min-width: 11rem;
+    padding: 0.6rem 1.4rem !important;
+    border: 1px solid var(--rec-navy) !important;
+    border-radius: 9px !important;
+    background: var(--rec-navy) !important;
+    color: #ffffff !important;
+    font-size: 0 !important;
+    box-shadow: 0 2px 6px rgba(25, 54, 93, 0.25) !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button * {
+    display: none !important;
+}
+
+[data-testid="stFileUploaderDropzone"] button::after {
+    content: "Choose file";
+    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+[data-testid="stFileUploaderDropzone"] button:hover {
+    border-color: var(--rec-navy-hover) !important;
+    background: var(--rec-navy-hover) !important;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"] {
+    align-items: center;
+    text-align: center;
 }
 
 [data-testid="stFileUploaderDropzoneInstructions"]::before {
-    content: "Drag and Drop Files Here";
+    content: "or drag and drop a file here";
     display: block;
-    color: var(--rec-text) !important;
+    color: var(--rec-text-secondary) !important;
     font-size: 0.95rem !important;
-    font-weight: 750 !important;
+    font-weight: 600 !important;
     line-height: 1.35;
 }
 
@@ -420,21 +456,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
 
 [data-testid="stFileUploaderDropzoneInstructions"] small {
     color: var(--rec-text-muted) !important;
-    font-size: 0.8rem !important;
-}
-
-[data-testid="stFileUploaderDropzone"] button {
-    border: 1px solid var(--rec-border-strong) !important;
-    border-radius: 8px !important;
-    background: #ffffff !important;
-    color: var(--rec-navy) !important;
-    font-weight: 700 !important;
-    box-shadow: 0 1px 2px rgba(20, 32, 51, 0.06) !important;
-}
-
-[data-testid="stFileUploaderDropzone"] button:hover {
-    border-color: var(--rec-navy) !important;
-    background: #f8fafc !important;
+    font-size: 0.88rem !important;
 }
 
 /* Once a file is loaded, preserve every uploader action while removing the
@@ -442,21 +464,11 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.upload-source-heading):hove
    hook without coupling the application logic to Streamlit's file-row markup. */
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     [data-testid="stFileUploaderDropzone"] {
-    padding: 0.2rem 0 !important;
+    padding: 0.55rem 1rem !important;
 }
 
 div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
-    [data-testid="stFileUploaderDropzone"]::before {
-    width: 28px;
-    height: 28px;
-    flex-basis: 28px;
-    margin-right: 0.6rem;
-    border-radius: 8px;
-    font-size: 0.9rem;
-}
-
-div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
-    [data-testid="stFileUploaderDropzoneInstructions"] small {
+    [data-testid="stFileUploaderDropzoneInstructions"] {
     display: none;
 }
 
@@ -474,7 +486,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     padding: 0.4rem 0.55rem;
     border-radius: 7px;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.875rem;
+    font-size: 0.97rem;
     font-weight: 600;
     line-height: 1.25;
 }
@@ -580,7 +592,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 
 .notice-title {
     color: var(--rec-text) !important;
-    font-size: 0.95rem;
+    font-size: 1.02rem;
     font-weight: 750;
     line-height: 1.3;
 }
@@ -588,7 +600,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 .notice-body {
     margin-top: 0.25rem;
     color: var(--rec-text-secondary) !important;
-    font-size: 0.9rem;
+    font-size: 0.98rem;
     line-height: 1.5;
 }
 
@@ -884,4 +896,17 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     .upload-source-heading {
         align-items: center;
     }
+}
+
+/* Validation summary chips after an upload, and the short matching statement before one. */
+.dataset-summary-ok { background: var(--rec-green-soft); border-color: #b7dfcf; }
+.dataset-summary-ok strong { color: #116447 !important; }
+.dataset-summary-warn { background: #fdecea; border-color: #f3b9b4; }
+.dataset-summary-warn strong { color: var(--rec-red) !important; }
+.matching-summary {
+    max-width: var(--rec-content-width);
+    margin: 0.4rem 0 0.6rem !important;
+    color: var(--rec-text-secondary) !important;
+    font-size: 1.02rem !important;
+    line-height: 1.5 !important;
 }

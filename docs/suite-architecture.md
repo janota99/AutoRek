@@ -61,8 +61,9 @@ summary: no payment processor is connected and nothing is charged.
 tool's expected layout. `build_samples.py` regenerates them. `shared/sample_data.py` provides
 `sample_uploader` (a file uploader plus a "Use Sample Data" button; a real upload always wins) and
 `sample_downloads` (the "Download Sample Templates" drawer). Wired into Sales Tax (Transaction Cleanup,
-Vendor Reconciliation) and Recon (all four uploads). FIFO is not wired: its samples would have to
-reconcile with the seeded P12 layers. The Sales Tax trial balance is download-only, because the real one is
+Vendor Reconciliation), Recon (all four uploads) and FIFO. FIFO's samples are not files: they are built
+from the layers in the session (`apps/fifo_inventory/sample_data.py`) so they reconcile, and Close & Commit
+is disabled while one is loaded, so demo numbers can never become the official layers. The Sales Tax trial balance is download-only, because the real one is
 a shared on-disk cache. Recon reads QuickBooks column A as the fiscal period, so its sample keeps one there.
 
 ## Adding an application

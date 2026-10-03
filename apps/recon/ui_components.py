@@ -265,14 +265,11 @@ def render_ingestion_flow(
     reconciliation_complete: bool,
     source_validation_failed: bool = False,
 ) -> None:
+    # The two uploads are independent, so either can come first and both read as "waiting" until loaded.
     step1_class = "complete" if qb_loaded else "active"
-    step1_status = "Upload confirmed" if qb_loaded else "Upload QuickBooks first"
-    if inf_loaded:
-        step2_class, step2_status = "complete", "Upload confirmed"
-    elif qb_loaded:
-        step2_class, step2_status = "active", "Upload Infinium next"
-    else:
-        step2_class, step2_status = "upcoming", "Available after QuickBooks"
+    step1_status = "Upload confirmed" if qb_loaded else "Waiting for upload"
+    step2_class = "complete" if inf_loaded else "active"
+    step2_status = "Upload confirmed" if inf_loaded else "Waiting for upload"
     if reconciliation_complete:
         step3_class, step3_status = "complete", "Controls validated"
     elif qb_loaded and inf_loaded and source_validation_failed:
