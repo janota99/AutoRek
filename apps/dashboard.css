@@ -380,3 +380,8 @@
 .stApp:has(.pp-dash) [data-testid="stHeader"] nav button {
     font-size: 1rem;
 }
+
+/* Logo: larger on the Dashboard, where it is the only branding, still sitting in the top-left corner. */
+.stApp:has(.pp-dash) [data-testid="stHeaderLogo"] {
+    height: 3.4rem !important;
+}
