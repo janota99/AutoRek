@@ -19,6 +19,8 @@ from typing import Any, Optional
 import pandas as pd
 import streamlit as st
 
+from shared.status import status_badge, status_styler
+
 from .matching import QB_ID, ReconciliationResult, numeric_sum
 from .utils import format_currency
 from .workpapers import (
@@ -431,7 +433,7 @@ def render_controls_table(controls: pd.DataFrame) -> None:
             f'<td class="num">{fmt(check, record["Expected"])}</td>'
             f'<td class="num">{fmt(check, record["Actual"])}</td>'
             f'<td class="num">{fmt(check, record["Difference"])}</td>'
-            f'<td class="status {"pass" if status == "PASS" else "fail"}">{html.escape(status)}</td>'
+            f"<td>{status_badge(status)}</td>"
             "</tr>"
         )
     st.markdown(
@@ -603,7 +605,7 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
         with cols[3]:
             render_kpi(
                 "Automated controls",
-                control_status,
+                status_badge(control_status),
                 f"{len(result.controls)} required controls",
             )
         review_holds = int(metrics.get("Final Disposition - Review Hold Rows", 0))
@@ -687,9 +689,12 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
                 height=260,
             )
         st.markdown("#### Final disposition of every QuickBooks row")
-        st.dataframe(
+        disposition_summary = (
             result.qb_dispositions.groupby("Final Disposition", as_index=False)
-            .agg(Rows=("QBO Row ID", "count"), Amount=("Amount", "sum")),
+            .agg(Rows=("QBO Row ID", "count"), Amount=("Amount", "sum"))
+        )
+        st.dataframe(
+            status_styler(disposition_summary, ["Final Disposition"], formats={"Rows": "{:,}", "Amount": "{:,.2f}"}),
             width="stretch", hide_index=True,
         )
 

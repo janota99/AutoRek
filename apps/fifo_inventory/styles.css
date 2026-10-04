@@ -44,13 +44,66 @@ div[data-testid="stDownloadButton"] button:hover {
     border-color: #1e40af;
 }
 
-/* Sidebar logo: about half the old size, centered, with room below. */
-[data-testid="stSidebarHeader"] { padding-bottom: 1.5rem; }
-[data-testid="stSidebarHeader"] [data-testid="stLogoLink"] {
-    display: flex;
-    justify-content: center;
+/* ---- Navy sidebar: the same blue as the Sales Reconciliation sidebar. It is lighter than the logo's own
+   navy, so the logo reads as a badge instead of dissolving into the sidebar. ---- */
+[data-testid="stSidebar"] { border-right: 1px solid #102946; }
+
+[data-testid="stSidebar"],
+[data-testid="stSidebar"] > div:first-child {
+    background-color: var(--pp-sidebar-bg);
 }
-[data-testid="stSidebarLogo"] {
-    width: 55% !important;
-    margin: 0 auto;
+
+/* Text sitting directly on the navy. Alerts, inputs, the uploader and buttons keep their own
+   light backgrounds, so they are deliberately not in this list. */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] h4,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSidebar"] [data-testid="stCheckbox"] p,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] > p,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary span {
+    color: #edf3fa;
+}
+
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #ffffff;
+}
+
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+    color: #c8d4e3;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
+    fill: #ffffff;
+    color: #ffffff;
+}
+
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.045);
+}
+
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Inline code in captions (snapshot folder paths) needs its own legible chip on the navy. */
+[data-testid="stSidebar"] code {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+/* Buttons keep a light face with dark text, like the Sales Tax sidebar. */
+[data-testid="stSidebar"] button[kind="secondary"],
+[data-testid="stSidebar"] button[kind="secondary"] p {
+    color: #1e1e1e;
+}
+
+/* The navy download button would disappear into the navy sidebar, so give it a visible edge. */
+[data-testid="stSidebar"] div[data-testid="stDownloadButton"] button {
+    border: 1px solid rgba(255, 255, 255, 0.55);
 }

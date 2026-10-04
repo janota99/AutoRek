@@ -834,18 +834,18 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 .rec-review-status {
     margin: 0.2rem 0 1rem;
     padding: 0.6rem 0.9rem;
-    border: 1px solid #e8c77a;
+    border: 1px solid var(--pp-status-review-border);
     border-left-width: 4px;
     border-radius: 9px;
-    background: #fff8e6;
-    color: #5c4300;
+    background: var(--pp-status-review-bg);
+    color: var(--pp-status-review-text);
     font-size: 0.95rem;
 }
 
 .rec-review-status.clear {
-    border-color: #9fd3b0;
-    background: #eefaf1;
-    color: #17552b;
+    border-color: var(--pp-status-pass-border);
+    background: var(--pp-status-pass-bg);
+    color: var(--pp-status-pass-text);
 }
 
 /* Row-accounting and source-period explanations */

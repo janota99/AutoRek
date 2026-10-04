@@ -42,6 +42,7 @@ from apps.fifo_inventory.sidebar import render_sidebar, render_history
 from apps.fifo_inventory.insights import render_insights
 from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
+from shared.status import status_tile
 
 # ==========================================
 # UI LAYOUT & INGESTION
@@ -457,9 +458,8 @@ with tab_processing:
                     "**Discard This Preview** clears it with nothing saved. Official FIFO layers are untouched until you commit."
                 )
             metric_cols = st.columns(3)
-            metric_cols[0].metric("PASS", counts['PASS'])
-            metric_cols[1].metric("REVIEW", counts['REVIEW'])
-            metric_cols[2].metric("FAIL", counts['FAIL'])
+            for col, label in zip(metric_cols, ("PASS", "REVIEW", "FAIL")):
+                col.markdown(status_tile(label, counts[label]), unsafe_allow_html=True)
 
             if counts['FAIL']:
                 st.error(f"{counts['FAIL']} product(s) FAIL their controls. Closing the period is blocked until they are fixed.")

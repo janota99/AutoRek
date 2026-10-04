@@ -28,12 +28,18 @@ h1, h2, h3 {
 }
 
 /* ---------- Sidebar ---------- */
+/* Same blue and edge as the Sales Reconciliation sidebar (--pp-sidebar-bg is defined in shared/theme.css). */
+[data-testid="stSidebar"],
+[data-testid="stSidebar"] > div:first-child {
+    background-color: var(--pp-sidebar-bg);
+}
+
 [data-testid="stSidebar"] {
-    background-color: #10243f;
+    border-right: 1px solid #102946;
 }
 
 [data-testid="stSidebar"] * {
-    color: #eef2f6 !important;
+    color: #edf3fa !important;
 }
 
 [data-testid="stSidebar"] h1 {
