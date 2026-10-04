@@ -1,0 +1,2320 @@
+{
+ "sheet_count": 4,
+ "sheet_order": [
+  "All Transactions",
+  "TAXABLE",
+  "EXEMPT",
+  "New Vendors",
+  "Removed Transactions"
+ ],
+ "sheets": {
+  "All Transactions": {
+   "cells": {
+    "A1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Vendor"
+    },
+    "A10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Uniform Rental"
+    },
+    "A2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Packaging Co"
+    },
+    "A3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Label Works"
+    },
+    "A4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Freight Lines"
+    },
+    "A5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Chemical Supply"
+    },
+    "A6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Office Depot"
+    },
+    "A7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Packaging Co"
+    },
+    "A8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Label Works"
+    },
+    "A9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Pallet Brokers"
+    },
+    "B1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice Date"
+    },
+    "B10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-21"
+    },
+    "B2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-01"
+    },
+    "B3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-02"
+    },
+    "B4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-03"
+    },
+    "B5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-04"
+    },
+    "B6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-05"
+    },
+    "B7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-06"
+    },
+    "B8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-07"
+    },
+    "B9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-20"
+    },
+    "C1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Transaction ID"
+    },
+    "C10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX2001"
+    },
+    "C2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1000"
+    },
+    "C3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1001"
+    },
+    "C4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1002"
+    },
+    "C5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1003"
+    },
+    "C6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1004"
+    },
+    "C7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1005"
+    },
+    "C8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1006"
+    },
+    "C9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX2000"
+    },
+    "D1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Description"
+    },
+    "D10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Uniforms"
+    },
+    "D2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 1"
+    },
+    "D3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 2"
+    },
+    "D4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 3"
+    },
+    "D5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 4"
+    },
+    "D6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 5"
+    },
+    "D7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 6"
+    },
+    "D8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 7"
+    },
+    "D9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Pallets"
+    },
+    "E1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account #"
+    },
+    "E10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 640000
+    },
+    "E2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 620000
+    },
+    "E4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 630000
+    },
+    "E5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 640000
+    },
+    "E6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 650000
+    },
+    "E7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "F1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Cost Center"
+    },
+    "F10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "G1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Amount"
+    },
+    "G10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 215.4
+    },
+    "G2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 125.5
+    },
+    "G3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 162.75
+    },
+    "G4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 200
+    },
+    "G5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 237.25
+    },
+    "G6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 274.5
+    },
+    "G7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 311.75
+    },
+    "G8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 349
+    },
+    "G9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 480
+    },
+    "H1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Tax Code"
+    },
+    "H10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "I1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Reference"
+    },
+    "I10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF21"
+    },
+    "I2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF1"
+    },
+    "I3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF2"
+    },
+    "I4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF3"
+    },
+    "I5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF4"
+    },
+    "I6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF5"
+    },
+    "I7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF6"
+    },
+    "I8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF7"
+    },
+    "I9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF20"
+    },
+    "J1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Code"
+    },
+    "K1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Period"
+    },
+    "K10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "L1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxability"
+    },
+    "L2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Exempt"
+    },
+    "L5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "M1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Grouping"
+    },
+    "M2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "M3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "M4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Freight"
+    },
+    "M5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Chemicals"
+    },
+    "M6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Office"
+    },
+    "M7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "M8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "N1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "GL Account"
+    },
+    "N10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-640000-000"
+    },
+    "N2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "N3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-620000-000"
+    },
+    "N4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-630000-000"
+    },
+    "N5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-640000-000"
+    },
+    "N6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-650000-000"
+    },
+    "N7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "N8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "N9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "O1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account Name"
+    },
+    "O10": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Office Supplies"
+    },
+    "O2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    },
+    "O3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Freight In"
+    },
+    "O4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Chemicals"
+    },
+    "O5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Office Supplies"
+    },
+    "O6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Utilities"
+    },
+    "O7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    },
+    "O8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    },
+    "O9": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    }
+   },
+   "dimensions": "A1:O10",
+   "filter": "A1:O10",
+   "freeze": "A2",
+   "merged": [],
+   "widths": {
+    "A": 24.0,
+    "B": 14.0,
+    "C": 16.0,
+    "D": 13.0,
+    "E": 11.0,
+    "F": 13.0,
+    "G": 8.0,
+    "H": 10.0,
+    "I": 11.0,
+    "J": 6.0,
+    "K": 8.0,
+    "L": 12.0,
+    "M": 11.0,
+    "N": 22.0,
+    "O": 20.0
+   }
+  },
+  "EXEMPT": {
+   "cells": {
+    "A1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Vendor"
+    },
+    "A2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Freight Lines"
+    },
+    "B1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice Date"
+    },
+    "B2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-03"
+    },
+    "C1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Transaction ID"
+    },
+    "C2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1002"
+    },
+    "D1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Description"
+    },
+    "D2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 3"
+    },
+    "E1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account #"
+    },
+    "E2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 630000
+    },
+    "F1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Cost Center"
+    },
+    "F2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F3": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "General",
+     "v": "Total"
+    },
+    "G1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Amount"
+    },
+    "G2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 200
+    },
+    "G3": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "$#,##0.00;($#,##0.00);$-",
+     "v": "=SUM(G2:G2)"
+    },
+    "H1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Tax Code"
+    },
+    "H2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "I1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Reference"
+    },
+    "I2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF3"
+    },
+    "J1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Code"
+    },
+    "K1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Period"
+    },
+    "K2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "L1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxability"
+    },
+    "L2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Exempt"
+    },
+    "M1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Grouping"
+    },
+    "M2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Freight"
+    },
+    "N1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "GL Account"
+    },
+    "N2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-630000-000"
+    },
+    "O1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account Name"
+    },
+    "O2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Chemicals"
+    }
+   },
+   "dimensions": "A1:O3",
+   "filter": "A1:O2",
+   "freeze": "A2",
+   "merged": [],
+   "widths": {
+    "A": 22.0,
+    "B": 14.0,
+    "C": 16.0,
+    "D": 13.0,
+    "E": 11.0,
+    "F": 13.0,
+    "G": 8.0,
+    "H": 10.0,
+    "I": 11.0,
+    "J": 6.0,
+    "K": 8.0,
+    "L": 12.0,
+    "M": 10.0,
+    "N": 22.0,
+    "O": 14.0
+   }
+  },
+  "New Vendors": {
+   "cells": {
+    "A1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Vendor"
+    },
+    "A2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Pallet Brokers"
+    },
+    "A3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Uniform Rental"
+    },
+    "B1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice Date"
+    },
+    "B2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-20"
+    },
+    "B3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-21"
+    },
+    "C1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Transaction ID"
+    },
+    "C2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX2000"
+    },
+    "C3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX2001"
+    },
+    "D1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Description"
+    },
+    "D2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Pallets"
+    },
+    "D3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Uniforms"
+    },
+    "E1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account #"
+    },
+    "E2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 640000
+    },
+    "F1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Cost Center"
+    },
+    "F2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F4": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "General",
+     "v": "Total"
+    },
+    "G1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Amount"
+    },
+    "G2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 480
+    },
+    "G3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 215.4
+    },
+    "G4": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "$#,##0.00;($#,##0.00);$-",
+     "v": "=SUM(G2:G3)"
+    },
+    "H1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Tax Code"
+    },
+    "H2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "I1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Reference"
+    },
+    "I2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF20"
+    },
+    "I3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF21"
+    },
+    "J1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Code"
+    },
+    "K1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Period"
+    },
+    "K2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "L1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxability"
+    },
+    "M1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Grouping"
+    },
+    "N1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "GL Account"
+    },
+    "N2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "N3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-640000-000"
+    },
+    "O1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account Name"
+    },
+    "O2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    },
+    "O3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Office Supplies"
+    }
+   },
+   "dimensions": "A1:O4",
+   "filter": "A1:O3",
+   "freeze": "A2",
+   "merged": [],
+   "widths": {
+    "A": 23.0,
+    "B": 14.0,
+    "C": 16.0,
+    "D": 13.0,
+    "E": 11.0,
+    "F": 13.0,
+    "G": 8.0,
+    "H": 10.0,
+    "I": 11.0,
+    "J": 6.0,
+    "K": 8.0,
+    "L": 12.0,
+    "M": 10.0,
+    "N": 22.0,
+    "O": 20.0
+   }
+  },
+  "Removed Transactions": {
+   "cells": {
+    "A1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Vendor"
+    },
+    "A2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "101806"
+    },
+    "A3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Packaging Co"
+    },
+    "A4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Packaging Co"
+    },
+    "B1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice Date"
+    },
+    "B2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-22"
+    },
+    "B3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-23"
+    },
+    "B4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-24"
+    },
+    "C1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Transaction ID"
+    },
+    "C2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX2002"
+    },
+    "C3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX2003"
+    },
+    "C4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1000"
+    },
+    "D1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Description"
+    },
+    "D2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Excluded vendor"
+    },
+    "D3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Letter-prefixed code"
+    },
+    "D4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Duplicate of TX1000"
+    },
+    "E1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account #"
+    },
+    "E2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "F1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Cost Center"
+    },
+    "F2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F5": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "General",
+     "v": "Total"
+    },
+    "G1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Amount"
+    },
+    "G2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 99.99
+    },
+    "G3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 50
+    },
+    "G4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 125.5
+    },
+    "G5": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "$#,##0.00;($#,##0.00);$-",
+     "v": "=SUM(G2:G4)"
+    },
+    "H1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Tax Code"
+    },
+    "H2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "I1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Reference"
+    },
+    "I2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF22"
+    },
+    "I3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF23"
+    },
+    "I4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF24"
+    },
+    "J1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Code"
+    },
+    "J3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "A-ADJ"
+    },
+    "K1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Period"
+    },
+    "K2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "L1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Source Excel Row"
+    },
+    "L2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 11
+    },
+    "L3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "L4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 13
+    },
+    "M1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Removal Reason"
+    },
+    "M2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Excluded vendor ID"
+    },
+    "M3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Code begins with a letter"
+    },
+    "M4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Duplicate transaction ID"
+    },
+    "N1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Retained Row (Duplicate)"
+    },
+    "N4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2"
+    }
+   },
+   "dimensions": "A1:N5",
+   "filter": "A1:N4",
+   "freeze": "A2",
+   "merged": [],
+   "widths": {
+    "A": 21.0,
+    "B": 14.0,
+    "C": 16.0,
+    "D": 22.0,
+    "E": 11.0,
+    "F": 13.0,
+    "G": 8.0,
+    "H": 10.0,
+    "I": 11.0,
+    "J": 7.0,
+    "K": 8.0,
+    "L": 18.0,
+    "M": 27.0,
+    "N": 26.0
+   }
+  },
+  "TAXABLE": {
+   "cells": {
+    "A1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Vendor"
+    },
+    "A2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Packaging Co"
+    },
+    "A3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Label Works"
+    },
+    "A4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Chemical Supply"
+    },
+    "A5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Office Depot"
+    },
+    "A6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Packaging Co"
+    },
+    "A7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Label Works"
+    },
+    "B1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice Date"
+    },
+    "B2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-01"
+    },
+    "B3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-02"
+    },
+    "B4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-04"
+    },
+    "B5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-05"
+    },
+    "B6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-06"
+    },
+    "B7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "2026-07-07"
+    },
+    "C1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Transaction ID"
+    },
+    "C2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1000"
+    },
+    "C3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1001"
+    },
+    "C4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1003"
+    },
+    "C5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1004"
+    },
+    "C6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1005"
+    },
+    "C7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "TX1006"
+    },
+    "D1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Description"
+    },
+    "D2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 1"
+    },
+    "D3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 2"
+    },
+    "D4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 4"
+    },
+    "D5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 5"
+    },
+    "D6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 6"
+    },
+    "D7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Invoice 7"
+    },
+    "E1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account #"
+    },
+    "E2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 620000
+    },
+    "E4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 640000
+    },
+    "E5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 650000
+    },
+    "E6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "E7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 610000
+    },
+    "F1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Cost Center"
+    },
+    "F2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 10100
+    },
+    "F8": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "General",
+     "v": "Total"
+    },
+    "G1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Amount"
+    },
+    "G2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 125.5
+    },
+    "G3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 162.75
+    },
+    "G4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 237.25
+    },
+    "G5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 274.5
+    },
+    "G6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 311.75
+    },
+    "G7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "_(* #,##0.00_);_(* (#,##0.00);_(* \"-\"??_);_(@_)",
+     "v": 349
+    },
+    "G8": {
+     "bold": true,
+     "fill": "00D9D9D9",
+     "fmt": "$#,##0.00;($#,##0.00);$-",
+     "v": "=SUM(G2:G7)"
+    },
+    "H1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Tax Code"
+    },
+    "H2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "H7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "T"
+    },
+    "I1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Reference"
+    },
+    "I2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF1"
+    },
+    "I3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF2"
+    },
+    "I4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF4"
+    },
+    "I5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF5"
+    },
+    "I6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF6"
+    },
+    "I7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "REF7"
+    },
+    "J1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Code"
+    },
+    "K1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Period"
+    },
+    "K2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "K7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 12
+    },
+    "L1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxability"
+    },
+    "L2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "L7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "M1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Grouping"
+    },
+    "M2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "M3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "M4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Chemicals"
+    },
+    "M5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Office"
+    },
+    "M6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "M7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "N1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "GL Account"
+    },
+    "N2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "N3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-620000-000"
+    },
+    "N4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-640000-000"
+    },
+    "N5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-650000-000"
+    },
+    "N6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "N7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "001-10100-610000-000"
+    },
+    "O1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Account Name"
+    },
+    "O2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    },
+    "O3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Freight In"
+    },
+    "O4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Office Supplies"
+    },
+    "O5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Utilities"
+    },
+    "O6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    },
+    "O7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Packaging Supplies"
+    }
+   },
+   "dimensions": "A1:O8",
+   "filter": "A1:O7",
+   "freeze": "A2",
+   "merged": [],
+   "widths": {
+    "A": 24.0,
+    "B": 14.0,
+    "C": 16.0,
+    "D": 13.0,
+    "E": 11.0,
+    "F": 13.0,
+    "G": 8.0,
+    "H": 10.0,
+    "I": 11.0,
+    "J": 6.0,
+    "K": 8.0,
+    "L": 12.0,
+    "M": 11.0,
+    "N": 22.0,
+    "O": 20.0
+   }
+  }
+ }
+}

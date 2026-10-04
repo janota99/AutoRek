@@ -1,0 +1,5 @@
+[
+ "Source Transactions: found 10 column(s); exactly 11 are required.",
+ "Vendor Mapping: found 3 column(s); at least 5 are required (Vendor, 2 unused, Taxability, Grouping).",
+ "Trial Balance: found 2 column(s); at least 3 are required."
+]

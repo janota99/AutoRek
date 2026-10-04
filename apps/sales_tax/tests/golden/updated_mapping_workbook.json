@@ -1,0 +1,257 @@
+{
+ "sheet_order": [
+  "Vendor Mapping"
+ ],
+ "sheets": {
+  "Vendor Mapping": {
+   "cells": {
+    "A1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Vendor Name"
+    },
+    "A2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Packaging Co"
+    },
+    "A3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Label Works"
+    },
+    "A4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Freight Lines"
+    },
+    "A5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Chemical Supply"
+    },
+    "A6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Office Depot"
+    },
+    "A7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Utilities LLC"
+    },
+    "A8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Sample Pallet Brokers"
+    },
+    "B1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Vendor ID"
+    },
+    "B2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 900101
+    },
+    "B3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 900102
+    },
+    "B4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 900103
+    },
+    "B5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 900104
+    },
+    "B6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 900105
+    },
+    "B7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": 900106
+    },
+    "C1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Notes"
+    },
+    "D1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxability"
+    },
+    "D2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "D3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "D4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Exempt"
+    },
+    "D5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "D6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "D7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Exempt"
+    },
+    "D8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Taxable"
+    },
+    "E1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Grouping"
+    },
+    "E2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "E3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "E4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Freight"
+    },
+    "E5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Chemicals"
+    },
+    "E6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Office"
+    },
+    "E7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Utilities"
+    },
+    "E8": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Supplies"
+    },
+    "F1": {
+     "bold": true,
+     "fill": null,
+     "fmt": "General",
+     "v": "Status"
+    },
+    "F2": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Active"
+    },
+    "F3": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Active"
+    },
+    "F4": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Active"
+    },
+    "F5": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Active"
+    },
+    "F6": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Active"
+    },
+    "F7": {
+     "bold": false,
+     "fill": null,
+     "fmt": "General",
+     "v": "Active"
+    }
+   },
+   "dimensions": "A1:F8",
+   "filter": "A1:F8",
+   "freeze": "A2",
+   "merged": [],
+   "widths": {
+    "A": 15.0,
+    "B": 14.0,
+    "C": 14.0,
+    "D": 14.0,
+    "E": 14.0,
+    "F": 14.0
+   }
+  }
+ }
+}

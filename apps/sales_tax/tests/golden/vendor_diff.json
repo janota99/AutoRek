@@ -1,0 +1,111 @@
+{
+ "added": {
+  "columns": [
+   "Vendor ID",
+   "Vendor Name",
+   "Taxability",
+   "Grouping"
+  ],
+  "dtypes": [
+   "float64",
+   "object",
+   "object",
+   "object"
+  ],
+  "rows": [
+   [
+    900107.0,
+    "Sample Pallet Brokers",
+    "",
+    ""
+   ]
+  ]
+ },
+ "removed": {
+  "columns": [
+   "Vendor ID",
+   "Vendor Name",
+   "Taxability",
+   "Grouping"
+  ],
+  "dtypes": [
+   "object",
+   "object",
+   "object",
+   "object"
+  ],
+  "rows": [
+   [
+    "900106",
+    "Sample Utilities LLC",
+    "Exempt",
+    "Utilities"
+   ]
+  ]
+ },
+ "renamed": {
+  "columns": [
+   "Vendor ID",
+   "Old Name",
+   "New Name",
+   "Taxability",
+   "Grouping"
+  ],
+  "dtypes": [
+   "float64",
+   "object",
+   "object",
+   "object",
+   "object"
+  ],
+  "rows": [
+   [
+    900102.0,
+    "Sample Label Works",
+    "Sample Label Works Inc",
+    "Taxable",
+    "Supplies"
+   ]
+  ]
+ },
+ "unchanged": {
+  "columns": [
+   "Vendor ID",
+   "Vendor Name",
+   "Taxability",
+   "Grouping"
+  ],
+  "dtypes": [
+   "float64",
+   "object",
+   "object",
+   "object"
+  ],
+  "rows": [
+   [
+    900101.0,
+    "Sample Packaging Co",
+    "Taxable",
+    "Supplies"
+   ],
+   [
+    900103.0,
+    "Sample Freight Lines",
+    "Exempt",
+    "Freight"
+   ],
+   [
+    900104.0,
+    "Sample Chemical Supply",
+    "Taxable",
+    "Chemicals"
+   ],
+   [
+    900105.0,
+    "Sample Office Depot",
+    "Taxable",
+    "Office"
+   ]
+  ]
+ }
+}
