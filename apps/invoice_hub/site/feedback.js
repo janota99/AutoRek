@@ -258,6 +258,16 @@
     showStatus('Your added reviews were removed.', 'success');
   });
 
+  // Hovering a review highlights it (delegated, so reviews added later work too).
+  reviewsPanel.addEventListener('mouseover', function (event) {
+    var card = event.target.closest('.review-card');
+    if (card) card.classList.add('is-hovered');
+  });
+  reviewsPanel.addEventListener('mouseout', function (event) {
+    var card = event.target.closest('.review-card');
+    if (card && !card.contains(event.relatedTarget)) card.classList.remove('is-hovered');
+  });
+
   /* ---------- initial render ---------- */
 
   loadReviews().forEach(addCardToTop);

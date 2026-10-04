@@ -512,3 +512,10 @@ mark { padding: 0 2px; background: #ffe58f; color: inherit; }
 .workspace-nav a.active { border-bottom-color: var(--blue); color: var(--navy); }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Hover/focus states added for the event-driven interactions */
+.feature-card { transition: transform 0.15s ease, background 0.15s ease; }
+.feature-card.is-expanded, .feature-card:focus-visible { transform: translateY(-3px); outline: 2px solid var(--blue); }
+.feature-detail { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.25); color: #fff; font-size: 0.88rem; font-style: italic; }
+.review-card { transition: background 0.15s ease; }
+.review-card.is-hovered { background: rgba(47, 111, 237, 0.07); }

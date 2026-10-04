@@ -44,3 +44,45 @@ function showSavings() {
     "Estimated time saved: <strong>" + hoursPerMonth.toFixed(1) +
     " hours per month</strong> (about " + hoursPerYear.toFixed(0) + " hours per year).";
 }
+
+// ---- Event handlers ----
+
+// Typing in the invoice box updates the estimate as the person types.
+// An empty or invalid value just clears the result (no alert while typing).
+function updateSavingsLive() {
+  var count = Number(document.getElementById("invoiceCount").value);
+  var result = document.getElementById("savingsResult");
+
+  if (isNaN(count) || count <= 0) {
+    result.innerHTML = "";
+    return;
+  }
+  showSavings();
+}
+
+// Mouse (and keyboard focus) on a feature card shows a worked example.
+function showFeatureDetail(card) {
+  if (card.querySelector(".feature-detail")) return;
+  var detail = document.createElement("p");
+  detail.className = "feature-detail";
+  detail.textContent = card.getAttribute("data-detail");
+  card.appendChild(detail);
+  card.classList.add("is-expanded");
+}
+
+function hideFeatureDetail(card) {
+  var detail = card.querySelector(".feature-detail");
+  if (detail) detail.remove();
+  card.classList.remove("is-expanded");
+}
+
+document.getElementById("calcButton").addEventListener("click", showSavings);
+document.getElementById("invoiceCount").addEventListener("input", updateSavingsLive);
+
+document.querySelectorAll(".feature-card[data-detail]").forEach(function (card) {
+  card.tabIndex = 0;
+  card.addEventListener("mouseenter", function () { showFeatureDetail(card); });
+  card.addEventListener("mouseleave", function () { hideFeatureDetail(card); });
+  card.addEventListener("focus", function () { showFeatureDetail(card); });
+  card.addEventListener("blur", function () { hideFeatureDetail(card); });
+});
