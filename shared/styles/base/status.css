@@ -1,0 +1,80 @@
+/* Status badges and tiles (shared/status.py). Each kind sets three custom properties, so the badge and
+   the tile share one definition. The icon is part of the badge, so status never relies on color alone. */
+.pp-status,
+.pp-status-tile {
+    --st-bg: var(--pp-status-neutral-bg);
+    --st-border: var(--pp-status-neutral-border);
+    --st-text: var(--pp-status-neutral-text);
+    --st-icon: "";
+}
+
+.pp-status--pass, .pp-status--matched,
+.pp-status-tile--pass, .pp-status-tile--matched {
+    --st-bg: var(--pp-status-pass-bg);
+    --st-border: var(--pp-status-pass-border);
+    --st-text: var(--pp-status-pass-text);
+    --st-icon: "¹3";  /* check */
+}
+
+.pp-status--review, .pp-status--unresolved,
+.pp-status-tile--review, .pp-status-tile--unresolved {
+    --st-bg: var(--pp-status-review-bg);
+    --st-border: var(--pp-status-review-border);
+    --st-text: var(--pp-status-review-text);
+    --st-icon: "!";
+}
+
+.pp-status--fail, .pp-status-tile--fail {
+    --st-bg: var(--pp-status-fail-bg);
+    --st-border: var(--pp-status-fail-border);
+    --st-text: var(--pp-status-fail-text);
+    --st-icon: "¹5";  /* cross */
+}
+
+.pp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    padding: 0.1rem 0.65rem;
+    border: 1px solid var(--st-border);
+    border-radius: 999px;
+    background: var(--st-bg);
+    color: var(--st-text);
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.pp-status::before {
+    content: var(--st-icon);
+    font-weight: 900;
+}
+
+.pp-status-tile {
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--st-border);
+    border-left-width: 4px;
+    border-radius: 0.5rem;
+    background: var(--st-bg);
+    color: var(--st-text);
+}
+
+.pp-status-tile-label {
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+
+.pp-status-tile-label::before {
+    content: var(--st-icon) " ";
+    font-weight: 900;
+}
+
+.pp-status-tile-count {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}

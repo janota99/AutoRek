@@ -1,47 +1,6 @@
 /* Suite-wide styling, injected on every page by shared/layout.py:apply_template().
    Each app still loads its own stylesheet after this one, so app styles win on
-   anything they both touch. Keep this file to suite chrome and the Dashboard. */
-
-/* Design tokens for the suite chrome (this file). Values are the ones the chrome already used, so
-   nothing changes visually. Namespaced --pp-* so they can't collide with the per-app variables
-   (--rec-*, --accent, the Dashboard's --navy). Each app stylesheet still owns its own palette;
-   the Invoice Hub runs in an iframe and cannot read these. */
-:root {
-    --pp-navy: #13283f;
-    --pp-navy-hover: #1f3c5c;
-    --pp-sidebar-bg: #19365d;  /* the Sales Reconciliation sidebar; lighter than the navy baked into the Janota Fin logo, so the logo stays visible */
-    --pp-surface: #ffffff;
-    --pp-text-secondary: #4a5a6e;
-    --pp-text-muted: #65758a;
-    --pp-border: #d8e1ea;
-    --pp-border-strong: #c9d4e0;
-    --pp-border-soft: #e6ecf2;
-    --pp-hover: #eef3f9;
-    --pp-accent: #2563eb;
-    --pp-accent-strong: #1d4ed8;
-    --pp-accent-soft: #eff6ff;
-    --pp-accent-soft-hover: #dbeafe;
-    --pp-warn-bg: #fdecc8;
-    --pp-warn-text: #8a4b00;
-    --pp-warn-border: #f0c36d;
-    --pp-shadow-popover: 0 10px 28px rgba(19, 40, 63, 0.18);
-    --pp-shadow-accent: 0 4px 12px rgba(37, 99, 235, 0.2);
-
-    /* Status palette (shared/status.py). matched = pass; unresolved = review: an open item is
-       something to look at, not a failure. Text on background is >= 4.5:1 (WCAG AA). */
-    --pp-status-pass-bg: #eefaf1;
-    --pp-status-pass-border: #9fd3b0;
-    --pp-status-pass-text: #17552b;
-    --pp-status-review-bg: #fff8e6;
-    --pp-status-review-border: #e8c77a;
-    --pp-status-review-text: #5c4300;
-    --pp-status-fail-bg: #fdecea;
-    --pp-status-fail-border: #e8a8a3;
-    --pp-status-fail-text: #8a1f17;
-    --pp-status-neutral-bg: #f3f5f7;
-    --pp-status-neutral-border: #c9d4e0;
-    --pp-status-neutral-text: #4a5a6e;
-}
+   anything they both touch. Keep this file to suite chrome. */
 
 
 /* Streamlit's default top padding leaves a large gap under the navigation bar. */
@@ -265,7 +224,7 @@
     font-size: 0.95rem;
 }
 
-/* The Dashboard is styled by apps/dashboard.css (it is one HTML block, not Streamlit widgets). */
+/* The Dashboard is styled by shared/styles/pages/dashboard.css (it is one HTML block, not Streamlit widgets). */
 
 /* Dashboard "View Plans" button (apps/dashboard.py): a pill pinned in the top-right of the navigation bar,
    left of the account strip. suite_banner.js sets its `right`; this is the fallback. */
@@ -320,85 +279,4 @@
     height: 2.75rem !important;
     width: auto !important;
     border-radius: 6px;
-}
-
-/* Status badges and tiles (shared/status.py). Each kind sets three custom properties, so the badge and
-   the tile share one definition. The icon is part of the badge, so status never relies on color alone. */
-.pp-status,
-.pp-status-tile {
-    --st-bg: var(--pp-status-neutral-bg);
-    --st-border: var(--pp-status-neutral-border);
-    --st-text: var(--pp-status-neutral-text);
-    --st-icon: "";
-}
-
-.pp-status--pass, .pp-status--matched,
-.pp-status-tile--pass, .pp-status-tile--matched {
-    --st-bg: var(--pp-status-pass-bg);
-    --st-border: var(--pp-status-pass-border);
-    --st-text: var(--pp-status-pass-text);
-    --st-icon: "¹3";  /* check */
-}
-
-.pp-status--review, .pp-status--unresolved,
-.pp-status-tile--review, .pp-status-tile--unresolved {
-    --st-bg: var(--pp-status-review-bg);
-    --st-border: var(--pp-status-review-border);
-    --st-text: var(--pp-status-review-text);
-    --st-icon: "!";
-}
-
-.pp-status--fail, .pp-status-tile--fail {
-    --st-bg: var(--pp-status-fail-bg);
-    --st-border: var(--pp-status-fail-border);
-    --st-text: var(--pp-status-fail-text);
-    --st-icon: "¹5";  /* cross */
-}
-
-.pp-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35em;
-    padding: 0.1rem 0.65rem;
-    border: 1px solid var(--st-border);
-    border-radius: 999px;
-    background: var(--st-bg);
-    color: var(--st-text);
-    font-size: 0.85rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    line-height: 1.4;
-    white-space: nowrap;
-}
-
-.pp-status::before {
-    content: var(--st-icon);
-    font-weight: 900;
-}
-
-.pp-status-tile {
-    padding: 0.7rem 1rem;
-    border: 1px solid var(--st-border);
-    border-left-width: 4px;
-    border-radius: 0.5rem;
-    background: var(--st-bg);
-    color: var(--st-text);
-}
-
-.pp-status-tile-label {
-    font-size: 0.85rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-}
-
-.pp-status-tile-label::before {
-    content: var(--st-icon) " ";
-    font-weight: 900;
-}
-
-.pp-status-tile-count {
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
 }

@@ -20,6 +20,7 @@ import pandas as pd
 import streamlit as st
 
 from shared.status import status_badge, status_styler
+from shared.styles import inject_page
 
 from .matching import QB_ID, ReconciliationResult, numeric_sum
 from .utils import format_currency
@@ -57,20 +58,8 @@ def _render_workbook_exception(label: str, exc: Exception) -> None:
 
 
 def load_app_css() -> None:
-    """Load the stylesheet located beside the application module."""
-    css_path = Path(__file__).resolve().with_name("style.css")
-    try:
-        css = css_path.read_text(encoding="utf-8")
-        css = (
-            css.replace("\u00a0", " ")
-            .replace("\u2007", " ")
-            .replace("\u202f", " ")
-        )
-    except OSError as exc:
-        st.warning(f"The application stylesheet could not be loaded: {exc}")
-        return
-
-    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    """Load Recon's stylesheet (shared/styles/pages/recon.css)."""
+    inject_page("recon")
 
 
 def render_kpi(label: str, value: str, subtitle: str = "") -> None:

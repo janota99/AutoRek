@@ -11,11 +11,12 @@ from pathlib import Path
 
 import streamlit as st
 
+from .styles import inject_base
+
 SUITE_NAME = "Janota Fin Automatations Accounting Apps"
 
 _SHARED_DIR = Path(__file__).resolve().parent
 _LOGO_PATH = _SHARED_DIR / "assets" / "janota_fin_logo.png"
-_THEME_PATH = _SHARED_DIR / "theme.css"
 _BANNER_JS_PATH = _SHARED_DIR / "suite_banner.js"
 
 # The account strip: filled in by suite_banner.js. Signed in it shows a greeting, the role, and an
@@ -126,11 +127,7 @@ def apply_template() -> None:
     """Suite-wide chrome drawn on every page, before the page's own content."""
     if _LOGO_PATH.is_file():
         st.logo(str(_LOGO_PATH), size="large")
-    try:
-        st.markdown(f"<style>{_THEME_PATH.read_text(encoding='utf-8')}</style>",
-                    unsafe_allow_html=True)
-    except FileNotFoundError:
-        pass  # The suite still works without its stylesheet, just less polished.
+    inject_base()
     try:
         banner_js = _BANNER_JS_PATH.read_text(encoding="utf-8")
     except FileNotFoundError:

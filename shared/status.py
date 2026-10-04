@@ -1,6 +1,6 @@
 """One status vocabulary for the whole suite: PASS / REVIEW / FAIL / matched / unresolved.
 
-The colors live in shared/theme.css (`--pp-status-*`, `.pp-status`); this module only picks the
+The colors live in shared/styles/base (`--pp-status-*` in tokens.css, `.pp-status` in status.css); this module only picks the
 class. Every badge carries an icon and its text, so status is never conveyed by color alone.
 Display only: nothing here decides a status, it just renders the one the engine already chose.
 """
@@ -33,7 +33,7 @@ def status_kind(label: str) -> str:
 
 
 # Canvas tables (st.dataframe) can't read CSS variables, so the Styler needs literal colors. These are the
-# values of --pp-status-*-bg / -text in theme.css; shared/tests/test_status.py fails if the two drift.
+# values of --pp-status-*-bg / -text in base/tokens.css; shared/tests/test_status.py fails if the two drift.
 PALETTE = {
     "pass": ("#eefaf1", "#17552b"),
     "review": ("#fff8e6", "#5c4300"),

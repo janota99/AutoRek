@@ -14,7 +14,6 @@
 | `app_settings.py` | User-editable tolerances persisted to `app_settings.json` (next to the module). |
 | `upload_templates.py` | Downloadable blank Master Grid / Receipts templates. |
 | `user_inputs.py` | Constants: `PRODUCTS`, the `PERIOD_12_OPENING_LAYERS` seed, versions, default tolerances. |
-| `styles.css` | Page styling (navy `#0B3350`, shared with the Excel report). |
 
 Dependencies: everything imports `user_inputs`; `fifo_layer_store` uses `ingestion`;
 `fifo_calculations` uses `ingestion`, `excel_export`, and `fifo_layer_store`; `sidebar` and

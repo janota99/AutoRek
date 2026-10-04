@@ -1,5 +1,4 @@
 # app.py — a page of the combined Streamlit app; run via ../../app.py
-from pathlib import Path
 import pandas as pd
 import streamlit as st
 
@@ -43,6 +42,7 @@ from apps.fifo_inventory.insights import render_insights
 from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
 from shared.status import status_tile
+from shared.styles import inject_page
 
 # ==========================================
 # UI LAYOUT & INGESTION
@@ -50,11 +50,7 @@ from shared.status import status_tile
 # Page title, icon, and wide layout come from st.navigation in the root app.py.
 st.title(":material/inventory_2: 13-Period Batch FIFO Inventory Tracker")
 
-try:
-    with open(Path(__file__).resolve().parent / "styles.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-except FileNotFoundError:
-    st.warning("styles.css could not be found next to the FIFO app.")
+inject_page("fifo")
 
 layer_store = FIFOLayerStore(PRODUCTS)
 

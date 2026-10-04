@@ -53,5 +53,5 @@ Built with openpyxl. Sheet order:
 
 Styling constants (`COLOR_*`, `FONT_*`, `FILL_*`, `FMT_*`) sit at the top of
 `excel_export.py` and are reused by `upload_templates.py`. The navy `#0B3350`
-matches `styles.css`. Excel table `displayName`s must be unique and use only
+matches the page styling in `shared/styles/pages/fifo.css`. Excel table `displayName`s must be unique and use only
 valid identifier characters.

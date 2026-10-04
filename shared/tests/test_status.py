@@ -6,7 +6,7 @@ import pandas as pd
 
 from shared.status import PALETTE, status_badge, status_kind, status_styler
 
-THEME = (Path(__file__).resolve().parents[1] / "theme.css").read_text(encoding="utf-8")
+THEME = (Path(__file__).resolve().parents[1] / "styles" / "base" / "tokens.css").read_text(encoding="utf-8")
 
 
 def test_python_palette_matches_theme_tokens():

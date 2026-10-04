@@ -10,11 +10,11 @@ streamlit run app.py
   app.py                    set_page_config(wide) → build_navigation() → apply_template() → page.run()
   shared/layout.py          APPS registry, st.navigation(position="top") (the apps plus Reviews & Feedback),
                             st.logo, theme injection, and the account strip (st.html + shared/suite_banner.js)
-  shared/theme.css          suite chrome (incl. the account strip, larger captions/labels); injected before each app's own CSS
+  shared/styles/            every stylesheet, in one place (see "Stylesheets" below); base/ is injected before each page's own CSS
   apps/dashboard.py         landing page: one card per APPS entry (one st.html block)
   apps/sales_page.py        Sales page (3 purchase tiers); NOT a registered page, drawn by the Dashboard only
   apps/feedback.py          Reviews & Feedback page: the Invoice Hub's feedback.html, embedded
-  apps/dashboard.css|.js    its styling and behavior (spotlight, entrance, animated Recon logo, client-side nav)
+  apps/dashboard.js         its behavior (spotlight, entrance, animated Recon logo, client-side nav); styling is styles/pages/dashboard.css
   apps/<pkg>/app.py         one page script per application
 ```
 
@@ -40,7 +40,7 @@ nothing, and every application stays open to anyone. Never describe it as access
   page switches, the same person follows you through every application; the Reviews & Feedback form
   starts with their name and role.
 - The strip asks the hub for a page through sessionStorage `pp.suite.hubPage` (read once by
-  `streamlit-bridge.js` on the hub's first render). A CSS rule in `theme.css` narrows Streamlit's
+  `streamlit-bridge.js` on the hub's first render). A CSS rule in `styles/base/chrome.css` narrows Streamlit's
   nav overflow so a page link is never covered by the strip.
 - Scripts inlined through `st.html` must not contain `<` followed by a letter, even in a comment:
   Streamlit's sanitizer drops the whole script. `suite_banner.js` avoids `<` entirely.
@@ -81,6 +81,24 @@ The site is not connected to MongoDB.
 2. Append an `AppEntry(title, icon, script, url_path, summary)` to `APPS` in `shared/layout.py`.
    The navigation bar and the Dashboard card both come from that list.
 3. Give the app a `docs/` folder and add a row to the routing table in `CLAUDE.md`.
+4. Put its CSS in `shared/styles/pages/<name>.css`, add the name to `PAGES` in `shared/styles/__init__.py`, and call
+   `inject_page("<name>")` once from the page script.
+
+## Stylesheets
+
+All CSS lives in `shared/styles/`; `shared/styles/__init__.py` is the only code that reads it.
+
+| Folder | Files | Loaded |
+|---|---|---|
+| `base/` | `tokens.css` (design tokens, `--pp-*`), `chrome.css` (account strip, sidebar logo, captions, "View Plans" pill, top-bar logo), `status.css` (PASS/REVIEW/FAIL badges and tiles) | on every page by `apply_template()`, in that order |
+| `pages/` | `dashboard.css`, `sales-page.css`, `fifo.css`, `recon.css`, `sales-tax.css` | by that page, after the base, so a page can override it |
+
+- Pages call `inject_page("<name>")`; pages drawn with `st.html` (Dashboard, Sales page) embed `style_tag("<name>")`.
+- Cascade order is injection order. Don't reorder `BASE_FILES`, and keep each page file's own overrides last.
+- New colors go in `tokens.css` as `--pp-*` and are used with `var(...)`. The apps' own palettes (`--rec-*`,
+  `--accent`) are still per page; unifying them changes how the apps look, so do it deliberately.
+- The Invoice Hub is the one exception: it runs in an iframe that can't see this CSS, so it keeps
+  `apps/invoice_hub/site/styles.css`.
 
 ## Rules that keep several apps working in one process
 

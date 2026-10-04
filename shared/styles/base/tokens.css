@@ -1,0 +1,40 @@
+/* Design tokens for the whole suite. Values are the ones the chrome already used, so
+   nothing changes visually. Namespaced --pp-* so they can't collide with the per-app variables
+   (--rec-*, --accent, the Dashboard's --navy). Each app stylesheet still owns its own palette;
+   the Invoice Hub runs in an iframe and cannot read these. */
+:root {
+    --pp-navy: #13283f;
+    --pp-navy-hover: #1f3c5c;
+    --pp-sidebar-bg: #19365d;  /* the Sales Reconciliation sidebar; lighter than the navy baked into the Janota Fin logo, so the logo stays visible */
+    --pp-surface: #ffffff;
+    --pp-text-secondary: #4a5a6e;
+    --pp-text-muted: #65758a;
+    --pp-border: #d8e1ea;
+    --pp-border-strong: #c9d4e0;
+    --pp-border-soft: #e6ecf2;
+    --pp-hover: #eef3f9;
+    --pp-accent: #2563eb;
+    --pp-accent-strong: #1d4ed8;
+    --pp-accent-soft: #eff6ff;
+    --pp-accent-soft-hover: #dbeafe;
+    --pp-warn-bg: #fdecc8;
+    --pp-warn-text: #8a4b00;
+    --pp-warn-border: #f0c36d;
+    --pp-shadow-popover: 0 10px 28px rgba(19, 40, 63, 0.18);
+    --pp-shadow-accent: 0 4px 12px rgba(37, 99, 235, 0.2);
+
+    /* Status palette (shared/status.py). matched = pass; unresolved = review: an open item is
+       something to look at, not a failure. Text on background is >= 4.5:1 (WCAG AA). */
+    --pp-status-pass-bg: #eefaf1;
+    --pp-status-pass-border: #9fd3b0;
+    --pp-status-pass-text: #17552b;
+    --pp-status-review-bg: #fff8e6;
+    --pp-status-review-border: #e8c77a;
+    --pp-status-review-text: #5c4300;
+    --pp-status-fail-bg: #fdecea;
+    --pp-status-fail-border: #e8a8a3;
+    --pp-status-fail-text: #8a1f17;
+    --pp-status-neutral-bg: #f3f5f7;
+    --pp-status-neutral-border: #c9d4e0;
+    --pp-status-neutral-text: #4a5a6e;
+}

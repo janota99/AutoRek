@@ -1,6 +1,6 @@
 """Dashboard: the landing page, with one card per application, built from the registry in shared/layout.py.
 
-The page is one hand-written HTML block (styled by dashboard.css, animated by dashboard.js) rather
+The page is one hand-written HTML block (styled by shared/styles/pages/dashboard.css, animated by dashboard.js) rather
 than Streamlit widgets. Each card is a plain link to the app's page; dashboard.js routes the click
 through Streamlit's own navigation so the session is kept.
 
@@ -15,6 +15,7 @@ import streamlit as st
 
 from apps import sales_page
 from shared.layout import APPS
+from shared.styles import style_tag
 
 _HERE = Path(__file__).resolve().parent
 
@@ -25,7 +26,7 @@ _DOC = '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><p
 # inserts these into each card's .pp-icon tile. An app without an entry gets a generic tile.
 _ICONS = {
     # Boxes advance along a track toward the arrow, first in, first out: a new box fades in on the
-    # left while the oldest fades out on the right. Animated in dashboard.css.
+    # left while the oldest fades out on the right. Animated in shared/styles/pages/dashboard.css.
     "fifo-inventory": (
         '<svg class="pp-fifo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" '
         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
@@ -36,7 +37,7 @@ _ICONS = {
         '<rect x="14" y="9" width="4" height="4" rx="1"/>'
         '<rect class="pp-fifo-out" x="20" y="9" width="4" height="4" rx="1"/>'
         '</g></svg>'),
-    # Two documents slide together, merge into one, and get a check mark. Animated in dashboard.css.
+    # Two documents slide together, merge into one, and get a check mark. Animated in shared/styles/pages/dashboard.css.
     "recon": (
         '<span class="pp-logo" title="Click to replay">'
         + _SVG.format(_DOC).replace("<svg ", '<svg class="pp-doc-left" ')
@@ -83,7 +84,7 @@ def _icons_json() -> str:
 
 
 page = (
-    f"<style>{(_HERE / 'dashboard.css').read_text(encoding='utf-8')}</style>"
+    f"{style_tag('dashboard')}"
     '<div class="pp-dash">'
     '<header class="pp-hero"><p class="pp-brand">Janota Fin Automatations</p>'
     "<h1>Accounting Workspace</h1><p>Pick an application to get started.</p>"
@@ -109,7 +110,7 @@ if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
 
 st.html(page, unsafe_allow_javascript=True)
 # The only way into the sales page: it is not a registered page, so it has no URL or nav entry.
-# theme.css pins this button in the top-right corner and suite_banner.js keeps it left of the account strip.
+# base/chrome.css pins this button in the top-right corner and suite_banner.js keeps it left of the account strip.
 if st.button("View Plans", icon=":material/auto_awesome:", key="pp-open-pricing"):
     st.session_state[sales_page.VIEW_KEY] = sales_page.PRICING_VIEW
     st.rerun()

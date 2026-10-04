@@ -9,10 +9,9 @@ File reading and the trial balance cache live in ingestion.py.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import streamlit as st
 
+from shared.styles import inject_page
 from apps.sales_tax.transaction_cleanup import render_transaction_cleanup
 from apps.sales_tax.vendor_reconciliation import render_vendor_reconciliation
 
@@ -21,22 +20,9 @@ from apps.sales_tax.vendor_reconciliation import render_vendor_reconciliation
 # STREAMLIT UI
 # =====================================================================
 
-def load_css(path: str = "style.css"):
-    # Resolved against this file's directory rather than the process's
-    # current working directory - Streamlit doesn't guarantee it's launched
-    # from the app's own folder, so a plain relative path can silently fail
-    # to find style.css depending on how/where `streamlit run` was invoked.
-    css_path = Path(__file__).resolve().parent / path
-    try:
-        with open(css_path) as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-    except FileNotFoundError:
-        pass  # App still works without the stylesheet; just less polished.
-
-
 def main():
     # Page title and wide layout come from st.navigation in the root app.py.
-    load_css("style.css")
+    inject_page("sales-tax")
 
     # Initialize session state for navigation if it doesn't exist
     if "active_tool" not in st.session_state:
