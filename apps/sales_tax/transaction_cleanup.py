@@ -8,6 +8,7 @@ import html
 import pandas as pd
 import streamlit as st
 
+from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
 
 from .ingestion import (
@@ -348,7 +349,10 @@ def render_transaction_cleanup():
                             icon="⚠️",
                         )
             except ValueError as e:
-                st.error(str(e))
+                friendly_error(
+                    "Cleanup couldn't run",
+                    f"{e}\n\nCheck the files against the sample templates, then run it again. Nothing was changed.",
+                )
 
         if "tc_result" in st.session_state:
             # Stale-result protection: if any input has changed since this run
@@ -437,10 +441,17 @@ def render_transaction_cleanup():
             """, unsafe_allow_html=True)
             if not control_ok:
                 st.error(
-                    "Control difference is non-zero - Original Total does not equal "
-                    "Retained + Removed. This indicates a bug in the reconciliation "
-                    "itself; do not rely on this run's output."
+                    "**The dollar control check failed.** Original Total does not equal Retained + Removed, "
+                    "which points to a problem in the cleanup itself. Do not use this run's output, and the "
+                    "download stays disabled."
                 )
+            elif stats['new_vendor_rows']:
+                st.info(
+                    f"Control check passed ($0.00 difference). {stats['new_vendor_rows']:,} transaction row(s) "
+                    "belong to vendors not in your mapping: classify them below, then build the updated mapping."
+                )
+            else:
+                st.success("Control check passed ($0.00 difference) and every vendor was found in your mapping. The workbook is ready to download.")
 
             # Vendor/Amount column names, needed both for classification below
             # and for the preview table's column_config further down.

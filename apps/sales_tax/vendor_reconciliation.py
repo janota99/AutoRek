@@ -32,6 +32,7 @@ import streamlit as st
 from openpyxl import Workbook
 from openpyxl.styles import Border, Font, Side
 
+from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
 
 # ID normalization is the same rule Transaction Cleanup uses: strip ALL internal
@@ -357,7 +358,12 @@ def render_vendor_reconciliation():
             df_old = pd.read_excel(old_file, header=0)
             df_new = pd.read_excel(new_file, header=0)
         except Exception as e:
-            st.error(f"Could not read one of the uploaded files: {e}")
+            friendly_error(
+                "We couldn't read one of the vendor listings",
+                "Check that both files are unprotected .xlsx workbooks with a header row on the first sheet, "
+                "then upload them again.",
+                e,
+            )
             return
 
         st.subheader("Map columns")

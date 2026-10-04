@@ -40,6 +40,7 @@ from apps.fifo_inventory.sample_data import (
 
 from apps.fifo_inventory.sidebar import render_sidebar, render_history
 from apps.fifo_inventory.insights import render_insights
+from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
 
 # ==========================================
@@ -83,9 +84,11 @@ if not st.session_state.get('disk_snapshot_checked', False):
                 st.session_state['app_flash'] = f"Restored FIFO layers from the last saved snapshot ({loaded_key})."
                 st.rerun()
         except Exception as exc:
-            st.error(
-                f"A snapshot was found on disk but could not be loaded automatically: {exc}. "
-                f"You can still restore one manually from the sidebar below."
+            friendly_error(
+                "A saved snapshot couldn't be loaded automatically",
+                "Your saved FIFO layers were not changed. Restore one manually from the sidebar, or check that "
+                "the snapshot file isn't open in another program.",
+                exc,
             )
 
 def _blank_master_grid():
@@ -292,7 +295,10 @@ with tab_processing:
                         'preview': uploaded_grid,
                     })
                 except Exception as exc:
-                    debug['errors'].append(str(exc))
+                    debug['errors'].append(
+                        f"We couldn't read the Master Grid file ({exc}). Check that it is the Ending Inventory "
+                        "workbook with a PRODUCT ALIAS column and a quantity and value column for each period."
+                    )
                     debug.update({'alias_col': None, 'period_cols': {}, 'value_period_cols': {}, 'applied_count': 0,
                                   'unmatched': [], 'duplicates': [], 'invalid_cells': [], 'preview': pd.DataFrame()})
 
@@ -359,7 +365,10 @@ with tab_processing:
                     raw_receipts_upload, current_period
                 )
             except Exception as exc:
-                receipt_errors = [str(exc)]
+                receipt_errors = [
+                    f"We couldn't read the Receipts file ({exc}). Check that it has a product alias, delivery "
+                    "date, quantity, and PRICE (total extended value) for each row."
+                ]
 
             for issue in receipt_errors:
                 st.error(issue)
@@ -452,10 +461,16 @@ with tab_processing:
             metric_cols[1].metric("REVIEW", counts['REVIEW'])
             metric_cols[2].metric("FAIL", counts['FAIL'])
 
+            if counts['FAIL']:
+                st.error(f"{counts['FAIL']} product(s) FAIL their controls. Closing the period is blocked until they are fixed.")
+            elif counts['REVIEW']:
+                st.warning(f"{counts['REVIEW']} product(s) need review. Check them, then acknowledge them to close the period.")
+            else:
+                st.success("All products PASS their controls. The period is ready to close.")
             if stale_preview:
                 st.error("Inputs or settings changed after this preview was calculated. Recalculate before closing the period.")
             if staged['processing_errors']:
-                st.error(f"{len(staged['processing_errors'])} product(s) encountered a calculation error.")
+                st.error(f"{len(staged['processing_errors'])} product(s) couldn't be calculated, so they are not in this preview. See the table below for the reason.")
                 st.dataframe(pd.DataFrame(staged['processing_errors']), width="stretch", hide_index=True)
             if staged['input_errors']:
                 st.error("The preview excludes rejected receipt rows. Correct them before closing the period.")
