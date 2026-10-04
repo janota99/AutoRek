@@ -96,9 +96,9 @@ page = (
     '<p><strong>Uploaded files:</strong> Switching applications clears uploads '
     "from the application you leave. Open applications in separate browser tabs to retain each session.</p>"
     '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
+    f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
     '<div class="pp-preview" role="status" aria-live="polite">'
     '<span class="pp-preview-hint">Hover over an application to preview what it takes in and produces.</span></div>'
-    f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
     "</div>"
     f"<script>window.PP_ICONS = {_icons_json()};\n"
     f"{(_HERE / 'dashboard.js').read_text(encoding='utf-8')}</script>"

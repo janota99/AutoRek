@@ -120,8 +120,8 @@ _CSS = """
 [class*="st-key-pp-plan-"] { transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
 [class*="st-key-pp-plan-"]:hover { transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0, 0, 0, .1);
     border-color: #2563eb; }
-.pp-compare { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1.5rem; min-height: 3.4rem;
-    margin: 0 0 1rem; padding: .7rem 1rem; border: 1px dashed #b9cadb; border-radius: .6rem;
+.pp-compare { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; min-height: 3.4rem;
+    margin: 1rem 0 0; padding: .7rem 1rem; border: 1px dashed #b9cadb; border-radius: .6rem;
     background: rgba(255, 255, 255, .6); color: #3b5266; font-size: .97rem; line-height: 1.45;
     transition: background .2s ease, border-color .2s ease; }
 .pp-compare-active { border-style: solid; border-color: #2f70a8; background: #fff; }
@@ -180,20 +180,19 @@ _HOVER_JS = r"""
     var plan = plans().filter(function (p) { return p.id === id; })[0];
     if (!plan) return;
     el.textContent = "";
-    var name = document.createElement("strong");
-    name.className = "pp-compare-name";
-    name.textContent = plan.name;
+    var name = line("Plan Name:", plan.name);
+    name.classList.add("pp-compare-name");
     el.appendChild(name);
     if (plan.monthly === null) {
-      el.appendChild(line("Price", "Quoted to your organization"));
+      el.appendChild(line("Price:", "Quoted to your organization"));
     } else {
       var saved = plan.monthly * 12 - plan.annual;
-      el.appendChild(line("Price", money(plan.monthly) + " per month, or " + money(plan.annual) +
+      el.appendChild(line("Price:", money(plan.monthly) + " per month, or " + money(plan.annual) +
         " per year (saves " + money(saved) + ")"));
     }
     var count = plan.tools.length;
-    el.appendChild(line("Adds", count + (count === 1 ? " application: " : " applications: ") + plan.tools.join(", ")));
-    if (plan.inherits) el.appendChild(line("Includes", plan.inherits.replace("Everything in ", "all of ")));
+    el.appendChild(line("Adds:", count + (count === 1 ? " application: " : " applications: ") + plan.tools.join(", ")));
+    if (plan.inherits) el.appendChild(line("Includes:", plan.inherits.replace("Everything in ", "all of ")));
     el.classList.add("pp-compare-active");
     card.classList.add("pp-plan-hover");
   }
@@ -296,7 +295,6 @@ def render() -> None:
 
     cycle = st.segmented_control("Billing", [_MONTHLY, _ANNUAL], default=_MONTHLY, key=_CYCLE_KEY)
     annual = cycle == _ANNUAL
-    st.html(f"{_compare_bar()}<script>{_HOVER_JS}</script>", unsafe_allow_javascript=True)
 
     for tier, col in zip(TIERS, st.columns(len(TIERS), gap="large")):
         with col, st.container(key=f"pp-plan-{tier.id}", border=True):
@@ -307,6 +305,9 @@ def render() -> None:
                 if tier.monthly_price is None:
                     st.session_state.pop(_SENT_KEY, None)
                     _contact_dialog()
+
+    # Under the cards, not above them, so the hover text never crowds the choices.
+    st.html(f"{_compare_bar()}<script>{_HOVER_JS}</script>", unsafe_allow_javascript=True)
 
     chosen = next((t for t in TIERS if t.id == st.session_state.get(PLAN_KEY)), None)
     if chosen:

@@ -143,14 +143,15 @@
         .pp-hero h1 { font-size: 2rem; }
 }
 
-/* Hover preview bar: what the hovered application takes in and produces (see dashboard.js). */
+/* Hover preview bar, below the cards so it never crowds the choices: what the hovered application
+   takes in and produces (see dashboard.js). */
 .pp-preview {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
     min-height: 3.4rem;
-    margin-bottom: 1.25rem;
+    margin-top: 1.25rem;
     padding: 0.7rem 1rem;
     border: 1px dashed #b9cadb;
     border-radius: 0.6rem;
@@ -167,7 +168,7 @@
     background: #ffffff;
 }
 
-.pp-preview-title { color: var(--navy); font-size: 1.05rem; }
+.pp-preview-title { color: var(--navy); font-size: 1.05rem; font-weight: 700; }
 .pp-preview-group b { margin-right: 0.35rem; color: var(--blue); font-weight: 700; }
 .pp-card.pp-hover { border-color: #9cc0e0; }
 

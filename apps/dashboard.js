@@ -65,12 +65,11 @@
     try { facts = JSON.parse(card.dataset.facts); } catch (e) { return; }
     card.classList.add("pp-hover");
     preview.textContent = "";
-    var title = document.createElement("strong");
-    title.className = "pp-preview-title";
-    title.textContent = facts.title;
+    var title = group("Utility Name:", [facts.title]);
+    title.classList.add("pp-preview-title");
     preview.appendChild(title);
-    if (facts.inputs.length) preview.appendChild(group("Takes in", facts.inputs));
-    if (facts.outputs.length) preview.appendChild(group("Produces", facts.outputs));
+    if (facts.inputs.length) preview.appendChild(group("Takes In:", facts.inputs));
+    if (facts.outputs.length) preview.appendChild(group("Produces:", facts.outputs));
     preview.classList.add("pp-preview-active");
   }
   function clearFacts(card) {
