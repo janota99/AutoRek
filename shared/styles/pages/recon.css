@@ -6,8 +6,8 @@
     --rec-surface-soft: #f8fafc;
     --rec-border: #dfe5ec;
     --rec-border-strong: #cbd5e1;
-    --rec-navy: #19365d;
-    --rec-navy-hover: #244b7d;
+    --rec-navy: var(--pp-navy);
+    --rec-navy-hover: var(--pp-navy-hover);
     --rec-blue: #2563eb;
     --rec-teal: #27666b;
     --rec-green: #16805b;

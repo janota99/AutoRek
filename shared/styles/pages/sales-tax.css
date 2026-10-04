@@ -5,7 +5,7 @@
    ============================================================ */
 
 :root {
-    --accent: #1f4e79;      /* deep slate blue - primary accent */
+    --accent: var(--pp-navy);  /* primary accent: the suite navy (base/tokens.css) */
     --accent-light: #eaf1f8;
     --success: #2e7d32;
     --warning: #b26a00;
@@ -79,7 +79,7 @@ h1, h2, h3 {
 
 [data-testid="stButton"] button:hover,
 [data-testid="stDownloadButton"] button:hover {
-    box-shadow: 0 2px 8px rgba(31, 78, 121, 0.18);
+    box-shadow: 0 2px 8px rgba(25, 54, 93, 0.18);
 }
 
 [data-testid="baseButton-primary"] {
@@ -295,8 +295,8 @@ button[kind="secondary"],
     order: -1;
     min-width: 11rem;
     padding: 0.55rem 1.4rem;
-    background: #19365d !important;
-    border: 1px solid #19365d !important;
+    background: var(--pp-navy) !important;
+    border: 1px solid var(--pp-navy) !important;
     font-size: 0 !important;
 }
 [class*="st-key-st-card-"] [data-testid="stFileUploaderDropzone"] button * { display: none !important; }
@@ -312,7 +312,7 @@ button[kind="secondary"],
 /* Check-your-file strip under an upload */
 .st-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 0.25rem; }
 .st-chip { padding: 0.25rem 0.6rem; border: 1px solid #dfe5ec; border-radius: 7px; background: #f8fafc;
-           color: #19365d; font-size: 0.92rem; }
+           color: var(--pp-navy); font-size: 0.92rem; }
 .st-chip b { color: #5b6b7c; font-weight: 600; margin-right: 0.25rem; }
 .st-chip-ok { background: #eaf6f1; border-color: #b7dfcf; color: #116447; }
 .st-chip-ok b { color: #116447; }

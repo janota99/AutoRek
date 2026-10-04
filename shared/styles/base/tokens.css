@@ -3,9 +3,11 @@
    (--rec-*, --accent, the Dashboard's --navy). Each app stylesheet still owns its own palette;
    the Invoice Hub runs in an iframe and cannot read these. */
 :root {
-    --pp-navy: #13283f;
-    --pp-navy-hover: #1f3c5c;
-    --pp-sidebar-bg: #19365d;  /* the Sales Reconciliation sidebar; lighter than the navy baked into the Janota Fin logo, so the logo stays visible */
+    /* The suite's one navy (the Sales Reconciliation blue). It is lighter than the navy baked into the
+       Janota Fin logo, so the logo stays visible on the sidebars. */
+    --pp-navy: #19365d;
+    --pp-navy-hover: #244b7d;
+    --pp-sidebar-bg: var(--pp-navy);
     --pp-surface: #ffffff;
     --pp-text-secondary: #4a5a6e;
     --pp-text-muted: #65758a;
@@ -20,7 +22,7 @@
     --pp-warn-bg: #fdecc8;
     --pp-warn-text: #8a4b00;
     --pp-warn-border: #f0c36d;
-    --pp-shadow-popover: 0 10px 28px rgba(19, 40, 63, 0.18);
+    --pp-shadow-popover: 0 10px 28px rgba(25, 54, 93, 0.18);
     --pp-shadow-accent: 0 4px 12px rgba(37, 99, 235, 0.2);
 
     /* Status palette (shared/status.py). matched = pass; unresolved = review: an open item is
