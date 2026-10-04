@@ -28,21 +28,30 @@ function estimateHoursSaved(invoices, minutesPerInvoice) {
   return totalMinutes / 60;
 }
 
+// Writes the result or an inline error into the result paragraph
+function showSavingsMessage(html, isError) {
+  var result = document.getElementById("savingsResult");
+  result.innerHTML = html;
+  result.classList.toggle("is-error", isError);
+  result.setAttribute("role", isError ? "alert" : "status");
+}
+
 // Runs when the button is clicked
 function showSavings() {
   var count = Number(document.getElementById("invoiceCount").value);
 
   if (isNaN(count) || count <= 0) {
-    alert("Please enter a number of invoices greater than 0.");
+    showSavingsMessage("Please enter a number of invoices greater than 0.", true);
+    document.getElementById("invoiceCount").focus();
     return;
   }
 
   var hoursPerMonth = estimateHoursSaved(count, MINUTES_SAVED_PER_INVOICE);
   var hoursPerYear = hoursPerMonth * 12;
 
-  document.getElementById("savingsResult").innerHTML =
+  showSavingsMessage(
     "Estimated time saved: <strong>" + hoursPerMonth.toFixed(1) +
-    " hours per month</strong> (about " + hoursPerYear.toFixed(0) + " hours per year).";
+    " hours per month</strong> (about " + hoursPerYear.toFixed(0) + " hours per year).", false);
 }
 
 // ---- Event handlers ----
@@ -55,6 +64,7 @@ function updateSavingsLive() {
 
   if (isNaN(count) || count <= 0) {
     result.innerHTML = "";
+    result.classList.remove("is-error");
     return;
   }
   showSavings();
