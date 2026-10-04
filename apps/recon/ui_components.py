@@ -479,6 +479,52 @@ def _workbook_timing_text(timing: dict[str, float]) -> str:
     return text
 
 
+def render_friendly_error(title: str, what_to_do: str, exc: Optional[BaseException] = None) -> None:
+    """Show a plain-language problem and the next step; the raw error stays one click away.
+
+    Display only: callers keep their own `return`, so a failure still stops the run exactly as before.
+    """
+    render_notice_panel(title, what_to_do, tone="danger", icon="!")
+    if exc is not None:
+        with st.expander("Technical details (for support)"):
+            st.code(f"{type(exc).__name__}: {exc}")
+
+
+def render_run_summary(result: "ReconciliationResult") -> None:
+    """One plain-language banner above the result tabs: what happened and what to do next.
+
+    Only restates figures already in `result.metrics`; it computes nothing new.
+    """
+    m = result.metrics
+    qb_rows = int(m["QuickBooks Rows"])
+    matched = int(m["Matched QuickBooks Rows"])
+    unresolved = int(m["Unresolved QuickBooks Rows"])
+    unmatched_inf = int(m["Unmatched Infinium Rows"])
+    je_amount = format_currency(m["Proposed JE Amount"])
+    controls_pass = m["Control Status"] == "PASS"
+    review_hold = m.get("Posting Status", "READY TO POST") == "REVIEW REQUIRED"
+
+    if not controls_pass:
+        headline, tone, icon = "Controls failed: do not post yet", "danger", "!"
+        next_step = "Open the Overview tab to see which control failed. Downloads stay locked until every control passes."
+    elif review_hold:
+        headline, tone, icon = "Reconciled, with items on review hold", "warning", "!"
+        next_step = "Resolve the held items in the Exception Review tab, then download the workpaper."
+    elif unresolved:
+        headline, tone, icon = "Reconciled: some items need a journal entry", "warning", "!"
+        next_step = "Review the unresolved items in the Exception Review tab, then download the workpaper."
+    else:
+        headline, tone, icon = "Fully reconciled: every row matched", "success", "✓"
+        next_step = "Go to the Downloads tab to prepare the workpaper."
+
+    body = (
+        f"{matched:,} of {qb_rows:,} QuickBooks rows matched exactly to the cent. "
+        f"{unresolved:,} QuickBooks row(s) unresolved (proposed journal entry {je_amount}); "
+        f"{unmatched_inf:,} Infinium row(s) unmatched. Next: {next_step}"
+    )
+    render_notice_panel(headline, body, tone=tone, icon=icon)
+
+
 def render_result(result: ReconciliationResult, run_started: Optional[float] = None) -> None:
     metrics = result.metrics
     control_status = metrics["Control Status"]
@@ -489,6 +535,8 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
         )
     else:
         st.error("Reconciliation completed with failed controls. Downloads are withheld until controls pass.")
+
+    render_run_summary(result)
 
     posting_status = metrics.get("Posting Status", "READY TO POST")
     if posting_status == "REVIEW REQUIRED":

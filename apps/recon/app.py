@@ -50,6 +50,7 @@ from apps.recon.matching import APP_VERSION, MATCHING_RULE_VERSION, build_reconc
 from apps.recon.vendor_aliases import load_vendor_aliases
 from apps.recon.ui_components import (
     load_app_css,
+    render_friendly_error,
     render_ingestion_flow,
     render_notice_panel,
     render_pre_execution_controls,
@@ -313,7 +314,7 @@ def main() -> None:
             if inf_secondary_bytes and inf_secondary_file else ()
         )
     except Exception as exc:
-        st.error(f"The application could not inspect the uploaded workbook structure: {exc}")
+        render_friendly_error("We couldn't open one of your files", "Check that each upload is an unprotected .xlsx, .xlsm, or .csv export and not a corrupted or password-protected file, then upload it again.", exc)
         return
 
     qb_sheet_name: Optional[str] = qb_sheets[0] if qb_sheets else None
@@ -394,7 +395,7 @@ def main() -> None:
             if inf_secondary_bytes and inf_secondary_file else None
         )
     except Exception as exc:
-        st.error(f"The application could not inspect the selected source worksheets: {exc}")
+        render_friendly_error("We couldn't read the selected worksheet", "Pick a different worksheet in the sidebar, or re-export the file so the data sits on a normal sheet.", exc)
         return
 
     st.sidebar.markdown("### Import settings")
@@ -455,16 +456,16 @@ def main() -> None:
             and inf_secondary_header_number is not None else None
         )
     except Exception as exc:
-        st.error(f"The application could not read the uploaded files with the selected header rows: {exc}")
+        render_friendly_error("The header row looks wrong", "Change the header row number in the sidebar to the row that holds the column names (PO, invoice, amount).", exc)
         return
     if qb_raw.empty or inf_raw.empty:
-        st.error("Both source files must contain at least one nonblank data row beneath the selected header row.")
+        render_friendly_error("No data found under the header row", "Both files need at least one data row below the header row. Check the header row number in the sidebar, or that the right file was uploaded.")
         return
     if qb_secondary_raw is not None and qb_secondary_raw.empty:
-        st.error("The QuickBooks secondary upload contains no usable rows beneath its selected header.")
+        render_friendly_error("The prior-period QuickBooks file looks empty", "Check its header row number, or remove the file: prior-period files are optional.")
         return
     if inf_secondary_raw is not None and inf_secondary_raw.empty:
-        st.error("The Infinium secondary upload contains no usable rows beneath its selected header.")
+        render_friendly_error("The prior-period Infinium file looks empty", "Check its header row number, or remove the file: prior-period files are optional.")
         return
     qb_import_audit = dict(qb_raw.attrs.get("ingestion_audit", {}))
     inf_import_audit = dict(inf_raw.attrs.get("ingestion_audit", {}))
@@ -531,9 +532,10 @@ def main() -> None:
         with progress_container:
             render_ingestion_flow(True, True, False, reconciliation_complete)
 
-        st.error(
-            "PO, invoice, and amount mappings are required for every uploaded source. "
-            "The primary Infinium fiscal-period column is also required."
+        render_friendly_error(
+            "Some columns still need to be matched",
+            "Pick the PO, invoice, and amount columns for every uploaded file in the sidebar. "
+            "The primary Infinium file also needs its fiscal-period column.",
         )
         return
 
@@ -553,8 +555,10 @@ def main() -> None:
                 True, True, True, reconciliation_complete, source_validation_failed=True
             )
 
-        st.error(
-            "No QuickBooks transaction-detail rows remain. A retained detail row must be populated in every field other than Quantity and Amount."
+        render_friendly_error(
+            "No usable QuickBooks transaction rows",
+            "Every transaction row must be filled in apart from Quantity and Amount; subtotal and blank rows are "
+            "removed automatically. Check that the header row and column mapping are right.",
         )
         return
 
@@ -725,7 +729,7 @@ def main() -> None:
             clear_prepared_workbooks()
             st.rerun()
         except Exception as exc:
-            st.error(f"Reconciliation stopped safely: {exc}")
+            render_friendly_error("Reconciliation stopped safely", "Nothing was changed or posted. Check the column mappings and header rows, then run it again. If it keeps failing, share the technical details below.", exc)
             return
 
     if "reconciliation_result" in st.session_state:
