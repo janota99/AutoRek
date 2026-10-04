@@ -1,8 +1,23 @@
 # AutoRek: Janota Fin Automatations Accounting Apps
 
-AutoRek collects accounting tools for a bottling and packaging operation in one
-[Streamlit](https://streamlit.io) web app. It runs on your own computer: you open it in a
-browser, upload your exports, review the results on screen, and download Excel workpapers.
+[![CI](https://github.com/janota99/AutoRek/actions/workflows/ci.yml/badge.svg)](https://github.com/janota99/AutoRek/actions/workflows/ci.yml)
+
+**Close the books faster, with numbers you can defend.** AutoRek gives a small accounting team
+four tools in one browser app: cost inventory, reconcile sales, review sales tax, and track
+invoices. You upload your exports, review the results on screen, and download Excel workpapers.
+It runs on your own computer, so company data never leaves it.
+
+**New here?** Every upload box has a **Use Sample Data** button, so you can see each tool work in
+under a minute without any files of your own.
+
+**Why you can trust the numbers**
+
+- Amounts are compared **to the exact cent**, never approximately.
+- Anything unclear is **flagged for review instead of guessed**.
+- Nothing changes the official books until you confirm it, and every control shows PASS, REVIEW
+  or FAIL.
+- Downloads stay disabled until the controls reconcile.
+- The reconciliation engine is covered by 360+ automated tests, run on every change.
 
 | Tool | What it does |
 |---|---|
@@ -10,10 +25,6 @@ browser, upload your exports, review the results on screen, and download Excel w
 | **Sales Reconciliation** | Matches QuickBooks sales to Infinium sales by PO, invoice, and exact signed amount, then builds the reconciliation workpaper. |
 | **Sales Tax Review** | Cleans up sales-tax transactions against a vendor mapping and the trial balance, and reconciles two vendor listings. |
 | **Invoice Lifecycle Hub** | Prototype of an Outlook invoice tracker that routes invoices and bills into approval queues. It uses demo data only. |
-
-The tools are built for accuracy and auditability: amounts are compared to the cent, unclear
-items are flagged for review instead of guessed, and nothing changes the official books until
-you confirm it.
 
 ---
 
@@ -43,6 +54,15 @@ pip install -r requirements.txt
 
 On macOS or Linux, use `python3` instead of `py`, and run `source .venv/bin/activate` to
 activate the environment.
+
+### Run with Docker (no Python needed)
+
+```bash
+docker build -t autorek .
+docker run -p 8501:8501 autorek
+```
+
+Then open <http://localhost:8501>.
 
 ### Run
 
@@ -176,6 +196,18 @@ excludes these locations:
 | `apps/fifo_inventory/app_settings.json` | FIFO tolerance settings |
 
 Before you commit, check `git status` and add specific files rather than everything.
+
+---
+
+## Known limitations and roadmap
+
+- Sign-in is simulated in the browser; it personalizes the app but is not access control.
+- FIFO and Sales Tax have no unit tests yet (Recon and the Invoice Hub do).
+- Prices on the Plans page are placeholders; there is no payment processing.
+- Planned: database-backed storage (see `mongodb/`), then moving the repository to private.
+
+Each tool's `docs/known-issues.md` lists its specific open items. To contribute, see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 

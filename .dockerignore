@@ -1,0 +1,9 @@
+.git
+.venv
+__pycache__
+*.pyc
+apps/recon/data/
+apps/sales_tax/data/
+apps/fifo_inventory/fifo_snapshots/
+apps/fifo_inventory/app_settings.json
+automated-outlook-invoice-tracker-phase-1.zip
