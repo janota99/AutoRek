@@ -641,7 +641,11 @@ def main() -> None:
             "Source validation passed. Both datasets are ready for reconciliation.",
         )
     with st.expander("Source validation details", expanded=validation_failed):
-        st.dataframe(status_styler(validation_report, ["Status"]), width="stretch", hide_index=True)
+        st.dataframe(
+    validation_report,
+    width="stretch",
+    hide_index=True,
+)
     if validation_failed:
         return
 
