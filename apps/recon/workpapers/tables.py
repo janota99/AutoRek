@@ -87,6 +87,19 @@ def _review_holds_released_expr() -> str:
     return f'SUMIFS({amount_col},{disposition_col},"Release to JE")'
 
 
+def _decisions_missing_support_expr() -> str:
+    """Count of Review Holds rows with a reviewer decision but no reviewer,
+    review date, or comment -- live, so it follows edits made in Excel."""
+    disposition = _table_column_reference("ReviewHolds", "Reviewer Disposition")
+    reviewer = _table_column_reference("ReviewHolds", "Reviewer")
+    date = _table_column_reference("ReviewHolds", "Review Date")
+    comment = _table_column_reference("ReviewHolds", "Comment")
+    return (
+        f'SUMPRODUCT(({disposition}<>"Pending Review")'
+        f'*((({reviewer}="")+({date}="")+({comment}=""))>0))'
+    )
+
+
 def _je_support_manual_exclusions_expr(result: "ReconciliationResult") -> str:
     """True-unmatched JE Support items a reviewer manually excluded, with a
     documented reason -- the engine's own Final Disposition for these rows

@@ -21,7 +21,7 @@ auditability, and "never silently change the books" beat convenience everywhere.
 ```powershell
 pip install -r requirements.txt
 streamlit run app.py                          # always from this folder (C:\AutoRek)
-py -m pytest                                  # Recon's 355 tests plus the mongodb/ sample-data checks; keep them free of FutureWarnings
+py -m pytest                                  # Recon's 418 tests plus the mongodb/ sample-data checks; keep them free of FutureWarnings
 node apps/invoice_hub/tests/test_layers.js    # Invoice Hub; prints ALL TESTS PASSED
 ```
 
@@ -46,6 +46,9 @@ checks and for how to prove a refactor changed nothing.
   calculation change bumps `ENGINE_VERSION`. The P12 seed values are real opening balances.
 - **Recon:** amounts must agree exactly to the signed cent. Ambiguity stays unresolved for review.
   Never add a "closest match" rule. Bump `MATCHING_RULE_VERSION` when match results can change.
+  Weak references never create an accepted match, and a match whose other identifier points at a
+  different record is refused, not ordered. Reviewer decisions never overwrite engine classifications;
+  "Final Approved" appears only after a recorded approval (`apps/recon/docs/matching-rules.md`).
 - **Sales Tax:** the source and mapping files are read **by position**. Blank ≠ conflict.
   The download stays disabled until the dollar control check is $0.00.
 - **Invoice Hub:** sign-in is simulated in the browser; never present it as real access

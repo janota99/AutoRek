@@ -15,10 +15,10 @@ import pandas as pd
 from ..duplicates import AMOUNT_CENTS, IDENTITY_GRADE_ROLES, STABLE_FINGERPRINT_ROLES
 
 
-APP_VERSION = "2.16.3"
+APP_VERSION = "2.17.0"
 
 
-MATCHING_RULE_VERSION = "2026.09-PACKAGING-WORDS-IGNORED"
+MATCHING_RULE_VERSION = "2026.10-EVIDENCE-LINK-CHECKS"
 
 
 # Grouped matching is intentionally bounded to keep reconciliation runs
@@ -45,6 +45,48 @@ INF_ID = "__REC_INF_ID"
 
 
 PRODUCT_STANDARD = "__REC_PRODUCT_STANDARD"
+
+
+# Match keys: the normalized PO / invoice, but blank when the value is a weak
+# reference (see matching/evidence.py). Every matching pass reads these, so a
+# placeholder such as "NA" can never prove two rows are the same transaction.
+# The full normalized values (NORM_PO / NORM_INV) are still kept for display,
+# duplicate screening, and the evidence search that explains a rejected row.
+
+KEY_PO = "__REC_KEY_PO"
+
+
+KEY_INV = "__REC_KEY_INV"
+
+
+# The values exactly as the source file carried them, and which source column
+# supplied each reference ("" = the dedicated PO / invoice column).
+
+SRC_PO = "__REC_SRC_PO"
+
+
+SRC_INV = "__REC_SRC_INV"
+
+
+PO_FIELD_USED = "__REC_PO_FIELD"
+
+
+INV_FIELD_USED = "__REC_INV_FIELD"
+
+
+# Corroborating context read from the mapped customer and date columns. It
+# explains a match or a hold; it never decides one (see evidence.corroboration).
+
+CORR_CUSTOMER = "__REC_CORR_CUSTOMER"
+
+
+CORR_DATE = "__REC_CORR_DATE"
+
+
+# Fiscal-period label as read from the mapped period column (any source), kept
+# for audit display only: an accounting-period difference is never identity evidence.
+
+SRC_PERIOD = "__REC_SRC_PERIOD"
 
 
 FISCAL_LABEL = "__REC_FISCAL_LABEL"
@@ -178,6 +220,12 @@ class MatchGroup:
     group_level: bool = False
     match_id: str = ""
     match_ref: str = ""
+    # Identifier discrepancy on a field that was NOT the matching key, when it
+    # does not compete with another record (see evidence.assess_group_links).
+    identifier_discrepancy: str = ""
+    # Which source fields supplied the evidence, e.g. "PO: QuickBooks 'P.O. NUMBER'
+    # = Infinium 'OHDESC'; invoice differs (non-competing)".
+    evidence_summary: str = ""
 
 
 @dataclass
@@ -237,6 +285,90 @@ class ReconciliationResult:
     qb_dispositions: pd.DataFrame = field(default_factory=pd.DataFrame)
     product_review_items: pd.DataFrame = field(default_factory=pd.DataFrame)
     customer_cases_without_bottles: dict[str, float] = field(default_factory=dict)
+    # Evidence layer: identity-level export controls, and the reviewer layer.
+    # Reviewer fields never overwrite engine classifications (see review_decisions).
+    export_controls: pd.DataFrame = field(default_factory=pd.DataFrame)
+    review_adjustments: pd.DataFrame = field(default_factory=pd.DataFrame)
+    adjustment_bridge: pd.DataFrame = field(default_factory=pd.DataFrame)
+    approval: dict[str, Any] = field(default_factory=dict)
+
+
+# Characters that appear in exports without being part of an identifier:
+# zero-width and byte-order marks, and the apostrophe Excel puts in front of
+# text-formatted numbers ('0105695). Leading zeros are never removed.
+
+_RE_INVISIBLE = re.compile("[​‌‍⁠﻿]")
+
+
+_RE_EXCEL_TEXT_PREFIX = re.compile(r"^'(?=\S)")
+
+
+_RE_EXCEL_FORMULA_TEXT = re.compile(r'^="(.*)"$')
+
+
+# "1.23457E+11" in a cell is Excel's rounded rendering of a long number: the
+# original digits are unrecoverable, so it is flagged, never "repaired".
+
+_RE_SCIENTIFIC = re.compile(r"^[+-]?\d(?:\.\d+)?E[+-]?\d+$")
+
+
+def identifier_text(value: Any) -> str:
+    """The identifier as text, exactly: never through float arithmetic.
+
+    Integers and whole-number floats/Decimals (what Excel and pandas hand back
+    for a numeric ID cell) become plain digit strings. A non-whole float keeps
+    its shortest repr. Surrounding whitespace, invisible characters, an Excel
+    text prefix, and ="..." wrappers are removed; nothing else is touched, so
+    leading zeros and punctuation survive for the caller to compare."""
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return str(value).upper()
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    if hasattr(value, "item") and not isinstance(value, (str, bytes)):
+        try:
+            value = value.item()
+        except Exception:
+            pass
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, (float, Decimal)):
+        decimal_value = Decimal(repr(value)) if isinstance(value, float) else value
+        if not decimal_value.is_finite():
+            return ""
+        if decimal_value == decimal_value.to_integral_value():
+            return format(decimal_value.quantize(Decimal(1)), "f")
+        return format(decimal_value.normalize(), "f")
+    text = _RE_INVISIBLE.sub("", str(value)).strip()
+    formula = _RE_EXCEL_FORMULA_TEXT.match(text)
+    if formula:
+        text = formula.group(1).strip()
+    return _RE_EXCEL_TEXT_PREFIX.sub("", text)
+
+
+def identifier_flags(value: Any) -> list[str]:
+    """Reviewer-facing notes on a source identifier that normalization had to
+    interpret. Empty for an ordinary value."""
+    text = identifier_text(value)
+    flags: list[str] = []
+    if text and _RE_SCIENTIFIC.match(text.upper()):
+        flags.append("EXCEL_SCIENTIFIC_NOTATION")
+    if text != ("" if value is None else str(value)) and isinstance(value, str) and text:
+        flags.append("SOURCE_TEXT_ADJUSTED")
+    if text and _RE_NON_ALNUM.search(text.upper().replace(" ", "")):
+        flags.append("PUNCTUATION_IGNORED")
+    return flags
+
+
+def fold_identifier(value: Any) -> str:
+    """Case- and whitespace-folded identifier that keeps punctuation. Two
+    values with the same normalized key but different folds differ only in
+    punctuation -- reported as an identifier discrepancy, not hidden."""
+    return re.sub(r"\s+", "", identifier_text(value).upper())
 
 
 @lru_cache(maxsize=4096)
@@ -246,9 +378,7 @@ def _cached_clean_alphanumeric(text: str) -> str:
 
 
 def clean_alphanumeric(value: Any) -> str:
-    if value is None or pd.isna(value):
-        return ""
-    return _cached_clean_alphanumeric(str(value).strip().upper())
+    return _cached_clean_alphanumeric(identifier_text(value).upper())
 
 
 @lru_cache(maxsize=4096)
@@ -259,9 +389,7 @@ def _cached_clean_po(text: str) -> str:
 
 
 def clean_po(value: Any) -> str:
-    if value is None or pd.isna(value):
-        return ""
-    return _cached_clean_po(str(value).strip().upper())
+    return _cached_clean_po(identifier_text(value).upper())
 
 
 def parse_amount_cents(value: Any) -> Optional[int]:

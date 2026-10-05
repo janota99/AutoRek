@@ -581,6 +581,25 @@ def build_source_validation_report(
     return pd.DataFrame(records)
 
 
+
+def fallback_reference_columns(
+    columns: list[str], mapping: dict[str, Optional[str]], key_prefix: str,
+) -> dict[str, tuple[str, ...]]:
+    """Optional extra columns that supply a PO or invoice only where the
+    dedicated column is blank (e.g. a memo or description). A value counts only
+    when it holds exactly one identifier-like token, and matches that rely on it
+    say so -- see matching.evidence.extract_reference. Stored as tuples so the
+    mapping stays hashable (it is part of the cached-run signature)."""
+    chosen: dict[str, tuple[str, ...]] = {}
+    for role, label, source in (
+        ("po_fallback", "Additional PO columns (optional; used only where PO is blank)", "po"),
+        ("invoice_fallback", "Additional invoice columns (optional; used only where invoice is blank)", "invoice"),
+    ):
+        options = [column for column in columns if column != mapping.get(source)]
+        chosen[role] = tuple(st.multiselect(label, options, key=f"{key_prefix}_{role}"))
+    return chosen
+
+
 def mapping_panel(
     qb_raw: pd.DataFrame,
     inf_raw: pd.DataFrame,
@@ -652,6 +671,7 @@ def mapping_panel(
             "Source fiscal period", qb_columns, QB_COLUMN_PATTERNS["period"],
             f"qb_map_period_{key_suffix}", optional=True, default_column=detected_qb_period,
         )
+        qb_mapping.update(fallback_reference_columns(qb_columns, qb_mapping, f"qb_map_{key_suffix}"))
         st.markdown("**Infinium**")
         inf_mapping = {
             "po": select_column("PO", inf_columns, INF_COLUMN_PATTERNS["po"], f"inf_map_po_{key_suffix}", default_column=inf_defaults["po"]),
@@ -675,6 +695,7 @@ def mapping_panel(
                 f"inf_map_date_{key_suffix}", optional=True, default_column=inf_defaults.get("date"),
             ),
         }
+        inf_mapping.update(fallback_reference_columns(inf_columns, inf_mapping, f"inf_map_{key_suffix}"))
 
     return qb_mapping, inf_mapping
 
@@ -734,6 +755,7 @@ def secondary_mapping_panel(
                 label, columns, patterns[role], f"{prefix}_map_{role}_{key_suffix}",
                 optional=True, default_column=defaults.get(role),
             )
+        mapping.update(fallback_reference_columns(columns, mapping, f"{prefix}_map_{key_suffix}"))
         return mapping
 
     qb_mapping: Optional[dict[str, Optional[str]]] = None

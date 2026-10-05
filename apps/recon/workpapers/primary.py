@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 from openpyxl import Workbook
 
-from ..matching import ReconciliationResult, validate_match_references
+from ..matching import assert_exportable, ReconciliationResult, validate_match_references
+from .audit import build_audit_sheet
 from .finishing import _apply_workbook_run_metadata, _save_workbook_bytes
 from .raw_data import build_raw_data_sheet
 from .detail import (
@@ -17,6 +20,9 @@ from .summary_sheets import build_aggregates_sheet, build_posting_summary_sheet
 
 def build_primary_workbook(result: ReconciliationResult) -> bytes:
     validate_match_references(result)
+    # Re-run the identity controls on exactly what is about to be written --
+    # including any reviewer adjustments -- and refuse to export on a failure.
+    result = dataclasses.replace(result, export_controls=assert_exportable(result))
     wb = Workbook()
     wb.properties.creator = "Sales Reconciliation Application"
     wb.properties.title = f"Sales Reconciliation {result.run_id}"
@@ -30,6 +36,7 @@ def build_primary_workbook(result: ReconciliationResult) -> bytes:
     _link_reconciled_data_to_unresolved_exceptions(wb, result)
     build_aggregates_sheet(wb, result, sheet_title="Aggregates")
     build_raw_data_sheet(wb, result)
+    build_audit_sheet(wb, result)
     build_posting_summary_sheet(wb, result)
     # The landing page: moved to the very front now that every other sheet exists.
     wb.move_sheet("Posting Summary", offset=-wb.sheetnames.index("Posting Summary"))

@@ -11,6 +11,7 @@ from .core import _split_reference_ids, cents_to_float, INF_ID, QB_ID, valid_cen
 from .labels import (
     HOLD_AMOUNT_VARIANCE,
     HOLD_CANDIDATE_INVALID_AMOUNT,
+    HOLD_CONFLICTING_LINKS,
     HOLD_EXACT_CANDIDATE_NOT_UNIQUE,
     HOLD_HISTORICAL_CLEARANCE,
     HOLD_INVALID_AMOUNT,
@@ -18,10 +19,12 @@ from .labels import (
     HOLD_PO_ALREADY_REPRESENTED,
     HOLD_PO_REUSE,
     HOLD_TYPO_CANDIDATES,
+    HOLD_WEAK_REFERENCE,
     MATCH_REF_COLUMN,
     REFERENCE_HOLD_COLUMNS,
     REFERENCED_MATCH_REF_COLUMN,
 )
+from .evidence import FINDING_CONFLICTING_LINKS, FINDING_WEAK_EXACT_AMOUNT
 from .exceptions import po_reuse_error_qb_index_map
 from .references import describe_match_references
 
@@ -50,6 +53,8 @@ SHORT_REASON_CODES: dict[str, str] = {
     "REVIEW_HOLD_INVALID_AMOUNT": "INVALID_AMOUNT",
     "REVIEW_HOLD_CANDIDATE_INVALID_AMOUNT": "INVALID_AMOUNT",
     "REVIEW_HOLD_FUZZY_MATCH": "FUZZY_CANDIDATE",
+    "REVIEW_HOLD_CONFLICTING_LINKS": "CONFLICTING_LINKS",
+    "REVIEW_HOLD_WEAK_REFERENCE": "WEAK_REFERENCE",
     "EXACT_QBO_DUPLICATE_EXCESS_COPY": "DUPLICATE_EXCLUDED",
     "TRUE_UNMATCHED_NO_INFINIUM_CANDIDATE": "NO_INFINIUM_CANDIDATE",
     "TRUE_UNMATCHED_PO_REUSE": "PO_REUSE_UNSUPPORTED",
@@ -94,6 +99,17 @@ REASON_CODE_GLOSSARY: dict[str, str] = {
     "FUZZY_CANDIDATE": (
         "A text-similarity (fuzzy PO) candidate was found with an exact amount match. Always held for "
         "review -- a fuzzy match is a guess, never posted automatically."
+    ),
+    "CONFLICTING_LINKS": (
+        "This row's PO and invoice point at different Infinium transactions, or the Infinium record it "
+        "would match is linked to another QuickBooks row. Neither link is accepted: processing order "
+        "must not decide which transaction a sale belongs to."
+    ),
+    "WEAK_REFERENCE": (
+        "The only shared reference is weak (a placeholder or generic value), but an Infinium record with "
+        "that reference agrees to the cent. Held, not matched: the sale may already be recorded, and "
+        "weak evidence is never enough to accept a match. A weak reference with no exact-amount "
+        "candidate is only an informational note and does not hold the row."
     ),
     "DUPLICATE_EXCLUDED": (
         "Confirmed to be a copy of the same underlying transaction as its canonical row -- by a trusted "
@@ -199,6 +215,7 @@ def build_reference_evidence_review_holds(
         available_ids = str(candidate["Available Infinium Candidate IDs"] or "")
         used_ids = str(candidate["Already-Matched Candidate IDs"] or "")
         typo_ids = str(candidate.get("Typo Candidate IDs") or "")
+        finding = str(candidate.get("Evidence Finding") or "")
         references = _split_reference_ids(candidate.get(REFERENCED_MATCH_REF_COLUMN))
         basis = str(candidate.get("Reference Basis") or "")
         related_inf = available_ids
@@ -210,6 +227,24 @@ def build_reference_evidence_review_holds(
             code = HOLD_INVALID_AMOUNT
             classification = "Review Hold — Invalid or Missing QuickBooks Amount"
             explanation = "The QuickBooks amount cannot be read as signed cents, so the row cannot be matched or accrued."
+        elif finding == FINDING_CONFLICTING_LINKS:
+            code = HOLD_CONFLICTING_LINKS
+            related_inf = str(candidate.get("Conflicting Infinium IDs") or "")
+            classification = "Review Hold — Conflicting Identifier Links"
+            explanation = (
+                f"{candidate.get('Evidence Detail') or ''} Accepting either link would let processing "
+                "order decide, so no match is made and the row is not accrued until a reviewer decides "
+                "which transaction it belongs to."
+            ).strip()
+        elif finding == FINDING_WEAK_EXACT_AMOUNT:
+            code = HOLD_WEAK_REFERENCE
+            related_inf = str(candidate.get("Weak Candidate IDs") or "")
+            classification = "Review Hold — Weak Reference With an Exact-Amount Candidate"
+            explanation = (
+                "The only shared reference is weak (a placeholder or generic value), but an Infinium "
+                f"record ({related_inf}) agrees to the cent. Weak evidence is never enough to accept a "
+                "match, yet the sale may already be recorded, so it is held rather than accrued."
+            )
         elif typo_ids:
             code = HOLD_TYPO_CANDIDATES
             related_inf = typo_ids
@@ -313,6 +348,8 @@ def build_reference_evidence_review_holds(
             "Reviewed By": None,
             "Review Timestamp": None,
             "Review Rationale": None,
+            "Evidence Finding": finding,
+            "Candidate Evidence": str(candidate.get("Candidate Evidence") or ""),
         })
         held.append(qidx)
     return pd.DataFrame(records, columns=REFERENCE_HOLD_COLUMNS), sorted(held)

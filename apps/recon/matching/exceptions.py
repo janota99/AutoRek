@@ -7,8 +7,8 @@ from typing import Any
 
 import pandas as pd
 
-from ..duplicates import AMOUNT_CENTS, NORM_INV, NORM_PO, SOURCE_POS
-from .core import cents_to_float, INF_ID, QB_ID, valid_cents
+from ..duplicates import AMOUNT_CENTS, SOURCE_POS
+from .core import cents_to_float, INF_ID, KEY_INV, KEY_PO, QB_ID, valid_cents
 from .engine import _reference_groups
 
 
@@ -83,16 +83,16 @@ def build_reference_amount_variances(
                 available_q.remove(qidx)
                 available_i.remove(iidx)
 
-    add_unique_tier((NORM_PO, NORM_INV), "PO_AND_INVOICE")
-    add_unique_tier((NORM_INV,), "INVOICE_ONLY")
-    add_unique_tier((NORM_PO,), "PO_ONLY")
+    add_unique_tier((KEY_PO, KEY_INV), "PO_AND_INVOICE")
+    add_unique_tier((KEY_INV,), "INVOICE_ONLY")
+    add_unique_tier((KEY_PO,), "PO_ONLY")
 
     records: list[dict[str, Any]] = []
     held_q: list[int] = []
     held_i: list[int] = []
     for qidx, iidx, evidence_tier in selected_pairs:
-        q_po, i_po = qb.at[qidx, NORM_PO], inf.at[iidx, NORM_PO]
-        q_inv, i_inv = qb.at[qidx, NORM_INV], inf.at[iidx, NORM_INV]
+        q_po, i_po = qb.at[qidx, KEY_PO], inf.at[iidx, KEY_PO]
+        q_inv, i_inv = qb.at[qidx, KEY_INV], inf.at[iidx, KEY_INV]
         po_agrees = bool(q_po and q_po == i_po)
         invoice_agrees = bool(q_inv and q_inv == i_inv)
         if evidence_tier == "PO_AND_INVOICE":
@@ -197,18 +197,18 @@ def build_ambiguous_duplicate_candidates(
     po_groups: dict[str, list[int]] = defaultdict(list)
     inv_groups: dict[str, list[int]] = defaultdict(list)
     for iidx in sorted(i_indexes, key=lambda row: inf.at[row, SOURCE_POS]):
-        po = inf.at[iidx, NORM_PO]
+        po = inf.at[iidx, KEY_PO]
         if po:
             po_groups[po].append(iidx)
-        invoice = inf.at[iidx, NORM_INV]
+        invoice = inf.at[iidx, KEY_INV]
         if invoice:
             inv_groups[invoice].append(iidx)
 
     records: list[dict[str, Any]] = []
     held_q: list[int] = []
     for qidx in q_indexes:
-        q_po = qb.at[qidx, NORM_PO]
-        q_inv = qb.at[qidx, NORM_INV]
+        q_po = qb.at[qidx, KEY_PO]
+        q_inv = qb.at[qidx, KEY_INV]
         candidate_indexes: set[int] = set(po_groups.get(q_po, [])) if q_po else set()
         if q_inv:
             candidate_indexes.update(inv_groups.get(q_inv, []))
@@ -293,13 +293,13 @@ def build_po_reuse_errors(
 
     q_po_groups: dict[str, list[int]] = defaultdict(list)
     for idx in sorted(q_indexes, key=lambda row: qb.at[row, SOURCE_POS]):
-        po = qb.at[idx, NORM_PO]
+        po = qb.at[idx, KEY_PO]
         if po:
             q_po_groups[po].append(idx)
 
     i_po_groups: dict[str, list[int]] = defaultdict(list)
     for idx in sorted(i_indexes, key=lambda row: inf.at[row, SOURCE_POS]):
-        po = inf.at[idx, NORM_PO]
+        po = inf.at[idx, KEY_PO]
         if po:
             i_po_groups[po].append(idx)
 

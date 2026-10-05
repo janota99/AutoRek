@@ -24,12 +24,31 @@ The package re-exports its public names, so callers keep importing from
     summaries       method/product/customer summaries, exception analysis, controls
     validation      ``validate_reconciliation``: end-of-run integrity checks
     reconciliation  ``build_reconciliation``: runs every step above in order
+
+Three modules sit beside that chain rather than in it: ``evidence`` (reference
+strength, link conflicts, candidate search -- used by ``engine``),
+``export_checks`` (identity-level controls over a finished result), and
+``review_decisions`` (the reviewer layer, applied to a finished result).
 """
 
 from __future__ import annotations
 
+from .evidence import (
+    assess_group_links,
+    reference_strength,
+    specific_key,
+)
+from .export_checks import assert_exportable, verify_result
+from .review_decisions import (
+    apply_review_decisions,
+    record_approval,
+    ReviewDecision,
+    ReviewDecisionError,
+)
 from .core import (
     APP_VERSION,
+    identifier_flags,
+    identifier_text,
     cents_or_zero,
     cents_to_float,
     clean_alphanumeric,
@@ -163,4 +182,15 @@ __all__ = [
     "refine_candidates_with_match_references",
     "valid_cents",
     "validate_match_references",
+    "assess_group_links",
+    "reference_strength",
+    "specific_key",
+    "assert_exportable",
+    "verify_result",
+    "apply_review_decisions",
+    "record_approval",
+    "ReviewDecision",
+    "ReviewDecisionError",
+    "identifier_flags",
+    "identifier_text",
 ]

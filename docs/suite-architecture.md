@@ -129,7 +129,7 @@ All CSS lives in `shared/styles/`; `shared/styles/__init__.py` is the only code 
 
 | What | Command (from the repo root) |
 |---|---|
-| Recon unit tests (355) | `py -m pytest`. `pytest.ini` sets `pythonpath = .` and disables the cache folder. Add `-W error::FutureWarning` to keep the suite free of pandas deprecations. |
+| Recon unit tests (418) | `py -m pytest`. `pytest.ini` sets `pythonpath = .` and disables the cache folder. Add `-W error::FutureWarning` to keep the suite free of pandas deprecations. |
 | Invoice Hub tests | `node apps/invoice_hub/tests/test_layers.js` (prints `ALL TESTS PASSED`) |
 | One page, headless | `PYTHONPATH=. PYTHONIOENCODING=utf-8 py -c "from streamlit.testing.v1 import AppTest; at = AppTest.from_file('apps/<pkg>/app.py', default_timeout=120).run(); print(at.exception)"` |
 

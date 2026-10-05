@@ -15,18 +15,27 @@ from .core import (
     _split_reference_ids,
     cents_or_zero,
     cents_to_float,
+    CORR_DATE,
     INF_ID,
     MatchGroup,
     QB_ID,
+    SRC_PERIOD,
     valid_cents,
 )
 from .labels import (
+    CLASS_ACCEPTED_HISTORICAL_MATCH,
+    CLASS_ACCEPTED_MATCH,
+    CLASS_ACCEPTED_MATCH_ID_DISCREPANCY,
+    CLASS_CONFIRMED_DUPLICATE,
+    CLASS_OTHER_REVIEW,
+    CLASS_TRUE_UNMATCHED,
     DISPOSITION_DUPLICATE_EXCLUDED,
     DISPOSITION_MATCHED,
     DISPOSITION_REVIEW_HOLD,
     DISPOSITION_TRUE_UNMATCHED,
     HOLD_AMOUNT_VARIANCE,
     HOLD_POTENTIAL_DUPLICATE,
+    HOLD_REASON_CLASS,
     MATCH_REF_COLUMN,
     QB_DISPOSITION_COLUMNS,
     REFERENCE_HOLD_SECTION,
@@ -72,6 +81,7 @@ def build_qb_dispositions(
     qb: pd.DataFrame,
     po_reuse_qb_indexes: set[int],
     register: Optional[pd.DataFrame] = None,
+    candidates: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     """One row per QuickBooks source row -- every one, in source order -- with
     exactly one of four final dispositions and the precise reason for it:
@@ -82,6 +92,14 @@ def build_qb_dispositions(
     the reconciliation can never disagree. Only TRUE_UNMATCHED rows feed the
     proposed journal entry."""
     matched_sections = {"01 Matched", "01 Matched - Historical Clearance"}
+    evidence_by_ref: dict[str, dict[str, Any]] = (
+        register.set_index(MATCH_REF_COLUMN).to_dict("index")
+        if register is not None and not register.empty else {}
+    )
+    evidence_by_qb: dict[str, dict[str, Any]] = (
+        candidates.set_index("QuickBooks Row ID").to_dict("index")
+        if candidates is not None and not candidates.empty else {}
+    )
     rows = [
         row for row in paired_rows
         if row.get("QB Index") is not None and row.get("QB Record Scope") == "Primary"
@@ -148,6 +166,22 @@ def build_qb_dispositions(
                 reason = "True Unmatched — No Remaining Infinium Candidate"
         else:
             raise ValueError(f"QuickBooks disposition control failure: unclassified section {section!r}.")
+        register_entry = evidence_by_ref.get(match_ref, {})
+        discrepancy = str(register_entry.get("Identifier Discrepancy") or "")
+        if disposition == DISPOSITION_MATCHED:
+            if section == "01 Matched - Historical Clearance":
+                classification = CLASS_ACCEPTED_HISTORICAL_MATCH
+            elif discrepancy:
+                classification = CLASS_ACCEPTED_MATCH_ID_DISCREPANCY
+            else:
+                classification = CLASS_ACCEPTED_MATCH
+        elif disposition == DISPOSITION_DUPLICATE_EXCLUDED:
+            classification = CLASS_CONFIRMED_DUPLICATE
+        elif disposition == DISPOSITION_REVIEW_HOLD:
+            classification = HOLD_REASON_CLASS.get(code, CLASS_OTHER_REVIEW)
+        else:
+            classification = CLASS_TRUE_UNMATCHED
+        candidate_entry = evidence_by_qb.get(qb.at[qidx, QB_ID], {})
         review_id = ""
         if disposition == DISPOSITION_REVIEW_HOLD:
             review_number += 1
@@ -173,6 +207,13 @@ def build_qb_dispositions(
                 else ""
             ),
             "In Proposed JE": "Yes" if disposition == DISPOSITION_TRUE_UNMATCHED else "No",
+            "Classification Code": classification,
+            "Evidence Finding": str(candidate_entry.get("Evidence Finding") or ""),
+            "Candidate Evidence": str(candidate_entry.get("Candidate Evidence") or ""),
+            "Evidence Summary": (
+                str(register_entry.get("Evidence Summary") or "")
+                if disposition == DISPOSITION_MATCHED else str(candidate_entry.get("Evidence Detail") or "")
+            ),
         })
     return pd.DataFrame(records, columns=QB_DISPOSITION_COLUMNS)
 
@@ -296,7 +337,19 @@ HISTORICAL_CLEARANCE_COLUMNS = [
     "Secondary Amount",
     "Amount Difference",
     "Disposition",
+    # Traceability for every accepted historical match: which file, which
+    # source row (Secondary Row ID), its period and date, and any identifier
+    # that did not agree. Period differences are shown, never used as evidence.
+    "Secondary Source File",
+    "Secondary Period",
+    "Secondary Date",
+    "Identifier Discrepancy",
+    "Evidence Summary",
 ]
+
+
+def _date_text(value: Any) -> str:
+    return "" if value is None or pd.isna(value) else str(pd.Timestamp(value).date())
 
 
 def build_historical_clearances(
@@ -306,6 +359,7 @@ def build_historical_clearances(
     unmatched_inf: list[int],
     qb_secondary: Optional[pd.DataFrame],
     inf_secondary: Optional[pd.DataFrame],
+    source_files: Optional[dict[str, Optional[str]]] = None,
 ) -> tuple[pd.DataFrame, list[int], list[int]]:
     """Clear opposing-primary exceptions with optional historical sources.
 
@@ -319,6 +373,7 @@ def build_historical_clearances(
     exception as a duplicated primary row is of misstating the accrual, so
     neither may reach this function.
     """
+    source_files = source_files or {}
     records: list[dict[str, Any]] = []
     cleared_qb: set[int] = set()
     cleared_inf: set[int] = set()
@@ -390,6 +445,17 @@ def build_historical_clearances(
                     "Secondary Amount": cents_to_float(secondary_amount),
                     "Amount Difference": cents_to_float(primary_amount - secondary_amount),
                     "Disposition": disposition,
+                    "Secondary Source File": source_files.get(secondary_dataset) or "",
+                    "Secondary Period": (
+                        secondary_frame.at[sidx, SRC_PERIOD]
+                        if sidx is not None and SRC_PERIOD in secondary_frame.columns else ""
+                    ),
+                    "Secondary Date": (
+                        _date_text(secondary_frame.at[sidx, CORR_DATE])
+                        if sidx is not None and CORR_DATE in secondary_frame.columns else ""
+                    ),
+                    "Identifier Discrepancy": group.identifier_discrepancy,
+                    "Evidence Summary": group.evidence_summary,
                 }
             )
         if primary_total != secondary_total:
