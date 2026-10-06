@@ -99,20 +99,18 @@ method, and any identifier discrepancy (`Secondary Source File`, `Secondary Row 
 `Secondary Date`, `Identifier Discrepancy`). The same normalization and link vetting apply. A period gap is shown,
 never used as evidence.
 
-## Reviewer decisions, approval, and export controls
+## Reviewer decisions and export controls
 
 - `matching/review_decisions.py` layers decisions on an immutable engine result. `apply_review_decisions` returns a
   copy carrying `review_adjustments` and `adjustment_bridge`; the engine's ledger is never edited.
   Actions: `CONFIRM_MATCH` (names the Infinium rows; each must be an unconsumed primary row, used by one decision
   only; a different amount is recorded, never posted), `RELEASE_TO_JE` and `CARRY_FORWARD` (holds only),
-  `EXCLUDE` (JE support or a hold; needs a supporting reference). Reviewer, date, and reason are required.
-- The result is **calculated** ("Reviewer-adjusted JE") until `record_approval` stores an approver, date, and the
-  amount approved. Approval is refused while any hold is undecided or carried forward. The workbook says
-  "FINAL APPROVED JE" only for a recorded approval.
+  `EXCLUDE` (JE support or a hold; needs a supporting reference). Date and reason are required; no reviewer name or second-person sign-off is recorded.
+- The result is **calculated** ("Reviewer-adjusted JE"). There is no approval step.
 - Decisions are applied in the Downloads tab and the workbook regenerated; they open pre-filled in the
   Reviewer Disposition columns. Release and Exclude totals on the Posting Summary are live formulas, so edits in
   Excel recalculate them, and two live checks compare the live total with the exported one and count decisions
-  missing a reviewer, date, or comment. **Excel never re-checks record consumption or exact-cent agreement.**
+  missing a date or comment. **Excel never re-checks record consumption or exact-cent agreement.**
 - `matching/export_checks.py` runs identity checks (rows), then counts, then dollars, from the result's own row
   sets: one disposition per row; populations match the ledger; no record consumed twice (individual, grouped,
   historical); every match and clearance ties to the cent; detail/exception/hold identities; the proposed JE

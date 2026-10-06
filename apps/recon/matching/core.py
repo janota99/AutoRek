@@ -290,7 +290,6 @@ class ReconciliationResult:
     export_controls: pd.DataFrame = field(default_factory=pd.DataFrame)
     review_adjustments: pd.DataFrame = field(default_factory=pd.DataFrame)
     adjustment_bridge: pd.DataFrame = field(default_factory=pd.DataFrame)
-    approval: dict[str, Any] = field(default_factory=dict)
 
 
 # Characters that appear in exports without being part of an identifier:

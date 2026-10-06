@@ -1,4 +1,4 @@
-"""Streamlit panel for reviewer decisions and approval (Downloads tab).
+"""Streamlit panel for reviewer decisions (Downloads tab).
 
 Decisions are validated and applied here, in the application, against the
 engine result -- record consumption and exact-cent agreement are enforced by
@@ -15,7 +15,6 @@ import streamlit as st
 
 from .matching import (
     apply_review_decisions,
-    record_approval,
     ReconciliationResult,
     ReviewDecisionError,
 )
@@ -24,8 +23,6 @@ from .matching.review_decisions import (
     ACTION_CONFIRM_MATCH,
     ACTION_EXCLUDE,
     ACTION_RELEASE_TO_JE,
-    approval_blockers,
-    approval_status_text,
     decisions_from_frame,
 )
 from .utils import clear_prepared_workbooks
@@ -37,17 +34,16 @@ _EMPTY = pd.DataFrame({
     "Infinium Row IDs": pd.Series(dtype="object"),
     "Support Reference": pd.Series(dtype="object"),
     "Reason": pd.Series(dtype="object"),
-    "Reviewer": pd.Series(dtype="object"),
     "Decision Date": pd.Series(dtype="object"),
 })
 
 
 def render_review_panel(result: ReconciliationResult) -> ReconciliationResult:
-    """Render the decision editor and approval form; return the result the
+    """Render the decision editor; return the result the
     workbook should be built from (the reviewed copy once decisions are applied)."""
     key = f"reviewed_result_{result.run_id}"
     reviewed: ReconciliationResult = st.session_state.get(key, result)
-    st.markdown("#### Reviewer decisions and approval")
+    st.markdown("#### Reviewer decisions")
     st.caption(
         "Decisions are applied here and the workbook is regenerated -- Excel never re-checks record "
         "consumption or exact-cent agreement. Engine classifications are never changed. "
@@ -93,21 +89,4 @@ def render_review_panel(result: ReconciliationResult) -> ReconciliationResult:
     if not reviewed.adjustment_bridge.empty:
         st.markdown("##### Adjustment bridge")
         st.dataframe(reviewed.adjustment_bridge.drop(columns=["Kind"]), hide_index=True, width="stretch")
-    st.markdown("##### Approval")
-    st.info(approval_status_text(reviewed))
-    blockers = approval_blockers(reviewed)
-    if blockers:
-        st.caption("Not yet approvable: " + "; ".join(blockers))
-    approver = st.text_input("Approver", key=f"approver_{result.run_id}")
-    approved_on = st.date_input("Approval date", value=date.today(), key=f"approval_date_{result.run_id}")
-    note = st.text_input("Approval note (optional)", key=f"approval_note_{result.run_id}")
-    if st.button("Record approval", key=f"approve_{result.run_id}", disabled=bool(blockers)):
-        try:
-            base = reviewed if not reviewed.adjustment_bridge.empty else apply_review_decisions(reviewed, [])
-            st.session_state[key] = record_approval(base, approver, approved_on, note)
-            clear_prepared_workbooks()
-            st.rerun()
-        except ReviewDecisionError as exc:
-            for problem in exc.problems:
-                st.error(problem)
     return reviewed

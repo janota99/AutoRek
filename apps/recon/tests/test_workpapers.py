@@ -1003,7 +1003,7 @@ def test_duplicate_review_hold_section_renders_with_documented_disposition_dropd
     assert cell.value == "Pending Review"
     assert cell.protection.locked is False, "reviewer must be able to edit the disposition cell"
     headers = [c.value for c in ws[disposition_header_row]]
-    for label in ("Reviewer", "Review Date", "Comment"):
+    for label in ("Review Date", "Comment"):
         col = headers.index(label) + 1
         assert ws.cell(data_row, col).protection.locked is False, label
 
@@ -2224,7 +2224,7 @@ def test_je_support_table_offers_only_pending_review_or_exclude(qb_mapping, inf_
     ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Unresolved Exceptions"]
     header_row = next(row for row in ws.iter_rows() if any(c.value == "Exception Status" for c in row))
     headers = [c.value for c in header_row]
-    for label in ("Reviewer Disposition", "Reviewer", "Review Date", "Comment"):
+    for label in ("Reviewer Disposition", "Review Date", "Comment"):
         assert label in headers
     disposition_col = headers.index("Reviewer Disposition") + 1
     disposition_letter = get_column_letter(disposition_col)
@@ -2341,11 +2341,11 @@ def test_posting_summary_bridge_reduces_to_engine_je_with_no_overrides(qb_mappin
     )
     assert released_to_je == 0
 
-    # So, by construction, Final Approved JE = Engine Proposed JE + 0 - 0.
+    # So, by construction, Reviewer-Adjusted JE = Engine Proposed JE + 0 - 0.
     posting = wb["Posting Summary"]
     text = " ".join(str(c.value) for row in posting.iter_rows() for c in row if c.value)
     assert "Engine Proposed JE" in text and "REVIEWER-ADJUSTED JE" in text
-    assert "FINAL APPROVED JE" not in text and "NOT APPROVED" in text
+    assert "APPROVED" not in text.upper()
     posting_numbers = [c.value for row in posting.iter_rows() for c in row if isinstance(c.value, (int, float))]
     assert result.metrics["Proposed JE Amount"] in posting_numbers
 

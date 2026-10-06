@@ -41,7 +41,6 @@ from .evidence import (
 from .export_checks import assert_exportable, verify_result
 from .review_decisions import (
     apply_review_decisions,
-    record_approval,
     ReviewDecision,
     ReviewDecisionError,
 )
@@ -188,7 +187,6 @@ __all__ = [
     "assert_exportable",
     "verify_result",
     "apply_review_decisions",
-    "record_approval",
     "ReviewDecision",
     "ReviewDecisionError",
     "identifier_flags",

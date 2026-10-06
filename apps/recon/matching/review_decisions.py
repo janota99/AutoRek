@@ -1,4 +1,4 @@
-"""Reviewer decisions, the adjustment bridge, and approval -- layered on top of an immutable engine result.
+"""Reviewer decisions and the adjustment bridge -- layered on top of an immutable engine result.
 
 The engine's classifications (``qb_dispositions``, ``matches``, the hold
 reports) are never edited. A reviewer's decision is a separate, dated, attributed
@@ -9,7 +9,6 @@ result, and returns a copy of it carrying:
     classification beside the reviewer's action and its journal-entry effect;
   * ``adjustment_bridge`` -- Engine Proposed JE -> reviewer adjustments ->
     Reviewer-Adjusted JE, plus the open and non-posting items;
-  * ``approval`` -- NOT APPROVED until ``record_approval`` is called.
 
 Decisions are applied in the app and the workbook is regenerated; the workbook
 then carries them in its Reviewer Disposition columns. The two Posting Summary
@@ -19,7 +18,7 @@ nothing in Excel re-validates record consumption or exact-cent agreement.
 That happens only here.
 
 Rules enforced:
-  * every decision names a reviewer, a date, and a reason;
+  * every decision has a date and a reason;
   * RELEASE_TO_JE, CONFIRM_MATCH and CARRY_FORWARD apply only to REVIEW_HOLD
     rows; EXCLUDE applies to TRUE_UNMATCHED rows (a JE removal) or to a hold
     (no JE effect) and always needs a supporting reference;
@@ -68,14 +67,11 @@ WORKBOOK_DISPOSITION = {
     ACTION_CARRY_FORWARD: "Carry Forward",
 }
 
-APPROVAL_NOT_APPROVED = "NOT APPROVED"
-APPROVAL_APPROVED = "APPROVED"
-
 ADJUSTMENT_COLUMNS = [
     "Adjustment ID", "QuickBooks Row ID", "Engine Final Disposition", "Engine Reason Code",
     "Engine Classification Code", "QuickBooks Amount", "Reviewer Action", "Infinium Row IDs",
     "Infinium Amount", "Confirmed Amount Difference", "JE Effect", "Support Reference",
-    "Reason", "Reviewer", "Decision Date", "Status",
+    "Reason", "Decision Date", "Status",
 ]
 
 BRIDGE_COLUMNS = ["Line", "Rows", "Amount", "Kind"]
@@ -93,7 +89,6 @@ class ReviewDecisionError(ValueError):
 class ReviewDecision:
     qb_row_id: str
     action: str
-    reviewer: str
     decided_on: Any
     reason: str
     support_reference: str = ""
@@ -156,8 +151,6 @@ def validate_review_decisions(
         if decision.qb_row_id in seen_rows:
             problems.append(f"{tag}: more than one decision for the same row.")
         seen_rows.add(decision.qb_row_id)
-        if not str(decision.reviewer or "").strip():
-            problems.append(f"{tag}: reviewer name is required.")
         if _as_date(decision.decided_on) is None:
             problems.append(f"{tag}: a valid decision date is required.")
         if not str(decision.reason or "").strip():
@@ -214,7 +207,7 @@ def _bridge(result: ReconciliationResult, adjustments: pd.DataFrame) -> pd.DataF
         ("Engine Proposed JE (TRUE_UNMATCHED total; never changed)", int(result.metrics["Final Disposition - True Unmatched Rows"]), cents_to_float(engine_cents), "engine"),
         ("Plus: review holds released to JE", count(ACTION_RELEASE_TO_JE), cents_to_float(int(released)), "adjustment"),
         ("Less: JE support excluded with documentation", count(ACTION_EXCLUDE), cents_to_float(int(excluded)), "adjustment"),
-        ("REVIEWER-ADJUSTED JE (calculated; not an approval)", None, cents_to_float(adjusted_cents), "result"),
+        ("REVIEWER-ADJUSTED JE (calculated)", None, cents_to_float(adjusted_cents), "result"),
         ("Memo: review holds confirmed as matched (no JE effect)", count(ACTION_CONFIRM_MATCH), amount(ACTION_CONFIRM_MATCH), "memo"),
         ("Memo: confirmed matches whose amounts differ (difference not posted)", int(
             (adjustments.loc[adjustments["Reviewer Action"] == ACTION_CONFIRM_MATCH, "Confirmed Amount Difference"].map(_cents) != 0).sum()
@@ -264,7 +257,6 @@ def apply_review_decisions(
             "JE Effect": cents_to_float(je_effect),
             "Support Reference": str(decision.support_reference or "").strip(),
             "Reason": str(decision.reason).strip(),
-            "Reviewer": str(decision.reviewer).strip(),
             "Decision Date": str(_as_date(decision.decided_on)),
             "Status": "Applied in app",
         })
@@ -273,7 +265,6 @@ def apply_review_decisions(
         result,
         review_adjustments=adjustments,
         adjustment_bridge=_bridge(result, adjustments),
-        approval={"status": APPROVAL_NOT_APPROVED},
     )
     return adjusted
 
@@ -286,68 +277,9 @@ def adjusted_je_amount(result: ReconciliationResult) -> float:
     return float(row["Amount"])
 
 
-def approval_blockers(result: ReconciliationResult) -> list[str]:
-    """Why this run cannot be approved yet; empty when it can."""
-    blockers: list[str] = []
-    decided = set(result.review_adjustments["QuickBooks Row ID"]) if not result.review_adjustments.empty else set()
-    carried = set(
-        result.review_adjustments.loc[
-            result.review_adjustments["Reviewer Action"] == ACTION_CARRY_FORWARD, "QuickBooks Row ID",
-        ]
-    ) if not result.review_adjustments.empty else set()
-    holds = result.qb_dispositions.loc[result.qb_dispositions["Final Disposition"] == DISPOSITION_REVIEW_HOLD, "QBO Row ID"]
-    open_rows = sorted((set(holds) - decided) | (set(holds) & carried))
-    if open_rows:
-        blockers.append(f"{len(open_rows)} review hold(s) have no resolving decision: {', '.join(open_rows[:8])}"
-                        + (" ..." if len(open_rows) > 8 else ""))
-    if result.metrics.get("Invalid QuickBooks Amounts") or result.metrics.get("Invalid Infinium Amounts"):
-        blockers.append("source rows with unreadable amounts remain")
-    if result.duplicate_review_hold_inf_rows:
-        blockers.append("Infinium duplicate review holds remain (resolve in the source data and rerun)")
-    if result.suspected_qb_secondary_rows or result.suspected_inf_secondary_rows:
-        blockers.append("historical duplicate review holds remain (resolve in the source data and rerun)")
-    return blockers
-
-
-def record_approval(
-    result: ReconciliationResult, approver: str, approved_on: Any, note: str = "",
-) -> ReconciliationResult:
-    """Record an explicit approval of the reviewer-adjusted JE. Refused while
-    anything remains open. The approval stores the amount it approved, so a
-    later workbook edit that changes the live total is visibly different."""
-    if not str(approver or "").strip():
-        raise ReviewDecisionError(["approver name is required."])
-    if _as_date(approved_on) is None:
-        raise ReviewDecisionError(["a valid approval date is required."])
-    blockers = approval_blockers(result)
-    if blockers:
-        raise ReviewDecisionError(blockers)
-    return dataclasses.replace(
-        result,
-        approval={
-            "status": APPROVAL_APPROVED,
-            "approved_by": str(approver).strip(),
-            "approved_on": str(_as_date(approved_on)),
-            "approved_amount": adjusted_je_amount(result),
-            "run_id": result.run_id,
-            "note": str(note or "").strip(),
-        },
-    )
-
-
-def approval_status_text(result: ReconciliationResult) -> str:
-    approval = result.approval or {}
-    if approval.get("status") == APPROVAL_APPROVED:
-        return (
-            f"APPROVED by {approval['approved_by']} on {approval['approved_on']} for "
-            f"${approval['approved_amount']:,.2f} (run {approval['run_id']})"
-        )
-    return "NOT APPROVED -- no approval has been recorded for this run"
-
-
 def decisions_from_frame(frame: pd.DataFrame) -> list[ReviewDecision]:
     """Build decisions from a table (an editor, CSV, or the adjustments sheet).
-    Columns: QuickBooks Row ID, Reviewer Action, Reviewer, Decision Date, Reason,
+    Columns: QuickBooks Row ID, Reviewer Action, Decision Date, Reason,
     Support Reference, Infinium Row IDs ("; "-separated)."""
     decisions = []
     for record in frame.to_dict("records"):
@@ -360,7 +292,6 @@ def decisions_from_frame(frame: pd.DataFrame) -> list[ReviewDecision]:
         decisions.append(ReviewDecision(
             qb_row_id=str(record.get("QuickBooks Row ID") or "").strip(),
             action=action,
-            reviewer=str(record.get("Reviewer") or ""),
             decided_on=record.get("Decision Date"),
             reason=str(record.get("Reason") or ""),
             support_reference=str(record.get("Support Reference") or ""),

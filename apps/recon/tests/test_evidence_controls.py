@@ -24,7 +24,6 @@ from apps.recon.matching import (
     clean_po,
     identifier_flags,
     identifier_text,
-    record_approval,
     reference_strength,
     ReviewDecision,
     ReviewDecisionError,
@@ -407,7 +406,7 @@ def reviewable(qb_mapping, inf_mapping, make_metadata):
 
 
 def _decision(row, action, **overrides):
-    values = dict(qb_row_id=row, action=action, reviewer="J. Reviewer", decided_on="2026-02-20", reason="Checked source documents")
+    values = dict(qb_row_id=row, action=action, decided_on="2026-02-20", reason="Checked source documents")
     values.update(overrides)
     return ReviewDecision(**values)
 
@@ -434,9 +433,8 @@ def test_reviewer_adjustments_bridge_the_engine_je_without_changing_the_engine(r
     assert (verify_result(reviewed)["Status"] == "PASS").all()
 
 
-def test_decisions_need_reviewer_date_reason_and_the_right_row_state(reviewable):
+def test_decisions_need_date_reason_and_the_right_row_state(reviewable):
     for bad, fragment in [
-        (_decision("QB-2", "RELEASE_TO_JE", reviewer=""), "reviewer name"),
         (_decision("QB-2", "RELEASE_TO_JE", decided_on="not a date"), "decision date"),
         (_decision("QB-2", "RELEASE_TO_JE", reason=" "), "reason"),
         (_decision("QB-1", "RELEASE_TO_JE"), "only to review holds"),
@@ -474,48 +472,25 @@ def test_a_confirmed_match_with_a_different_amount_is_recorded_not_posted(review
     assert reviewed.adjustment_bridge.set_index("Kind").loc["result", "Amount"] == pytest.approx(44.0)
 
 
-def test_approval_is_separate_from_calculation(reviewable):
-    # Open holds block approval.
-    with pytest.raises(ReviewDecisionError, match="no resolving decision"):
-        record_approval(apply_review_decisions(reviewable, []), "A. Approver", "2026-02-21")
-    reviewed = apply_review_decisions(reviewable, [
-        _decision("QB-2", "RELEASE_TO_JE"), _decision("QB-3", "CONFIRM_MATCH", inf_row_ids=("INF-3",)),
-    ])
-    assert reviewed.approval["status"] == "NOT APPROVED"
-    carried = apply_review_decisions(reviewable, [
-        _decision("QB-2", "CARRY_FORWARD"), _decision("QB-3", "CONFIRM_MATCH", inf_row_ids=("INF-3",)),
-    ])
-    with pytest.raises(ReviewDecisionError, match="no resolving decision"):
-        record_approval(carried, "A. Approver", "2026-02-21")
-    with pytest.raises(ReviewDecisionError, match="approver name"):
-        record_approval(reviewed, "", "2026-02-21")
-    approved = record_approval(reviewed, "A. Approver", "2026-02-21", "ok")
-    assert approved.approval["status"] == "APPROVED"
-    assert approved.approval["approved_amount"] == pytest.approx(144.0)
-    assert approved.approval["run_id"] == reviewed.run_id
-
-
 def _sheet_text(workbook_bytes, sheet):
     ws = load_workbook(io.BytesIO(workbook_bytes))[sheet]
     return " ".join(str(c.value) for row in ws.iter_rows() for c in row if c.value is not None)
 
 
-def test_the_workbook_says_final_approved_only_after_an_approval_is_recorded(reviewable):
+def test_the_workbook_has_no_approval_or_reviewer_name_fields(reviewable):
     reviewed = apply_review_decisions(reviewable, [
         _decision("QB-2", "RELEASE_TO_JE"), _decision("QB-3", "CONFIRM_MATCH", inf_row_ids=("INF-3",)),
     ])
-    assert "FINAL APPROVED JE" not in _sheet_text(build_primary_workbook(reviewed), "Posting Summary")
-    assert "NOT APPROVED" in _sheet_text(build_primary_workbook(reviewed), "Posting Summary")
-    approved = record_approval(reviewed, "A. Approver", "2026-02-21")
-    text = _sheet_text(build_primary_workbook(approved), "Posting Summary")
-    assert "FINAL APPROVED JE (recorded approval)" in text and "APPROVED by A. Approver" in text
+    assert "approval" not in reviewed.__dataclass_fields__
+    text = _sheet_text(build_primary_workbook(reviewed), "Posting Summary")
+    assert "APPROVED" not in text.upper()
 
 
 def test_decisions_open_in_the_workbook_through_the_existing_reviewer_columns(reviewable):
     reviewed = apply_review_decisions(reviewable, [_decision("QB-2", "RELEASE_TO_JE")])
     ws = load_workbook(io.BytesIO(build_primary_workbook(reviewed)))["Unresolved Exceptions"]
     values = {c.value for row in ws.iter_rows() for c in row if c.value is not None}
-    assert "Release to JE" in values and "J. Reviewer" in values and "2026-02-20" in values
+    assert "Release to JE" in values and "2026-02-20" in values
 
 
 def test_the_audit_sheet_identifies_the_run_versions_files_and_controls(qb_mapping, inf_mapping, make_metadata):
@@ -523,7 +498,7 @@ def test_the_audit_sheet_identifies_the_run_versions_files_and_controls(qb_mappi
     text = _sheet_text(build_primary_workbook(result), "Audit & Controls")
     from apps.recon.matching import APP_VERSION, MATCHING_RULE_VERSION
     for needle in (result.run_id, APP_VERSION, MATCHING_RULE_VERSION, "inf_prior.xlsx", "qb.xlsx",
-                   "Validated at export (static)", "LIVE CONTROLS", "NOT APPROVED"):
+                   "Validated at export (static)", "LIVE CONTROLS"):
         assert needle in text
 
 

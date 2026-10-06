@@ -47,8 +47,8 @@ checks and for how to prove a refactor changed nothing.
 - **Recon:** amounts must agree exactly to the signed cent. Ambiguity stays unresolved for review.
   Never add a "closest match" rule. Bump `MATCHING_RULE_VERSION` when match results can change.
   Weak references never create an accepted match, and a match whose other identifier points at a
-  different record is refused, not ordered. Reviewer decisions never overwrite engine classifications;
-  "Final Approved" appears only after a recorded approval (`apps/recon/docs/matching-rules.md`).
+  different record is refused, not ordered. Reviewer decisions never overwrite engine classifications.
+  There is no approval or sign-off step (`apps/recon/docs/matching-rules.md`).
 - **Sales Tax:** the source and mapping files are read **by position**. Blank ≠ conflict.
   The download stays disabled until the dollar control check is $0.00.
 - **Invoice Hub:** sign-in is simulated in the browser; never present it as real access

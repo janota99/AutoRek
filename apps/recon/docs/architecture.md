@@ -21,7 +21,7 @@ An optional legacy-format export, `Sales_Reconciliation_Legacy_<run>.xlsx`, is a
 | `workpapers/` | Excel workbook builders (package; see below). No Streamlit. |
 | `excel_styles.py` | openpyxl styling primitives: borders, bands, number formats, autofit. `_CellPainter` reuses each distinct cell style instead of re-hashing it per cell, which roughly halves the build time; it copies openpyxl's internal `cell._style`, so openpyxl is pinned to 3.1.x and `tests/test_excel_styles.py` guards it. |
 | `ui_components.py` | Streamlit UI blocks: CSS loading, KPI cards, stepper, results tabs, Downloads tab (with a "Workbook built in X s · page refreshed in Y s" readout). |
-| `ui_review.py` | The Downloads-tab panel for reviewer decisions and approval. Calls `matching.review_decisions`; edits no engine result. |
+| `ui_review.py` | The Downloads-tab panel for reviewer decisions. Calls `matching.review_decisions`; edits no engine result. |
 | `utils.py`, `config.py` | Run signature and formatting helpers; palette and time-zone constants. |
 | `assets/` | QuickBooks/Infinium logos as data URIs (`ui_assets.py`). The suite logo lives in `shared/assets/`. |
 | `tests/` | pytest suite. `conftest.py` holds the shared QB/Infinium mapping and run-metadata fixtures. |
@@ -47,7 +47,7 @@ callers write `from .matching import build_reconciliation`, not the submodule pa
 | `reconciliation` | `build_reconciliation`: runs every step above in order. |
 
 Beside that chain: `evidence` (reference strength, link vetting, candidate search; imported by `engine`),
-`export_checks` (identity-level controls over a finished result), and `review_decisions` (reviewer layer, approval).
+`export_checks` (identity-level controls over a finished result), and `review_decisions` (reviewer layer).
 `engine` also owns `build_candidate_table`, the evidence behind every unmatched row.
 
 If a new shared constant would create an import cycle, put it in `core` or `labels`.
@@ -64,5 +64,5 @@ If a new shared constant would create an import cycle, put it in `core` or `labe
 | `unresolved` | The Unresolved Exceptions sheet. Its summary rows (KPIs, reason codes, exceptions by fiscal period) form an Excel row group that's collapsed when the file opens. |
 | `summary_sheets` | The Posting Summary and Aggregates sheets. The legacy workbook reuses the Aggregates builder. |
 | `legacy` | The legacy-format workbook. |
-| `audit` | The Audit & Controls sheet: run identity, approval, export controls (static vs live), reviewer adjustments, bridge. |
+| `audit` | The Audit & Controls sheet: run identity, export controls (static vs live), reviewer adjustments, bridge. |
 | `primary` | `build_primary_workbook`: re-runs the export controls, then assembles the primary workpaper. |

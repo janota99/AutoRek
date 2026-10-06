@@ -42,7 +42,7 @@ from ..excel_styles import (
     fix_row_height,
 )
 from ..matching import parse_fiscal_period, ReconciliationResult
-from ..matching.review_decisions import adjusted_je_amount, approval_status_text
+from ..matching.review_decisions import adjusted_je_amount
 from .tables import (
     _decisions_missing_support_expr,
     _je_support_manual_exclusions_expr,
@@ -435,8 +435,7 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     # columns on Unresolved Exceptions) -- it is bridged to the reviewer-
     # adjusted total through two purely additive manual adjustments. With no
     # reviewer overrides, both adjustments are zero and the adjusted JE =
-    # Engine Proposed JE exactly. The adjusted total is a calculation; it is
-    # called "Final Approved" only where an approval was recorded.
+    # Engine Proposed JE exactly. The adjusted total is a calculation.
     bridge_title_row = next_row
     unmerged_band(
         bridge_title_row, "JOURNAL ENTRY BRIDGE", SLATE,
@@ -472,7 +471,6 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     final_row = row
     for col in range(1, end_col + 1):
         ws.cell(final_row, col).fill = PatternFill("solid", fgColor=GREEN_LIGHT)
-    approved = (result.approval or {}).get("status") == "APPROVED"
     final_label_cell = ws.cell(final_row, 1, "REVIEWER-ADJUSTED JE (calculated; live)")
     final_value_cell = ws.cell(final_row, value_col, "=" + "+".join(bridge_value_cells))
     final_label_cell.font = Font(name=FONT_NAME, size=11, bold=True, color=TEXT)
@@ -483,19 +481,18 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     final_value_cell.border = _total_border()
     fix_row_height(ws, final_row, 22)
 
-    # Calculation is not approval, and a live total is not the exported one:
-    # say which is which, and flag any difference between them.
+    # A live total is not the exported one: say which is which, and flag any
+    # difference between them.
     adjusted_at_export = adjusted_je_amount(result)
     final_value_ref = f"{value_col_letter}{final_row}"
     status_rows = [
-        ("Approval status", approval_status_text(result), None),
         ("Reviewer-adjusted JE recorded at export", adjusted_at_export, ACCOUNTING_CURRENCY_FORMAT),
         (
             "Live check: workbook total less total at export (must be 0.00)",
-            f"=ROUND({final_value_ref}-{value_col_letter}{final_row + 2},2)", ACCOUNTING_CURRENCY_FORMAT,
+            f"=ROUND({final_value_ref}-{value_col_letter}{final_row + 1},2)", ACCOUNTING_CURRENCY_FORMAT,
         ),
         (
-            "Live check: reviewer decisions missing reviewer, date, or comment (must be 0)",
+            "Live check: reviewer decisions missing date or comment (must be 0)",
             "=" + _decisions_missing_support_expr(), ACCOUNTING_COUNT_FORMAT,
         ),
     ]
@@ -512,17 +509,6 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
             cell.number_format = number_format
             cell.border = _thin_border()
         fix_row_height(ws, row, 18)
-        row += 1
-    if approved:
-        for col in range(1, end_col + 1):
-            ws.cell(row, col).fill = PatternFill("solid", fgColor=GREEN_LIGHT)
-        ws.cell(row, 1, "FINAL APPROVED JE (recorded approval)").font = Font(name=FONT_NAME, size=11, bold=True, color=TEXT)
-        ws.cell(row, 1).alignment = Alignment(horizontal="left", vertical="center", indent=1)
-        approved_cell = ws.cell(row, value_col, float(result.approval["approved_amount"]))
-        approved_cell.font = Font(name=FONT_NAME_NUMERIC, size=12, bold=True, color=TEXT)
-        approved_cell.number_format = ACCOUNTING_CURRENCY_FORMAT
-        approved_cell.border = _total_border()
-        fix_row_height(ws, row, 22)
         row += 1
     next_row = row + 1
 

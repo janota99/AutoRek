@@ -88,15 +88,14 @@ def _review_holds_released_expr() -> str:
 
 
 def _decisions_missing_support_expr() -> str:
-    """Count of Review Holds rows with a reviewer decision but no reviewer,
-    review date, or comment -- live, so it follows edits made in Excel."""
+    """Count of Review Holds rows with a reviewer decision but no review
+    date or comment -- live, so it follows edits made in Excel."""
     disposition = _table_column_reference("ReviewHolds", "Reviewer Disposition")
-    reviewer = _table_column_reference("ReviewHolds", "Reviewer")
     date = _table_column_reference("ReviewHolds", "Review Date")
     comment = _table_column_reference("ReviewHolds", "Comment")
     return (
         f'SUMPRODUCT(({disposition}<>"Pending Review")'
-        f'*((({reviewer}="")+({date}="")+({comment}=""))>0))'
+        f'*((({date}="")+({comment}=""))>0))'
     )
 
 

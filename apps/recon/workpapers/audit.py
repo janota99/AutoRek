@@ -1,4 +1,4 @@
-"""The Audit & Controls sheet: run identity, approval, export controls, and the reviewer layer."""
+"""The Audit & Controls sheet: run identity, export controls, and the reviewer layer."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from ..excel_styles import (
 from ..matching import APP_VERSION, MATCHING_RULE_VERSION, ReconciliationResult
 from ..duplicates import DUPLICATE_RULE_VERSION
 from ..matching.export_checks import LIVE_WORKBOOK_CONTROLS
-from ..matching.review_decisions import adjusted_je_amount, approval_status_text
+from ..matching.review_decisions import adjusted_je_amount
 from .tables import _write_dataframe_values
 
 
@@ -52,7 +52,6 @@ def _write_table(ws, row: int, frame: pd.DataFrame, title: str, caption: str, co
 def build_audit_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ws = wb.create_sheet(AUDIT_SHEET)
     md = result.metadata
-    approved = (result.approval or {}).get("status") == "APPROVED"
 
     _write_title_band(ws, 1, 1, _END_COL, "AUDIT & CONTROLS", NAVY)
     _write_caption_band(
@@ -88,15 +87,13 @@ def build_audit_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ], columns=["Item", "Value"])
     row = _write_table(ws, 4, identity, "RUN IDENTITY", "Compare these across exports to tell runs apart.", SLATE, set())
 
-    approval = pd.DataFrame([
+    je_summary = pd.DataFrame([
         ("Engine proposed JE (never changed)", result.metrics["Proposed JE Amount"]),
         ("Reviewer-adjusted JE (calculated)", adjusted_je_amount(result)),
-        ("Approval status", approval_status_text(result)),
     ], columns=["Item", "Value"])
     row = _write_table(
-        ws, row, approval, "CALCULATION VS APPROVAL",
-        "A calculated amount is not an approval. 'Final approved' appears only where an explicit approval "
-        "was recorded in the application for this run.",
+        ws, row, je_summary, "JOURNAL ENTRY",
+        "The engine's proposed JE and the total after any reviewer decisions applied in the application.",
         NAVY, {"Value"},
     )
 
