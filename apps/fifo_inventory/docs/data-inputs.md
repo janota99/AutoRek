@@ -7,22 +7,22 @@ the UI asks which one to use (`_excel_sheet_names` / `_read_uploaded_table` in
 
 ## Master Grid (UI label: "Ending Inventory Workbook")
 
-One row per product alias, with a quantity column and a value column for each period.
+One row per product alias, with a quantity column for each period. Value columns are optional and ignored (the app derives values from its stored FIFO layers).
 
 | Column | Detection |
 |---|---|
 | Alias | Header `ALIAS` / `PRODUCT ALIAS` (matched ignoring case and punctuation); otherwise the **first column**. Non-numeric alias rows are dropped. |
 | Quantity for period *n* | `n`, `0n`, `Pn`, `PDn`, `P.n`, … (1–13), via `parse_period_column_header`. |
-| Value for period *n* | The same token with a trailing `V`: `12V`, `PD12V`. |
+| Value for period *n* (optional, ignored) | The same token with a trailing `V`: `12V`, `PD12V`. Never required; a non-numeric value cell is still reported as an invalid cell. |
 
 In app session state the grid is normalized to `PRODUCT ALIAS`, `DESCRIPTION`,
 `01`…`13`, `01V`…`13V` (`_blank_master_grid` in `app.py`). An upload is *merged*
 into this grid by `apply_updates_to_master_grid`, and only known aliases are applied.
 
 **Errors that block the preview** (collected in `app.py` plus `validate_master_grid`):
-- The beginning and ending qty/value columns for the selected period are missing (P1's beginning column is `13`/`13V`).
+- The beginning and ending quantity columns for the selected period are missing (P1's beginning column is `13`).
 - A known alias is missing, or an alias appears twice.
-- A required cell is blank, non-numeric, or a negative quantity. Value columns *may* be negative.
+- A required quantity cell is blank, non-numeric, or negative.
 
 Unknown aliases only produce a warning.
 

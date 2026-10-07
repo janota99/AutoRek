@@ -5,7 +5,7 @@
         chrome.css           suite chrome: account strip, sidebar logo, captions, "View Plans" pill, top-bar logo
         status.css           PASS / REVIEW / FAIL / matched / unresolved badges and tiles (shared/status.py)
     shared/styles/pages/   one file per page, loaded by that page after the base (so a page can override it):
-        dashboard.css, sales-page.css, fifo.css, recon.css, sales-tax.css
+        landing.css, dashboard.css, sales-page.css, fifo.css, recon.css, sales-tax.css
 
 The Invoice Hub is the exception: it runs in an iframe that cannot see this page's CSS, so it keeps its own
 apps/invoice_hub/site/styles.css.
@@ -19,7 +19,7 @@ import streamlit as st
 
 _DIR = Path(__file__).resolve().parent
 BASE_FILES = ("tokens", "chrome", "status")
-PAGES = ("dashboard", "sales-page", "fifo", "recon", "sales-tax")
+PAGES = ("landing", "dashboard", "sales-page", "fifo", "recon", "sales-tax")
 
 # Non-breaking spaces pasted into a stylesheet silently break the rule they sit in.
 _SPACE_FIXES = str.maketrans({" ": " ", " ": " ", " ": " "})

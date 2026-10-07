@@ -245,16 +245,9 @@ def validate_master_grid(grid_df, current_period):
 
     end_col = f"{int(current_period):02d}"
     beginning_col = "13" if int(current_period) == 1 else f"{int(current_period) - 1:02d}"
-    end_value_col = f"{end_col}V"
-    beginning_value_col = f"{beginning_col}V"
-
     for col in (beginning_col, end_col):
         if col not in grid_df.columns:
             errors.append(f"Master Grid is missing required period column {col}.")
-    for col in (beginning_value_col, end_value_col):
-        if col not in grid_df.columns:
-            errors.append(f"Master Grid is missing required period value column {col}.")
-
     aliases = pd.to_numeric(grid_df['PRODUCT ALIAS'], errors='coerce')
     duplicate_aliases = aliases[aliases.duplicated(keep=False) & aliases.notna()].astype(int).unique().tolist()
     if duplicate_aliases:
@@ -277,16 +270,8 @@ def validate_master_grid(grid_df, current_period):
             bad_aliases = aliases[negative_mask].dropna().astype(int).tolist()[:10]
             errors.append(f"Period {col} contains negative ending quantities for alias(es): {bad_aliases}")
 
-    for col in (beginning_value_col, end_value_col):
-        if col not in grid_df.columns:
-            continue
-        values = _coerce_accounting_series(grid_df[col])
-        invalid_mask = values.isna() | ~values.map(lambda x: math.isfinite(float(x)) if pd.notna(x) else False)
-        if invalid_mask.any():
-            bad_aliases = aliases[invalid_mask].dropna().astype(int).tolist()[:10]
-            errors.append(f"Period {col} contains nonnumeric or blank values for alias(es): {bad_aliases}")
-        # Value columns may legitimately be negative (a product can carry a
-        # negative reconciling variance), so no negative-value check here.
+    # Value columns (01V..13V) are optional and never read by the calculation:
+    # beginning value comes from the stored FIFO layers, ending value is derived.
     return errors
 
 def prepare_receipts_upload(df_upload, current_period):

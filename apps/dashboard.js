@@ -86,15 +86,56 @@
   });
 
   // Open an app through Streamlit's own top navigation link so the session is kept and the page
-  // does not reload. If that link cannot be found, the card's href navigates normally.
+  // does not reload. If that link cannot be found, the href navigates normally.
+  function navTo(path) {
+    path = path.replace(/\/$/, "");
+    var link = Array.prototype.slice.call(document.querySelectorAll("a[href]")).find(function (a) {
+      return !root.contains(a) && new URL(a.href, location.href).pathname.replace(/\/$/, "") === path;
+    });
+    if (link) { link.click(); return true; }
+    return false;
+  }
+  function plain(ev) { return ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey; }
+  root.querySelectorAll("a[data-route]").forEach(function (a) {
+    a.addEventListener("click", function (ev) {
+      if (plain(ev)) return;
+      if (navTo(new URL(a.href, location.href).pathname)) ev.preventDefault();
+    });
+  });
+  // Clicking empty space on a card opens it too; its links, buttons, and details keep their own behaviour.
   cards.forEach(function (card) {
     card.addEventListener("click", function (ev) {
-      if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
-      var path = new URL(card.href, location.href).pathname.replace(/\/$/, "");
-      var link = Array.prototype.slice.call(document.querySelectorAll("a[href]")).find(function (a) {
-        return !root.contains(a) && new URL(a.href, location.href).pathname.replace(/\/$/, "") === path;
-      });
-      if (link) { ev.preventDefault(); link.click(); }
+      if (plain(ev) || ev.target.closest("a, button, .pp-details")) return;
+      if (!navTo(card.dataset.href)) location.href = card.dataset.href;
+    });
+  });
+
+  // "View details" opens a card's drawer in place.
+  root.querySelectorAll(".pp-card .pp-link").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var drawer = btn.closest(".pp-card").querySelector(".pp-details");
+      var open = drawer.hidden;
+      drawer.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.textContent = open ? "Hide details" : "View details";
+    });
+  });
+
+  // "Compare plans" presses the page's own View Plans button, which opens the pricing page.
+  root.querySelectorAll("[data-open-plans]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var plans = document.querySelector(".st-key-pp-open-pricing button");
+      if (plans) plans.click();
+    });
+  });
+
+  // Sidebar: Overview and Applications scroll to their section.
+  root.querySelectorAll(".pp-rail [data-scroll]").forEach(function (a) {
+    a.addEventListener("click", function (ev) {
+      var target = document.getElementById(a.dataset.scroll);
+      if (!target) return;
+      ev.preventDefault();
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
 

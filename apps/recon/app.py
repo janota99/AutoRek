@@ -91,8 +91,8 @@ def main() -> None:
     st.markdown(
         """
         <div class="rec-title">
-            <h1>Sales Reconciliation</h1>
-            <p>QuickBooks-to-Infinium matching, data summarization, and reconciliation analytics</p>
+            <h1>Data Reconciliation Studio</h1>
+            <p>Example workflow: QuickBooks-to-Infinium matching, data summarization, and reconciliation analytics</p>
         </div>
         """,
         unsafe_allow_html=True,

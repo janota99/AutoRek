@@ -6,8 +6,9 @@ Pure computation layer: given beginning layers, a period's receipts, and an
 ending quantity, work out what was consumed versus what remains on hand
 (`calculate_fifo`), and stage a full multi-product batch run across every
 product (`stage_batch_calculation`), including the digest/signature hashing
-used to detect when a preview has gone stale (`_build_run_signature`) and the
-known-value-variance drift check described in fifo_layer_store.py.
+used to detect when a preview has gone stale (`_build_run_signature`).
+Ending value is always derived from the FIFO layers; no value column of the
+Master Grid is read.
 
 Nothing here touches Streamlit widgets or session state directly. Layer
 storage and persistence belong to fifo_layer_store.py; `stage_batch_calculation`
@@ -338,8 +339,7 @@ def calculate_fifo(beginning_layers, receipts_df, ending_qty, period=None, fisca
     return on_hand, depleted, raw_receipts, metrics
 
 def _failed_product_result(alias, name, beginning_layers, expected_beg_qty, ending_qty,
-                           period, fiscal_year, as_of_date, error_message,
-                           value_variance_current=0.0, value_variance_prior=0.0):
+                           period, fiscal_year, as_of_date, error_message):
     safe_layers = []
     for seq, raw in enumerate(beginning_layers, 1):
         layer = _canonicalize_layer(raw)
@@ -368,9 +368,6 @@ def _failed_product_result(alias, name, beginning_layers, expected_beg_qty, endi
         'depleted': [], 'on_hand': safe_layers,
         'beg_variance_qty': actual_beg_qty - expected_beg_qty,
         'beg_variance_val': (actual_beg_qty - expected_beg_qty) * avg_cost,
-        'value_variance_current': value_variance_current,
-        'value_variance_prior': value_variance_prior,
-        'value_variance_drift': value_variance_current - value_variance_prior,
         'alias_found': True, 'alias_ambiguous': False,
         'processing_error': str(error_message),
     }
@@ -382,7 +379,6 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
     processing_errors = []
     beginning_col = "13" if int(current_period) == 1 else f"{int(current_period) - 1:02d}"
     ending_col = f"{int(current_period):02d}"
-    beginning_value_col = f"{beginning_col}V"
 
     for alias, name in products.items():
         prod_rows = master_grid[pd.to_numeric(master_grid['PRODUCT ALIAS'], errors='coerce') == alias]
@@ -394,19 +390,6 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
         beg_variance_qty = 0.0
         beg_variance_val = 0.0
 
-        # Known beginning-value variance: the gap between this period's Master Grid
-        # beginning-value column (the user's own spreadsheet total for that point in
-        # time) and what the FIFO layers actually carry forward as their beginning
-        # value. This is computed fresh every period from the upload -- it is not a
-        # manually-maintained or seeded figure. It is allowed to be nonzero (the
-        # user's legacy spreadsheet has its own rounding drift between two competing
-        # formulas), but it should not move by more than VALUE_TOLERANCE from what
-        # was computed and accepted as of the last period close. Defaulted here (to
-        # whatever was last computed and stored) so it is available even if this
-        # product's calculation fails below.
-        value_variance_current = layer_store.get_value_variance(alias)
-        value_variance_prior = layer_store.last_committed_value_variance(alias)
-
         try:
             if alias_ambiguous:
                 raise ValueError("Product alias appears more than once in the Master Grid.")
@@ -415,7 +398,6 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
 
             expected_beg_qty = _finite_number(prod_rows.iloc[0][beginning_col], f"Alias {alias} beginning quantity")
             ending_qty = _finite_number(prod_rows.iloc[0][ending_col], f"Alias {alias} ending quantity")
-            manual_beg_value = _finite_number(prod_rows.iloc[0][beginning_value_col], f"Alias {alias} beginning value")
 
             beginning_layers = layer_store.sync_beginning(alias, expected_beg_qty)
             actual_beg_qty = sum(_canonicalize_layer(l)['qty'] for l in beginning_layers)
@@ -423,9 +405,6 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
             beg_variance_qty = actual_beg_qty - expected_beg_qty
             avg_cost = actual_beg_val / actual_beg_qty if actual_beg_qty else 0.0
             beg_variance_val = beg_variance_qty * avg_cost
-
-            value_variance_current = manual_beg_value - actual_beg_val
-            layer_store.set_value_variance(alias, value_variance_current)
 
             product_receipts = (
                 receipts_df[receipts_df['PRODUCT ALIAS'] == alias] if not receipts_df.empty else pd.DataFrame()
@@ -438,9 +417,6 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
                 'alias': alias, 'prod_name': name, 'metrics': metrics,
                 'receivings': raw_receipts, 'depleted': depleted, 'on_hand': on_hand,
                 'beg_variance_qty': beg_variance_qty, 'beg_variance_val': beg_variance_val,
-                'value_variance_current': value_variance_current,
-                'value_variance_prior': value_variance_prior,
-                'value_variance_drift': value_variance_current - value_variance_prior,
                 'alias_found': alias_found, 'alias_ambiguous': alias_ambiguous,
                 'processing_error': None,
             }
@@ -450,8 +426,6 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
             result = _failed_product_result(
                 alias, name, beginning_layers, expected_beg_qty, ending_qty,
                 current_period, fiscal_year, as_of_date, str(exc),
-                value_variance_current=value_variance_current,
-                value_variance_prior=value_variance_prior,
             )
             result['alias_found'] = alias_found
             result['alias_ambiguous'] = alias_ambiguous

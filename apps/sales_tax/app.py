@@ -41,7 +41,7 @@ def main():
     if "_nav_request" in st.session_state:
         st.session_state["active_tool"] = st.session_state.pop("_nav_request")
 
-    st.sidebar.title("Sales Tax Vendor Review Tool")
+    st.sidebar.title("Transaction Preparation & Review")
 
     # Bind the radio button to session_state for dynamic tool switching
     tool = st.sidebar.radio(

@@ -52,6 +52,9 @@
 
   // Keep the strip just left of Streamlit's own toolbar (Share, star, edit, menu) so it never covers it.
   // Use the leftmost control right of the navigation links; Share and star can mount after the strip does (re-placed every second below).
+  // Streamlit also draws its "Running..." status (with the Stop button) just left of the toolbar, only while a script runs.
+  // Reserve its room permanently: the strip then never jumps or covers it.
+  var STATUS_ROOM = 128;
   function place(banner) {
     var left = Infinity;
     document.querySelectorAll('[data-testid="stToolbar"] button, [data-testid="stToolbar"] a')
@@ -61,7 +64,7 @@
         if (r.width > 0) left = Math.min(left, r.left);
       });
     var right = isFinite(left) ? window.innerWidth - left + 16 : 16;
-    banner.style.setProperty('--pp-sb-right', Math.max(16, right) + 'px');
+    banner.style.setProperty('--pp-sb-right', Math.max(16, right) + STATUS_ROOM + 'px');
     // The Dashboard's "View Plans" button sits just left of the strip, whatever its width.
     var plans = document.querySelector('.st-key-pp-open-pricing');
     if (plans) plans.style.right = (window.innerWidth - banner.getBoundingClientRect().left + 12) + 'px';

@@ -135,6 +135,8 @@ class FIFOLayerStore:
     # as their beginning value. It is computed fresh from the upload every
     # period by fifo_calculations.stage_batch_calculation and written here via
     # set_value_variance — nothing here seeds or maintains a standing figure.
+    # (Engine 2.2.0: the drift check is retired and nothing calls set_value_variance;
+    # the stored figures remain only so older snapshots still load unchanged.)
     # It is expected to be nonzero (the user's legacy spreadsheet computes an
     # "Ending Inventory" waterfall and a "TOTAL" layer-sum independently and
     # they don't always agree to the penny) but should not drift outside the

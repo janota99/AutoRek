@@ -21,9 +21,9 @@ under a minute without any files of your own.
 
 | Tool | What it does |
 |---|---|
-| **FIFO Inventory** | Costs raw materials with strict first-in, first-out (FIFO) layers across a 13-period fiscal year. Runs PASS/REVIEW/FAIL controls and closes periods in order. |
-| **Sales Reconciliation** | Matches QuickBooks sales to Infinium sales by PO, invoice, and exact signed amount, then builds the reconciliation workpaper. |
-| **Sales Tax Review** | Cleans up sales-tax transactions against a vendor mapping and the trial balance, and reconciles two vendor listings. |
+| **Inventory Costing & Analytics** (example workflow: FIFO) | Costs raw materials with strict first-in, first-out (FIFO) layers across a 13-period fiscal year. Runs PASS/REVIEW/FAIL controls and closes periods in order. |
+| **Data Reconciliation Studio** (example workflow: QuickBooks and Infinium) | Matches QuickBooks sales to Infinium sales by PO, invoice, and exact signed amount, then builds the reconciliation workpaper. |
+| **Transaction Preparation & Review** (example workflow: sales-tax cleanup) | Cleans up sales-tax transactions against a vendor mapping and the trial balance, and reconciles two vendor listings. |
 | **Invoice Lifecycle Hub** | Prototype of an Outlook invoice tracker that routes invoices and bills into approval queues. It uses demo data only. |
 
 ---
@@ -80,7 +80,9 @@ each time you open a new terminal.
 
 ## Using the app
 
-The app opens on a **Dashboard** with one card per tool. Use the navigation bar at the top to
+The app opens on a **Home** landing page that introduces the platform: an interactive example you can inspect and rerun, a
+walkthrough, sample downloads, plans, and a simulated purchase flow. The **Workspace** page is the Dashboard, with one card
+per tool. Use the navigation bar at the top to
 switch tools; **Reviews & Feedback** is the last item in that bar. The top-right corner of every
 page shows your account: a **Sign in** button (a demo account works), or, once you're signed in, a
 greeting with your role and a menu with your profile, your invoice workspace, and sign out. Uploaded files are cleared when you switch to another tool, but finished results
@@ -94,7 +96,8 @@ from the oldest layer first, and a layer can never go negative.
 1. **Choose the fiscal year and period** in the sidebar. Periods must be closed in order:
    P13 is followed by the next year's P1.
 2. **Upload the Ending Inventory Workbook (Master Grid).** It has one row per product alias,
-   with a quantity column and a value column for each period (for example `12` and `12V`). It
+   with a quantity column for each period (for example `12`). Value columns such as `12V` are
+   optional and ignored: the app derives inventory values from its FIFO layers. It
    can be a `.csv`, `.xlsx`, or `.xlsm` file.
 3. **Upload the Current Period Receipts.** Each receipt needs a product alias, a delivery
    date, a quantity, and `PRICE`, which is the **total extended value** of the line, not the unit
@@ -217,7 +220,8 @@ Each tool's `docs/known-issues.md` lists its specific open items. To contribute,
 app.py                  Entry point: page setup, top navigation, shared styling
 shared/                 Navigation registry (layout.py), theme, logo
 apps/
-  dashboard.py          Landing page with one card per tool
+  landing.py            Home: the front landing page (value, solutions, demo, plans, simulated purchase)
+  dashboard.py          Workspace: one card per tool
   fifo_inventory/       FIFO Inventory
   recon/                Sales Reconciliation (matching/ and workpapers/ packages, tests/)
   sales_tax/            Sales Tax Review

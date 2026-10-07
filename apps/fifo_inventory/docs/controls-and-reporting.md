@@ -14,7 +14,6 @@ This drives the Summary/Executive Summary sheets and, through
 | Processing Integrity | FAIL |
 | Beginning Quantity Agreement (layers vs Master Grid) | FAIL — must be 0 units to close |
 | Estimated Value Effect of Beginning Qty Variance | REVIEW |
-| Beginning Value Variance Consistency (known-variance drift) | REVIEW |
 | Receipt Quantity / Value Agreement | FAIL |
 | Depletion Quantity Agreement | FAIL |
 | Layer Value Conservation (`value_variance`) | FAIL |
@@ -28,11 +27,11 @@ Overall status order: any FAIL → `FAIL`; else any REVIEW → `REVIEW`; else `P
 
 - `_value_is_material(v, tol)`: rounds `v` to cents with `Decimal` ROUND_HALF_UP and compares against `tol` (default $0.01).
 - `_quantity_is_material(v, tol)`: `abs(v) > tol` (default `QTY_TOLERANCE` = 0.0001).
-- `value_variance_drift_is_acceptable(drift, tolerances)`: **always** uses the fixed ±$0.01 penny rule and ignores `tolerances` on purpose ("monetary materiality is deliberately not configurable").
+- The known-value-variance drift check was retired in engine 2.2.0 (see `fifo-accounting.md`).
 
 ## Tolerance settings (`app_settings.py`)
 
-`qty_tolerance`, `value_tolerance`, `zero_cost_tolerance`, `drift_min`, `drift_max`
+`qty_tolerance`, `value_tolerance`, `zero_cost_tolerance` (the old `drift_min` / `drift_max` keys are ignored if present in a saved file)
 are edited in the ⚙️ Settings tab (`insights.py`) and saved atomically to `apps/fifo_inventory/app_settings.json`
 (override the path with `FIFO_SETTINGS_PATH`). `get_effective_tolerances()` reads
 the disk on every call, and a corrupt file falls back to the defaults. The

@@ -284,20 +284,6 @@ def _settings_tab():
             value=current_settings['zero_cost_tolerance'], step=0.0001, format="%.6f",
             help=app_settings.field_help('zero_cost_tolerance'),
         )
-        drift_col1, drift_col2 = st.columns(2)
-        with drift_col1:
-            drift_min_input = st.number_input(
-                app_settings.field_label('drift_min'),
-                value=current_settings['drift_min'], step=0.001, format="%.4f",
-                help=app_settings.field_help('drift_min'),
-            )
-        with drift_col2:
-            drift_max_input = st.number_input(
-                app_settings.field_label('drift_max'),
-                value=current_settings['drift_max'], step=0.001, format="%.4f",
-                help=app_settings.field_help('drift_max'),
-            )
-
         settings_save_col, settings_reset_col = st.columns(2)
         with settings_save_col:
             settings_submitted = st.form_submit_button("💾 Save Settings", type="primary")
@@ -309,7 +295,6 @@ def _settings_tab():
             app_settings.save_settings({
                 'qty_tolerance': qty_tolerance_input, 'value_tolerance': value_tolerance_input,
                 'zero_cost_tolerance': zero_cost_tolerance_input,
-                'drift_min': drift_min_input, 'drift_max': drift_max_input,
             })
             st.success("Settings saved. These tolerances now apply to every new preview and export.")
         except Exception as exc:

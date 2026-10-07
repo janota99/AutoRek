@@ -3,8 +3,8 @@
 A fixed file could not reconcile: the Master Grid's beginning quantity and value must equal the
 layers actually carried, and those depend on the selected period and what has been closed. So
 the sample is generated on demand, as a plan per product: a small receipt for some products, a
-usage of about a third of the stock, and the ending quantity and value that strict
-oldest-first consumption gives. Both files come from the same plan, so they always agree.
+usage of about a third of the stock, and the ending quantity (the ending value is left blank:
+the app derives it by strict oldest-first consumption). Both files come from the same plan, so they always agree.
 
 Nothing is written to disk and no layer is changed. The page blocks Close & Commit while a
 sample is loaded, so demo numbers can never become the official books.
@@ -93,7 +93,7 @@ def build_master_grid_sample(layer_store, fiscal_year: int, period: int, as_of: 
             if p == begin_period:
                 row += [plan[alias]['begin_qty'], plan[alias]['begin_val']]
             elif p == period:
-                row += [plan[alias]['end_qty'], plan[alias]['end_val']]
+                row += [plan[alias]['end_qty'], None]   # the app derives the ending value; none is entered
             else:
                 row += [0.0, 0.0]
         ws.append(row)

@@ -94,16 +94,6 @@ def _layer_is_unpriced(layer, zero_cost_tolerance=0.0):
     return float(layer.get('unit_cost') or 0.0) <= zero_cost_tolerance
 
 
-def value_variance_drift_is_acceptable(drift, tolerances=None):
-    """Return True when the reported drift is within the permanent penny rule.
-
-    ``tolerances`` remains in the signature for backward compatibility with
-    existing callers, but monetary materiality is deliberately not
-    configurable.
-    """
-    return _value_is_acceptable(drift)
-
-
 _LAYER_DATE_TOKEN = re.compile(r'(\d{1,2}/\d{1,2}/\d{2,4}|\d{4}-\d{1,2}-\d{1,2})')
 _LAYER_PERIOD_PREFIX = re.compile(r'^\s*(P\.?D?\.?\s*0?\d{1,2}(?:[-.]\d{2,4})?)\s*:?', re.IGNORECASE)
 
@@ -260,16 +250,10 @@ def _compute_product_controls(res, tolerances=None):
     )
     chrono_ok = _check_chronology(depleted) and _check_chronology(on_hand)
 
-    value_variance_current = res.get('value_variance_current', 0.0)
-    value_variance_prior = res.get('value_variance_prior', 0.0)
-    value_variance_drift = res.get('value_variance_drift', value_variance_current - value_variance_prior)
-    value_variance_consistent = value_variance_drift_is_acceptable(value_variance_drift)
-
     checks = [
         ("Processing Integrity", "FAIL" if processing_error else "PASS", processing_error or "Calculation completed without an exception"),
         ("Beginning Quantity Agreement", "FAIL" if _quantity_is_material(beg_var_qty, qty_tol) else "PASS", f"{beg_var_qty:,.0f} unit variance vs Master Grid — a variance of 0 units is required to close this period" if _quantity_is_material(beg_var_qty, qty_tol) else "0-unit variance"),
         ("Estimated Value Effect of Beginning Qty Variance", "REVIEW" if _value_is_material(beg_var_val, val_tol) else "PASS", f"${beg_var_val:,.2f} estimated effect; the Master Grid supplies quantities, not an independent book value" if _value_is_material(beg_var_val, val_tol) else "$0.00 estimated effect"),
-        ("Beginning Value Variance Consistency", "PASS" if value_variance_consistent else "REVIEW", f"${value_variance_current:,.2f} accepted variance carried forward within the permanent ±$0.01 rule" if value_variance_consistent else f"Accepted variance moved by ${value_variance_drift:,.2f} (now ${value_variance_current:,.2f} vs ${value_variance_prior:,.2f} accepted last period), outside the permanent ±$0.01 rule — confirm this reflects a deliberate reconciliation"),
         ("Receipt Quantity Agreement", "FAIL" if _quantity_is_material(raw_qty - m['purch_qty'], qty_tol) else "PASS", "Raw receipts do not sum to purchase quantity" if _quantity_is_material(raw_qty - m['purch_qty'], qty_tol) else f"{raw_qty:,.0f} receipt units tied"),
         ("Receipt Value Agreement", "FAIL" if _value_is_material(raw_val - m['purch_val'], val_tol) else "PASS", "Raw receipts do not sum to purchase value" if _value_is_material(raw_val - m['purch_val'], val_tol) else f"${raw_val:,.2f} receipt value tied"),
         ("Depletion Quantity Agreement", "FAIL" if _quantity_is_material(dep_qty - m['usage_qty'], qty_tol) else "PASS", "Depleted layers do not sum to FIFO usage quantity" if _quantity_is_material(dep_qty - m['usage_qty'], qty_tol) else f"{dep_qty:,.0f} depleted units tied"),
@@ -341,14 +325,6 @@ def _compute_summary_control_status(res, alias_found=True, alias_ambiguous=False
         hard_fail = True
         reconciliation_status = "FAIL"
         exceptions.append(f"Beginning quantity differs from Master Grid by {beg_var_qty:,.0f} units — a variance of 0 units is required before this period can be closed")
-
-    value_variance_current = res.get('value_variance_current', 0.0)
-    value_variance_prior = res.get('value_variance_prior', 0.0)
-    value_variance_drift = res.get('value_variance_drift', value_variance_current - value_variance_prior)
-    if not value_variance_drift_is_acceptable(value_variance_drift):
-        if reconciliation_status != "FAIL":
-            reconciliation_status = "REVIEW"
-        exceptions.append(f"Known value variance moved by ${value_variance_drift:,.2f} (now ${value_variance_current:,.2f} vs ${value_variance_prior:,.2f} accepted last period), outside the permanent ±$0.01 rule — confirm this reflects a deliberate reconciliation")
 
     if hard_fail: overall = "FAIL"
     elif reconciliation_status == "REVIEW" or valuation_status == "REVIEW": overall = "REVIEW"

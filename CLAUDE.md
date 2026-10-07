@@ -5,10 +5,11 @@ tools for a bottling/packaging operation behind a shared top navigation bar:
 
 | Page (URL) | Code | What it does |
 |---|---|---|
-| Dashboard (`/`) | `apps/dashboard.py` | Landing page: one card per app, built from the registry in `shared/layout.py`. Every page also carries the account strip (greeting, role, account menu) in its top-right corner. |
-| FIFO Inventory (`/fifo-inventory`) | `apps/fifo_inventory/` | 13-period strict FIFO costing of raw materials; PASS/REVIEW/FAIL controls; period close. |
-| Sales Reconciliation (`/recon`) | `apps/recon/` | Matches QuickBooks sales to Infinium; builds the reconciliation workpaper. |
-| Sales Tax Review (`/sales-tax`) | `apps/sales_tax/` | VBA-macro port: transaction cleanup against a vendor mapping and trial balance, plus vendor-list reconciliation. |
+| Home (`/`) | `apps/landing.py` | Front landing page: opening message, solution explorer with a populated demo, customization walkthrough (available vs planned), sample downloads, plans, and a simulated 6-step purchase sequence (plan, review, account, checkout, confirmation, onboarding). Example numbers come from `apps/landing_data.py`. It has no second header: while it shows, Streamlit's page links are hidden and a small public bar sits beside the `st.logo` wordmark. `apps/demo_banner.py` adds a "Back to solutions" banner to a solution opened with `?demo=1`. Planned or prototype benefits in `apps/sales_page.py` carry a `Planned: ` / `Prototype: ` prefix, which renders as a tag; keep `mongodb/plans.json` in step. |
+| Workspace (`/workspace`) | `apps/dashboard.py` | The Dashboard: one card per app, built from the registry in `shared/layout.py`. Every page also carries the account strip (greeting, role, account menu) in its top-right corner. |
+| Inventory Costing & Analytics (`/fifo-inventory`; example workflow: FIFO) | `apps/fifo_inventory/` | 13-period strict FIFO costing of raw materials; PASS/REVIEW/FAIL controls; period close. |
+| Data Reconciliation Studio (`/recon`; example workflow: QuickBooks and Infinium) | `apps/recon/` | Matches QuickBooks sales to Infinium; builds the reconciliation workpaper. |
+| Transaction Preparation & Review (`/sales-tax`; example workflow: sales-tax cleanup) | `apps/sales_tax/` | VBA-macro port: transaction cleanup against a vendor mapping and trial balance, plus vendor-list reconciliation. |
 | Invoice Lifecycle Hub (`/invoice-hub`) | `apps/invoice_hub/` | Static HTML/JS prototype of an Outlook invoice tracker, embedded as a Streamlit component. Its page has two tabs: Service overview and My Dashboard (the signed-in person's invoice workspace). |
 | Sales page (no URL) | `apps/sales_page.py` | Three-tier pricing page reachable only from the Dashboard's "View Plans" button in the top-right corner (session flag, not a registered page). Placeholder prices; no payment processing. |
 | Reviews & Feedback (`/feedback`) | `apps/feedback.py` | Navigation-bar page (not a Dashboard card): the hub's reviews and feedback form, embedded. |
