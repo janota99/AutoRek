@@ -11,6 +11,7 @@ import streamlit as st
 from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
 
+from . import ui
 from .ingestion import (
     clear_trial_balance_cache,
     IngestionError,
@@ -97,9 +98,9 @@ def _render_upload_summary(uploaded, kind: str) -> None:
     st.markdown(f"<div class='st-chips'>{markup}</div>", unsafe_allow_html=True)
 
 
-def _drop_zone(title: str, hint: str, key: str, sample_file: str, kind: str):
-    """A file uploader under a headline, with a status pill (Uploaded / Demo data / Missing) and,
-    once a file is in, a strip of facts to check it against the export it came from."""
+def _drop_zone(number: int, title: str, hint: str, glyph: str, key: str, sample_file: str, kind: str):
+    """A numbered, labeled upload card section: icon, title, status pill (Uploaded / Demo data / Missing) and
+    what the file should be; once a file is in, a strip of facts to check it against the export it came from."""
     status = st.empty()
     uploaded, is_sample = sample_uploader(
         title, key=key, sample_file=sample_file, types=["xlsx"], show_badge=False,
@@ -110,24 +111,29 @@ def _drop_zone(title: str, hint: str, key: str, sample_file: str, kind: str):
         pill = "<span class='st-pill st-pill-ok'>&#10003; Uploaded</span>"
     else:
         pill = "<span class='st-pill st-pill-missing'>Missing</span>"
-    status.markdown(
-        f"<div class='st-drop-head'><div class='st-drop-title'>{title} {pill}</div>"
-        f"<div class='st-drop-sub'>{hint}</div></div>",
-        unsafe_allow_html=True,
-    )
+    status.markdown(ui.drop_head(number, title, hint, glyph, pill), unsafe_allow_html=True)
     if uploaded is not None:
         _render_upload_summary(uploaded, kind)
     return uploaded
 
 
+_CLEANUP_STEPS = [
+    ("Add files", "Source, mapping, trial balance"),
+    ("Run cleanup", "Apply the rules"),
+    ("Review", "Check results and new vendors"),
+    ("Download", "Needs a $0.00 control"),
+]
+
+
+def _draw_steps(slot, ready: bool, has_result: bool, control_ok: bool) -> None:
+    current = 0 if not ready else 1 if not has_result else 3 if control_ok else 2
+    slot.html(ui.stepper_html(_CLEANUP_STEPS, current))
+
+
 def render_transaction_cleanup():
-    st.header("Transaction Cleanup")
-    st.markdown(
-        "<div class='instruction-text'>Clean the source transactions against the vendor mapping and "
-        "trial balance. Nothing is changed silently: every removed row is kept on its own sheet, "
-        "and the download stays locked until the dollar control check is $0.00.</div>",
-        unsafe_allow_html=True
-    )
+    steps_slot = st.empty()  # filled once the page knows what is uploaded and run
+    ui.section("Transaction Cleanup", "Clean the source transactions against the vendor mapping and trial balance. "
+               "Every removed row is kept on its own sheet.")
     with st.expander("How the cleanup works"):
         st.markdown(
             "Columns are read **by position**, so the source file must keep the original layout: "
@@ -145,15 +151,16 @@ def render_transaction_cleanup():
     left, right = st.columns(2, gap="large")
     with left:
         with st.container(key="st-card-uploads", border=True):
-            st.markdown("<div class='st-card-title'>Upload files</div>", unsafe_allow_html=True)
+            st.markdown("<div class='st-card-title'>1 &middot; Add your files</div>", unsafe_allow_html=True)
             source_file = _drop_zone(
-                "Source Transactions", "XLSX with 11 columns (A-K)", "source_file",
-                "sales_tax_source_transactions.xlsx", "source",
+                1, "Source Transactions", "XLSX with 11 columns (A-K), read by position", "receipt_long",
+                "source_file", "sales_tax_source_transactions.xlsx", "source",
             )
             mapping_file = _drop_zone(
-                "Vendor Mapping", "XLSX vendor mapping file", "mapping_file",
-                "sales_tax_vendor_mapping.xlsx", "mapping",
+                2, "Vendor Mapping", "XLSX vendor mapping: Vendor ID, Taxability, Grouping", "account_tree",
+                "mapping_file", "sales_tax_vendor_mapping.xlsx", "mapping",
             )
+            tb_slot = st.empty()  # the trial balance is cached; its status tile is drawn after the cache is read
 
             sample_downloads([
                 ("Source Transactions (.xlsx)", "sales_tax_source_transactions.xlsx"),
@@ -282,6 +289,16 @@ def render_transaction_cleanup():
                     st.success("Trial Balance cached for future runs.")
                     st.rerun()
 
+    if cached_tb_status.valid:
+        tb_pill = f"<span class='st-pill st-pill-ok'>&#10003; {cached_tb_status.row_count:,} accounts cached</span>"
+    else:
+        tb_pill = "<span class='st-pill st-pill-missing'>Missing</span>"
+    tb_slot.markdown(
+        ui.drop_head(3, "Trial Balance", "Cached on disk and managed in the sidebar; upload it once, when it changes",
+                     "table_chart", tb_pill),
+        unsafe_allow_html=True,
+    )
+
     ready = bool(source_file and mapping_file and cached_tb_status.valid)
     with left:
         run_clicked = st.button(
@@ -297,6 +314,11 @@ def render_transaction_cleanup():
             if not cached_tb_status.valid:
                 missing.append("Trial Balance (upload once in the sidebar)")
             st.caption("Still needed: " + ", ".join(missing))
+
+    prior = st.session_state.get("tc_result") is not None and st.session_state.get("tc_fingerprint") == compute_input_fingerprint(
+        source_file.getvalue() if source_file else None, mapping_file.getvalue() if mapping_file else None,
+        cached_tb_status.fingerprint, excluded_ids, pad_side)
+    _draw_steps(steps_slot, ready, prior, prior and st.session_state["tc_stats"]["control_difference"] == 0)
 
     with right:
         st.markdown("<div class='st-card-title'>Output &amp; Preview</div>", unsafe_allow_html=True)
@@ -337,6 +359,7 @@ def render_transaction_cleanup():
                     # different result set and shouldn't still be offered here.
                     st.session_state.pop("tc_updated_mapping_buf", None)
                     st.session_state.pop("tc_updated_mapping_count", None)
+                    _draw_steps(steps_slot, ready, True, stats["control_difference"] == 0)
 
                     # Fires once, right when the run that found them completes - not
                     # on every later rerun of the script (e.g. from touching an
@@ -376,69 +399,27 @@ def render_transaction_cleanup():
 
             st.subheader("Summary")
 
-            # Use custom HTML for color-coded metric cards
-            st.markdown(f"""
-            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
-                <div style="background-color: #fff3f3; padding: 15px; border-radius: 5px; border-left: 5px solid #ff4b4b; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Removed - Prefixes</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">{stats['letter_rows_deleted']:,}</div>
-                </div>
-                <div style="background-color: #fff3f3; padding: 15px; border-radius: 5px; border-left: 5px solid #ff4b4b; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Removed - Duplicates</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">{stats['duplicate_rows_deleted']:,}</div>
-                </div>
-                <div style="background-color: #fff3f3; padding: 15px; border-radius: 5px; border-left: 5px solid #ff4b4b; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Removed - Excluded</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">{stats['excluded_rows_deleted']:,}</div>
-                </div>
-                <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Rows Kept</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">{len(result_df):,}</div>
-                </div>
-            </div>
-            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
-                <div style="background-color: #f2f9f2; padding: 15px; border-radius: 5px; border-left: 5px solid #4caf50; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Vendors Matched</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">{stats['matched_vendor_rows']:,}</div>
-                </div>
-                <div style="background-color: #f2f9f2; padding: 15px; border-radius: 5px; border-left: 5px solid #4caf50; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">GL Accounts Matched</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">{stats['matched_gl_rows']:,}</div>
-                </div>
-                <div style="background-color: #fff8e1; padding: 15px; border-radius: 5px; border-left: 5px solid #ffc107; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">New Vendors</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">{stats['new_vendor_rows']:,}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Dollar control totals: proves Original = Retained + Removed, not
-            # just row counts. A non-zero control difference would mean the
-            # reconciliation itself is broken (a real bug), so it's called out
-            # in red rather than blended in with the other metrics.
             control_ok = stats["control_difference"] == 0
-            control_color = "#4caf50" if control_ok else "#ff4b4b"
-            control_bg = "#f2f9f2" if control_ok else "#fff3f3"
-            st.markdown(f"""
-            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
-                <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Original Total</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">${stats['original_amount_total']:,.2f}</div>
-                </div>
-                <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Retained Total</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">${stats['retained_amount_total']:,.2f}</div>
-                </div>
-                <div style="background-color: #f0f8ff; padding: 15px; border-radius: 5px; border-left: 5px solid #000080; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Removed Total</div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">${stats['removed_amount_total']:,.2f}</div>
-                </div>
-                <div style="background-color: {control_bg}; padding: 15px; border-radius: 5px; border-left: 5px solid {control_color}; flex: 1; min-width: 150px;">
-                    <div style="font-size: 0.95rem; color: #444;">Control Difference</div>
-                    <div style="font-size: 1.5rem; font-weight: bold; color: {control_color};">${stats['control_difference']:,.2f}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(ui.kpi_row([
+                ("Removed - Prefixes", f"{stats['letter_rows_deleted']:,}", "remove"),
+                ("Removed - Duplicates", f"{stats['duplicate_rows_deleted']:,}", "remove"),
+                ("Removed - Excluded", f"{stats['excluded_rows_deleted']:,}", "remove"),
+                ("Rows Kept", f"{len(result_df):,}", "keep"),
+            ]) + ui.kpi_row([
+                ("Vendors Matched", f"{stats['matched_vendor_rows']:,}", "good"),
+                ("GL Accounts Matched", f"{stats['matched_gl_rows']:,}", "good"),
+                ("New Vendors", f"{stats['new_vendor_rows']:,}", "warn"),
+            ]), unsafe_allow_html=True)
+
+            # Dollar control totals: proves Original = Retained + Removed, not just row counts. A non-zero
+            # control difference would mean the reconciliation itself is broken (a real bug), so it is
+            # called out in red rather than blended in with the other tiles.
+            st.markdown(ui.kpi_row([
+                ("Original Total", f"${stats['original_amount_total']:,.2f}", "keep"),
+                ("Retained Total", f"${stats['retained_amount_total']:,.2f}", "keep"),
+                ("Removed Total", f"${stats['removed_amount_total']:,.2f}", "keep"),
+                ("Control Difference", f"${stats['control_difference']:,.2f}", "good" if control_ok else "bad"),
+            ]), unsafe_allow_html=True)
             if not control_ok:
                 st.error(
                     "**The dollar control check failed.** Original Total does not equal Retained + Removed, "

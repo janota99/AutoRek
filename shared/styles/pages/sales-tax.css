@@ -15,7 +15,7 @@
 
 /* ---------- Overall page ---------- */
 [data-testid="stAppViewContainer"] {
-    background-color: #fbfcfd;
+    background-color: #f4f7fb;
 }
 
 h1, h2, h3 {
@@ -71,7 +71,7 @@ h1, h2, h3 {
 /* ---------- Buttons ---------- */
 [data-testid="stButton"] button,
 [data-testid="stDownloadButton"] button {
-    border-radius: 8px;
+    border-radius: var(--pp-btn-radius);
     border: 1px solid var(--border);
     font-weight: 600;
     transition: transform 0.05s ease-in-out, box-shadow 0.15s ease-in-out;
@@ -152,8 +152,8 @@ h3 + [data-testid="stCaptionContainer"] {
    keeping them last preserves that cascade order.
    ============================================================ */
 /* Set primary buttons to navy blue */
-button[kind="primary"] { background-color: #000080 !important; color: white !important; border: none !important; }
-button[kind="primary"]:hover { background-color: #000050 !important; }
+button[kind="primary"] { background-color: var(--pp-primary) !important; color: white !important; border: none !important; }
+button[kind="primary"]:hover { background-color: var(--pp-primary-hover) !important; }
 
 /* Improve contrast for instructional text */
 .instruction-text { color: #1e1e1e; font-size: 1.05rem; margin-bottom: 1rem; }
@@ -178,7 +178,7 @@ button[kind="primary"]:hover { background-color: #000050 !important; }
 /* Secondary button text (e.g. 'Clear cached Trial Balance'). Both
    selectors are included since Streamlit has used different testids
    for this across versions; button[kind="secondary"] targets the
-   underlying <button> attribute directly and has been the most stable. */
+   underlying button attribute directly and has been the most stable. */
 button[kind="secondary"],
 [data-testid="stBaseButton-secondary"] {
     color: #1e1e1e !important;
@@ -186,7 +186,7 @@ button[kind="secondary"],
 
 /* Sidebar buttons, as a structural fallback: this doesn't depend on
    Streamlit's "kind" attribute or any internal testid naming at all -
-   just that it's a <button> nested inside the sidebar - so it stays
+   just that it's a button nested inside the sidebar - so it stays
    correct even if the selectors above stop matching in a future
    version (this is what was happening: button[kind="secondary"] was
    not reliably matching, leaving sidebar buttons with default light
@@ -318,3 +318,62 @@ button[kind="secondary"],
 .st-chip-ok b { color: #116447; }
 .st-chip-warn { background: #fdecea; border-color: #f3b9b4; color: #c2413b; }
 .st-chip-warn b { color: #c2413b; }
+
+
+/* ============================================================
+   Modern layout (apps/sales_tax/ui.py): title block, progress stepper, numbered upload cards, KPI tiles.
+   Keep this file free of less-than signs: Streamlit's sanitizer can drop a stylesheet over one.
+   ============================================================ */
+.stApp:has(.st-title) .block-container { max-width: 1500px; }
+.st-title { margin: 0 0 1.1rem; max-width: 60rem; }
+.stApp .st-title h1 { margin: .15rem 0 0; padding: 0; color: var(--pp-navy); font-size: clamp(2rem, 3.4vw, 2.9rem); font-weight: 800; line-height: 1.08; letter-spacing: -.03em; }
+.st-title p { margin: .6rem 0 0; color: #4a5a6e; font-size: 1.05rem; line-height: 1.5; }
+.st-eyebrow { display: inline-block; padding: .15rem .7rem; border-radius: 999px; background: var(--pp-accent-soft); border: 1px solid var(--pp-accent-soft-hover); color: var(--pp-accent-strong); font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+
+/* Tool switch (a segmented control in the page, replacing the sidebar radio) */
+.stApp:has(.st-title) [data-testid="stButtonGroup"] { margin-bottom: .4rem; }
+
+/* Stepper */
+.st-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: .6rem 0 1.2rem; padding: 0 !important; list-style: none; }
+.st-step { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding-right: 1rem; }
+.st-step:not(:last-child)::after { content: ""; position: absolute; top: 17px; left: 46px; right: 8px; height: 2px; background: #cdd8e4; }
+.st-step[data-state="complete"]:not(:last-child)::after { background: #2e7d32; }
+.st-node { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid #cdd8e4; border-radius: 50%; background: #fff; color: #65758a; font-weight: 800; font-size: .9rem; position: relative; z-index: 1; }
+.st-node .material-symbols-rounded { font-size: 1.2rem; }
+.st-step[data-state="complete"] .st-node { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+.st-step[data-state="active"] .st-node { background: var(--pp-navy); border-color: var(--pp-navy); color: #fff; box-shadow: 0 0 0 4px rgba(25, 54, 93, .2); }
+.st-step-title { margin-top: .55rem; color: #65758a; font-weight: 700; font-size: 1rem; }
+.st-step[data-state="active"] .st-step-title, .st-step[data-state="complete"] .st-step-title { color: var(--pp-navy); }
+.st-step-detail { color: #65758a; font-size: .85rem; line-height: 1.35; }
+
+.st-section { margin: .4rem 0 1rem; }
+.stApp .st-section h2 { margin: 0; padding: 0; color: var(--pp-navy); font-size: 1.45rem; font-weight: 800; }
+.st-section p { margin: .3rem 0 0; color: #4a5a6e; font-size: 1rem; }
+
+/* Upload cards: a numbered, labeled heading above each drop zone */
+[class*="st-key-st-card-"] { border-radius: 14px; border: 1px solid #dbe4ee; box-shadow: 0 2px 8px rgba(25, 54, 93, .06); }
+.st-drop-head { display: flex; align-items: flex-start; gap: .8rem; text-align: left; padding: .7rem 0 .3rem; }
+.st-badge { flex: none; display: grid; place-items: center; width: 2.7rem; height: 2.7rem; border-radius: .75rem; background: linear-gradient(135deg, var(--pp-navy), var(--pp-accent)); color: #fff; }
+.st-badge .material-symbols-rounded { font-size: 1.5rem; }
+.st-drop-copy { min-width: 0; }
+.st-drop-title { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin: 0; color: var(--pp-navy); font-weight: 800; font-size: 1.1rem; }
+.st-num { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; margin-right: .1rem; border-radius: 50%; background: var(--pp-accent-soft-hover); color: var(--pp-accent-strong); font-size: .8rem; font-weight: 800; }
+.st-drop-sub { margin: .2rem 0 0; color: #4a5a6e; font-size: .95rem; }
+.st-pill { margin-left: 0; }
+.st-req { padding: .08rem .55rem; border-radius: 999px; background: #eef1f5; color: #4a5a6e; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.st-opt { background: transparent; border: 1px dashed #94a3b8; }
+
+/* KPI tiles */
+.st-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin: 0 0 .8rem; }
+.st-kpi { display: grid; gap: .15rem; padding: .8rem 1rem; border: 1px solid #dbe4ee; border-left-width: 5px; border-radius: .6rem; background: #fff; }
+.st-kpi-l { color: #4a5a6e; font-size: .9rem; }
+.st-kpi-v { color: var(--pp-navy); font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.st-kpi[data-tone="remove"] { border-left-color: #ff4b4b; background: #fff6f6; }
+.st-kpi[data-tone="keep"] { border-left-color: var(--pp-navy); background: #f3f7fc; }
+.st-kpi[data-tone="good"] { border-left-color: #4caf50; background: #f3faf4; }
+.st-kpi[data-tone="warn"] { border-left-color: #ffc107; background: #fff9e8; }
+.st-kpi[data-tone="bad"] { border-left-color: #ff4b4b; background: #fdecea; }
+.st-kpi[data-tone="bad"] .st-kpi-v { color: #c2413b; }
+.st-kpi[data-tone="good"] .st-kpi-v { color: #1b5e20; }
+
+@media (max-width: 720px) { .st-steps { grid-template-columns: 1fr 1fr; row-gap: 1rem; } .st-step::after { display: none; } }

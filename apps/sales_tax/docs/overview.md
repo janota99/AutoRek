@@ -11,6 +11,7 @@ A Streamlit port of a VBA macro with two tools, picked in the sidebar:
 | `transaction_cleanup.py` | The Transaction Cleanup screen: uploads, sidebar options, trial balance cache controls, Run Cleanup, results, new-vendor classification. |
 | `cleanup.py` | Transaction Cleanup logic, no Streamlit: `validate_inputs`, GL account building, conflict detectors, `process_transactions`, new-vendor checks, the input fingerprint. Also `clean_key_series`, which Vendor Reconciliation shares. |
 | `excel_output.py` | Sheet naming and grouping, the formatted cleanup workbook, the updated mapping workbook. |
+| `ui.py` | Markup only: page title, progress stepper, numbered upload-card heading, KPI tiles (styles: `shared/styles/pages/sales-tax.css`, `st-*` classes). Reads no file and changes no number. |
 | `vendor_reconciliation.py` | Compares two vendor listings by Vendor ID (Added/Removed/Renamed/Unchanged) and builds an updated 6-column mapping file. |
 | `ingestion.py` | File reading with size limits, the on-disk trial balance cache, excluded vendor IDs. No Streamlit. |
 | `data/` | `trial_balance_cache.xlsx` (the live cache) plus sample input files. Real company data, gitignored. |

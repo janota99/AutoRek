@@ -35,6 +35,8 @@ from openpyxl.styles import Border, Font, Side
 from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
 
+from . import ui
+
 # ID normalization is the same rule Transaction Cleanup uses: strip ALL internal
 # whitespace, surrounding quotes, and Excel .0 float artifacts, then uppercase.
 from .cleanup import clean_key_series as clean_id_key_series
@@ -328,26 +330,46 @@ def build_mapping_workbook(unchanged_df, renamed_df, added_df,
 # =====================================================================
 # STREAMLIT UI
 # =====================================================================
-def render_vendor_reconciliation():
-    st.header("Vendor Reconciliation")
-    st.caption(
-        "Compare a previous vendor listing against an updated one, by Vendor ID, "
-        "to find new, removed, and renamed vendors."
-    )
+_STEPS = [
+    ("Add listings", "Previous and updated"),
+    ("Map and compare", "Pick the columns, then compare"),
+    ("Classify", "Taxability and grouping for new vendors"),
+    ("Download", "The updated mapping file"),
+]
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("**Previous Vendor Listing**")
-        old_file, _ = sample_uploader(
+
+def _pill(file, is_sample) -> str:
+    if is_sample:
+        return "<span class='st-pill st-pill-sample'>&#9679; Demo data</span>"
+    if file is not None:
+        return "<span class='st-pill st-pill-ok'>&#10003; Uploaded</span>"
+    return "<span class='st-pill st-pill-missing'>Missing</span>"
+
+
+def render_vendor_reconciliation():
+    steps_slot = st.empty()  # drawn once the listings are known
+    ui.section("Vendor Reconciliation", "Compare a previous vendor listing against an updated one, by Vendor ID, "
+               "to find new, removed, and renamed vendors.")
+
+    col1, col2 = st.columns(2, gap="large")
+    with col1, st.container(key="st-card-old", border=True):
+        head1 = st.empty()
+        old_file, old_sample = sample_uploader(
             "Previous Vendor Listing", key="old_vendor_file",
-            sample_file="vendor_listing_previous.xlsx", types=["xlsx"],
+            sample_file="vendor_listing_previous.xlsx", types=["xlsx"], show_badge=False,
         )
-    with col2:
-        st.markdown("**Updated Vendor Listing**")
-        new_file, _ = sample_uploader(
+        head1.markdown(ui.drop_head(1, "Previous Vendor Listing", "The listing your current mapping was built from",
+                                    "history", _pill(old_file, old_sample)), unsafe_allow_html=True)
+    with col2, st.container(key="st-card-new", border=True):
+        head2 = st.empty()
+        new_file, new_sample = sample_uploader(
             "Updated Vendor Listing", key="new_vendor_file",
-            sample_file="vendor_listing_updated.xlsx", types=["xlsx"],
+            sample_file="vendor_listing_updated.xlsx", types=["xlsx"], show_badge=False,
         )
+        head2.markdown(ui.drop_head(2, "Updated Vendor Listing", "The newer export to compare against", "update",
+                                    _pill(new_file, new_sample)), unsafe_allow_html=True)
+    ran = "vr_added" in st.session_state
+    steps_slot.html(ui.stepper_html(_STEPS, 3 if ran else 1 if old_file and new_file else 0))
     sample_downloads([
         ("Previous Vendor Listing (.xlsx)", "vendor_listing_previous.xlsx"),
         ("Updated Vendor Listing (.xlsx)", "vendor_listing_updated.xlsx"),
@@ -446,11 +468,10 @@ def render_vendor_reconciliation():
         renamed = st.session_state["vr_renamed"]
         unchanged = st.session_state["vr_unchanged"]
 
-        m = st.columns(4)
-        m[0].metric("Added", len(added))
-        m[1].metric("Removed", len(removed))
-        m[2].metric("Renamed", len(renamed))
-        m[3].metric("Unchanged", len(unchanged))
+        st.markdown(ui.kpi_row([
+            ("Added", f"{len(added):,}", "warn"), ("Removed", f"{len(removed):,}", "remove"),
+            ("Renamed", f"{len(renamed):,}", "keep"), ("Unchanged", f"{len(unchanged):,}", "good"),
+        ]), unsafe_allow_html=True)
 
         tax_options = get_controlled_options(df_old, old_tax_col_resolved) if old_file and new_file else []
         group_options = get_controlled_options(df_old, old_group_col_resolved) if old_file and new_file else []

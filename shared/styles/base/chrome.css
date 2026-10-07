@@ -287,7 +287,7 @@
 .pp-demo-tag { display: inline-block; padding: .1rem .6rem; border-radius: 999px; background: rgba(255, 255, 255, .16); color: #fff; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .st-key-pp-demo-bar button { background: #fff; border-color: #fff; color: var(--pp-navy); }
 .st-key-pp-demo-bar button:hover { background: var(--pp-accent-soft); border-color: var(--pp-accent-soft); color: var(--pp-navy); }
-.st-key-pp-demo-bar button p { color: var(--pp-navy); font-weight: 600; }
+.st-key-pp-demo-bar button p { color: var(--pp-navy); font-weight: 600; white-space: nowrap; }
 .pp-demo-copy .material-symbols-rounded { font-size: 1.4rem; }
 
 /* Material Symbols glyphs in hand-written HTML (landing page, demo banner): Streamlit registers the font but not this class. */

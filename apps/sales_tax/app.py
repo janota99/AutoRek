@@ -12,8 +12,12 @@ from __future__ import annotations
 import streamlit as st
 
 from shared.styles import inject_page
+from apps.sales_tax import ui
 from apps.sales_tax.transaction_cleanup import render_transaction_cleanup
 from apps.sales_tax.vendor_reconciliation import render_vendor_reconciliation
+
+
+TOOLS = ["Transaction Cleanup", "Vendor Reconciliation"]
 
 
 # =====================================================================
@@ -26,7 +30,7 @@ def main():
 
     # Initialize session state for navigation if it doesn't exist
     if "active_tool" not in st.session_state:
-        st.session_state["active_tool"] = "Transaction Cleanup"
+        st.session_state["active_tool"] = TOOLS[0]
 
     # Applies any pending navigation request BEFORE the radio widget below is
     # instantiated. Nothing currently sets "_nav_request" (the old "Go to
@@ -41,19 +45,22 @@ def main():
     if "_nav_request" in st.session_state:
         st.session_state["active_tool"] = st.session_state.pop("_nav_request")
 
-    st.sidebar.title("Transaction Preparation & Review")
-
-    # Bind the radio button to session_state for dynamic tool switching
-    tool = st.sidebar.radio(
-        "Tool",
-        ["Transaction Cleanup", "Vendor Reconciliation"],
-        key="active_tool"
+    ui.page_header(
+        "Transaction Preparation & Review",
+        "Standardize vendors, review sales tax, and reconcile vendor lists. Every change is traceable and the "
+        "download stays locked until the dollar control check is $0.00.",
+        eyebrow="Example workflow: sales-tax cleanup",
     )
-    st.sidebar.divider()
+    # Bound to session_state so a future button can switch tools (see _nav_request above). A segmented control
+    # can be deselected; fall back to the first tool if it is.
+    st.segmented_control("Tool", TOOLS, key="active_tool", label_visibility="collapsed")
+    tool = st.session_state.get("active_tool") or TOOLS[0]
 
-    if tool == "Transaction Cleanup":
+    st.sidebar.markdown("### Transaction Preparation & Review")
+    if tool == TOOLS[0]:
         render_transaction_cleanup()
     else:
+        st.sidebar.caption("Vendor Reconciliation compares two vendor listings by Vendor ID. It does not use the trial balance.")
         render_vendor_reconciliation()
 
 
