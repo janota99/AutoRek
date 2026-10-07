@@ -7,7 +7,7 @@ site header: while this page shows, landing.css hides Streamlit's page links and
 place beside the Janota FIN wordmark that st.logo draws. Every other page keeps the workspace navigation.
 
 Every example number comes from apps/landing_data.py. The checkout is a labeled simulation: no processor is
-connected, nothing is charged, and the sign-in step creates a session-only demo account with no password.
+connected, nothing is charged, and the account step creates a session-only demo account (login, password kept only as a salted hash, offline authenticator code).
 """
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from apps import landing_data as data
 from apps import sales_page
 from apps.sales_page import TIERS, _ANNUAL, _CYCLE_KEY, _MONTHLY
 from apps.demo_banner import SECTION_PARAM, SOLUTIONS_SECTION
+from shared import billing
 from shared.layout import _LOGO_PATH, APPS, DASHBOARD_SCRIPT
 from shared.styles import style_tag
 
@@ -32,8 +33,9 @@ _E = html.escape
 # Session keys for the purchase sequence.
 STEP = "pp_l_step"          # 1 plan, 2 review, 3 account, 4 checkout, 5 confirmation, 6 onboarding
 PLAN = "pp_l_plan"
-ACCOUNT = "pp_l_account"    # {"name", "email"}; session only, no password
-ACCOUNTS = "pp_l_accounts"  # demo accounts created in this session, by email
+ACCOUNT = "pp_l_account"    # the signed-in demo account: names, email, login, password hash, authenticator secret
+ACCOUNTS = "pp_l_accounts"  # demo accounts created in this session, by lower-case login name
+PENDING = "pp_l_pending"    # an account waiting for its first authenticator code
 ANNUAL = "pp_l_annual"
 TEMPLATE = "pp_l_template"
 _STEPS = ("Plan", "Review", "Account", "Checkout", "Confirmation", "Set up")
@@ -389,7 +391,7 @@ def _tier(plan_id: str):
 
 
 def _restart() -> None:
-    for key in (STEP, PLAN, TEMPLATE, ANNUAL):
+    for key in (STEP, PLAN, TEMPLATE, ANNUAL, PENDING):
         st.session_state.pop(key, None)
     st.rerun()
 
@@ -437,39 +439,96 @@ def _step_review(tier, annual: bool) -> None:
         st.rerun()
 
 
+def _finish_sign_in(account: dict) -> None:
+    st.session_state[ACCOUNT] = account
+    st.session_state.pop(PENDING, None)
+    st.session_state[STEP] = 4
+    st.rerun()
+
+
+def _enroll_two_factor(pending: dict) -> None:
+    """Show the new authenticator secret and require one valid code before the account is created."""
+    st.markdown("**Set up two-factor authentication**")
+    st.write("Add this account to an authenticator app (such as Microsoft Authenticator, Google Authenticator or "
+             "1Password). The app makes codes on your device without a network, a phone number or email.")
+    st.code(billing.totp_secret_display(pending["totp_secret"]), language=None)
+    st.caption("Enter the key above in the app (time-based, 6 digits), or paste this address if it accepts one:")
+    st.code(billing.totp_uri(pending["totp_secret"], pending["email"]), language=None)
+    with st.form("pp-l-2fa", border=True, clear_on_submit=True):
+        code = st.text_input("6-digit code from the app", max_chars=7, autocomplete="off")
+        go = st.form_submit_button("Verify and create account", type="primary")
+    if go:
+        step = billing.verify_totp(pending["totp_secret"], code)
+        if step is None:
+            st.error("That code is not valid. Check the key in your app and the device clock, then try the next code.")
+        else:
+            account = {**pending, "totp_enrolled": True, "totp_last": -1}  # enrolling does not use up a code
+            st.session_state.setdefault(ACCOUNTS, {})[account["username"].lower()] = account
+            _finish_sign_in(account)
+    if st.button("Start over", key="pp-l-2fa-cancel", type="tertiary"):
+        st.session_state.pop(PENDING, None)
+        st.rerun()
+
+
 def _step_account() -> None:
-    """Step 3: a demo account that lives in this session only. No password is requested or kept."""
-    st.info("Simulated account: it exists only in this browser session. No password is asked for or stored, and it does "
+    """Step 3: a demo account that lives in this session only. It needs a name, email, login and password, and an
+    offline authenticator code (TOTP). The password is kept only as a salted hash; nothing here gates any tool."""
+    st.info("Simulated account: it exists only in this browser session. The password is kept only as a salted hash "
+            "for this session, and the second factor is a code from an authenticator app, generated offline. It does "
             "not control access to any tool.")
+    pending = st.session_state.get(PENDING)
+    if pending:
+        _enroll_two_factor(pending)
+        return
     create, sign_in = st.tabs(["Create account", "Sign in"])
     with create:
-        with st.form("pp-l-create", border=True):
-            name = st.text_input("Full name")
-            email = st.text_input("Work email", placeholder="you@company.com")
-            go = st.form_submit_button("Create account", type="primary")
+        with st.form("pp-l-create", border=True, clear_on_submit=True):
+            c1, c2 = st.columns(2)
+            first = c1.text_input("First name", autocomplete="given-name")
+            last = c2.text_input("Last name", autocomplete="family-name")
+            email = st.text_input("Work email", placeholder="you@company.com", autocomplete="email")
+            username = st.text_input("Login name", autocomplete="username", help="4 to 32 letters, numbers, dots, dashes or underscores.")
+            p1, p2 = st.columns(2)
+            password = p1.text_input("Password", type="password", autocomplete="new-password", help="At least 12 characters, with letters and numbers.")
+            confirm = p2.text_input("Confirm password", type="password", autocomplete="new-password")
+            go = st.form_submit_button("Continue to two-factor setup", type="primary")
         if go:
-            if not name.strip():
-                st.error("Enter your name.")
-            elif not sales_page._EMAIL_RE.match(email.strip()):
-                st.error("Enter a valid email address.")
+            problems = []
+            if not first.strip() or not last.strip():
+                problems.append("Enter your first and last name.")
+            if not sales_page._EMAIL_RE.match(email.strip()):
+                problems.append("Enter a valid email address.")
+            problems += billing.validate_login(username, password, confirm)
+            if username.strip().lower() in st.session_state.get(ACCOUNTS, {}):
+                problems.append("That login name is already used in this session.")
+            if problems:
+                for problem in problems:
+                    st.error(problem)
             else:
-                account = {"name": name.strip(), "email": email.strip().lower()}
-                st.session_state.setdefault(ACCOUNTS, {})[account["email"]] = account
-                st.session_state[ACCOUNT] = account
-                st.session_state[STEP] = 4
+                salt, digest = billing.hash_password(password)
+                st.session_state[PENDING] = {
+                    "first": first.strip(), "last": last.strip(), "name": f"{first.strip()} {last.strip()}",
+                    "email": email.strip().lower(), "username": username.strip(), "salt": salt, "hash": digest,
+                    "totp_secret": billing.new_totp_secret(),
+                }
                 st.rerun()
     with sign_in:
-        with st.form("pp-l-signin", border=True):
-            email = st.text_input("Email", key="pp-l-signin-email")
+        with st.form("pp-l-signin", border=True, clear_on_submit=True):
+            login = st.text_input("Login name", key="pp-l-signin-login", autocomplete="username")
+            pw = st.text_input("Password", type="password", key="pp-l-signin-pw", autocomplete="current-password")
+            otp = st.text_input("6-digit code from your authenticator app", key="pp-l-signin-otp", max_chars=7, autocomplete="off")
             go = st.form_submit_button("Sign in", type="primary")
         if go:
-            account = st.session_state.get(ACCOUNTS, {}).get(email.strip().lower())
-            if account:
-                st.session_state[ACCOUNT] = account
-                st.session_state[STEP] = 4
-                st.rerun()
+            account = st.session_state.get(ACCOUNTS, {}).get(login.strip().lower())
+            step = None
+            if account and billing.verify_password(pw, account["salt"], account["hash"]):
+                step = billing.verify_totp(account["totp_secret"], otp, last_used=account.get("totp_last", -1))
+            if step is None:  # one message for every failure, so it does not reveal which part was wrong
+                st.error("The login name, password or code is not right, or no demo account exists in this session. "
+                         "Create one on the other tab.")
             else:
-                st.error("No demo account with that email in this session. Create one on the other tab.")
+                account["totp_last"] = step
+                _finish_sign_in(account)
     if st.button("Back", key="pp-l-back-3"):
         st.session_state[STEP] = 2
         st.rerun()
@@ -479,7 +538,7 @@ def _step_checkout(tier, annual: bool) -> None:
     """Step 4: the clearly labeled simulated checkout."""
     st.html('<p class="pp-l-sim">SIMULATED CHECKOUT &middot; Nothing is charged</p>')
     st.html(sales_page.order_summary(tier, annual))
-    if sales_page.payment_section(tier, annual, key="pp-l-pay", quiet=True):
+    if sales_page.payment_section(tier, annual, key="pp-l-pay", quiet=True, account=st.session_state.get(ACCOUNT)):
         st.session_state[STEP] = 5
         st.rerun()
     if st.button("Back", key="pp-l-back-4"):
@@ -492,7 +551,7 @@ def _step_confirm(tier) -> None:
     account = st.session_state.get(ACCOUNT) or {}
     order = (st.session_state.get(sales_page.REGISTER_KEY) or [{}])[-1]
     st.html(f'<div class="pp-l-confirm"><span class="pp-wordmark" role="img" aria-label="Janota FIN"></span><h3>Demo order recorded</h3>'
-            f'<p>Thanks, {_E(account.get("name", "there"))}. Your {_E(tier.name)} plan ({_E(order.get("cycle", ""))}) is set up '
+            f'<p>Thanks, {_E(account.get("first", "there"))}. Your {_E(tier.name)} plan ({_E(order.get("cycle", ""))}) is set up '
             f'in this demo, billed {"once a year" if order.get("cycle") == "Annual" else "monthly"}. Total {sales_page.money(order.get("total", 0))}: '
             f'<strong>not charged</strong>.</p>'
             f'<p class="pp-l-note">A confirmation for {_E(account.get("email", ""))} would be sent here; email delivery is not connected.</p></div>')

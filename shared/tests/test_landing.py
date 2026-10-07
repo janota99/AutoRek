@@ -73,41 +73,78 @@ def test_landing_page_shows_every_section_and_the_three_purchase_buttons():
     assert len(at.get("download_button")) == 3
 
 
+def _field(at, label):
+    return next(t for t in at.text_input if t.label == label)       # the create-account tab renders first
+
+
+def _create_account(at, username="test.accountant"):
+    for label, value in (("First name", "Test"), ("Last name", "Accountant"), ("Work email", "test@example.com"),
+                         ("Login name", username), ("Password", "correct-horse-42"), ("Confirm password", "correct-horse-42")):
+        _field(at, label).set_value(value)
+    _button(at, "Continue to two-factor setup").click().run()
+
+
 def test_purchase_sequence_runs_from_plan_to_onboarding():
+    from shared import billing
     at = _run()
     _button(at, "Choose Professional").click().run()
     assert not at.exception and at.session_state["pp_l_step"] == 2           # review and total
     _button(at, "Continue to account").click().run()
     assert at.session_state["pp_l_step"] == 3                                 # account
 
-    at.text_input[0].set_value("Test Accountant")
-    at.text_input[1].set_value("test@example.com")
-    _button(at, "Create account").click().run()
+    # A weak password is refused before anything is created.
+    for label, value in (("First name", "Test"), ("Last name", "Accountant"), ("Work email", "test@example.com"),
+                         ("Login name", "test.accountant"), ("Password", "short"), ("Confirm password", "short")):
+        _field(at, label).set_value(value)
+    _button(at, "Continue to two-factor setup").click().run()
+    assert "pp_l_pending" not in at.session_state and at.error
+
+    _create_account(at)
+    pending = at.session_state["pp_l_pending"]                               # waiting for its first authenticator code
+    assert "correct-horse-42" not in str(pending) and pending["hash"]        # only a salted hash is kept
+    _field(at, "6-digit code from the app").set_value("000000")
+    _button(at, "Verify and create account").click().run()
+    assert at.session_state["pp_l_step"] == 3 and "pp_l_account" not in at.session_state   # wrong code: not created
+    _field(at, "6-digit code from the app").set_value(billing.totp_now(pending["totp_secret"]))
+    _button(at, "Verify and create account").click().run()
     assert at.session_state["pp_l_step"] == 4                                 # simulated checkout
-    assert at.session_state["pp_l_account"]["email"] == "test@example.com"
+    assert at.session_state["pp_l_account"]["username"] == "test.accountant"
 
-    # A bad card is refused and nothing is recorded.
-    fields = {t.label: t for t in at.text_input}
-    fields["Name on card"].set_value("Test Accountant")
-    fields["Card number"].set_value("4242 4242 4242 4241")
-    fields["Expiration (MM/YY)"].set_value("12/99")
-    fields["Security code (CVC)"].set_value("123")
-    fields["Billing ZIP"].set_value("60601")
-    _button(at, "Place order (demo)").click().run()
-    assert at.session_state["pp_l_step"] == 4 and not "pp_register" in at.session_state
+    secret = at.session_state["pp_l_account"]["totp_secret"]
 
-    fields = {t.label: t for t in at.text_input}
-    fields["Name on card"].set_value("Test Accountant")
-    fields["Card number"].set_value("4242 4242 4242 4242")
-    fields["Expiration (MM/YY)"].set_value("12/99")
-    fields["Security code (CVC)"].set_value("123")
-    fields["Billing ZIP"].set_value("60601")
-    _button(at, "Place order (demo)").click().run()
+    def fill(card, otp):
+        for label, value in (("Name on card", "Test Accountant"), ("Card number", card), ("Expiration date (MM/YY)", "12/99"),
+                             ("Security code (CVC)", "123"), ("Street address", "1 Main St"), ("City", "Chicago"),
+                             ("State / region", "IL"), ("ZIP / postal code", "60601"), ("6-digit code from your authenticator app", otp)):
+            _field(at, label).set_value(value)
+        _button(at, "Place order (demo)").click().run()
+
+    fill("4242 4242 4242 4241", billing.totp_now(secret))                     # bad card number: refused
+    assert at.session_state["pp_l_step"] == 4 and "pp_register" not in at.session_state
+    fill("4242 4242 4242 4242", "000000")                                     # good card, wrong authentication code: refused
+    assert at.session_state["pp_l_step"] == 4 and "pp_register" not in at.session_state
+    fill("4242 4242 4242 4242", billing.totp_now(secret))
     assert at.session_state["pp_l_step"] == 5                                 # confirmation
     entry = at.session_state["pp_register"][-1]
     assert entry["status"] == "Demo: not charged" and entry["total"] == 10825
     assert entry["method"] == "Visa ending 4242"                              # brand and last four only
     assert "4242 4242" not in str(at.session_state["pp_register"])
+
+
+def test_checkout_needs_a_complete_billing_address():
+    from shared import billing
+    at = AppTest.from_file(LANDING, default_timeout=60)
+    secret = billing.new_totp_secret()
+    at.session_state["pp_l_plan"] = "starter"
+    at.session_state["pp_l_account"] = {"name": "T A", "first": "T", "email": "t@example.com", "totp_secret": secret, "totp_enrolled": True}
+    at.session_state["pp_l_step"] = 4
+    at.run()
+    assert not at.exception, at.exception
+    for label, value in (("Name on card", "T A"), ("Card number", "4242 4242 4242 4242"), ("Expiration date (MM/YY)", "12/99"),
+                         ("Security code (CVC)", "123"), ("6-digit code from your authenticator app", billing.totp_now(secret))):
+        _field(at, label).set_value(value)                                    # address left blank
+    _button(at, "Place order (demo)").click().run()
+    assert at.session_state["pp_l_step"] == 4 and any("billing street" in e.value for e in at.error)
 
 
 def test_onboarding_needs_every_field_mapped_and_offers_the_workspace():
@@ -130,10 +167,11 @@ def test_sign_in_needs_an_account_created_in_this_session():
     at = _run()
     _button(at, "Choose Starter").click().run()
     _button(at, "Continue to account").click().run()
-    sign_in = next(t for t in at.text_input if t.label == "Email")
-    sign_in.set_value("nobody@example.com")
+    at.text_input(key="pp-l-signin-login").set_value("nobody")
+    at.text_input(key="pp-l-signin-pw").set_value("whatever-123456")
+    at.text_input(key="pp-l-signin-otp").set_value("123456")
     _button(at, "Sign in").click().run()
-    assert at.session_state["pp_l_step"] == 3 and any("No demo account" in e.value for e in at.error)
+    assert at.session_state["pp_l_step"] == 3 and any("not right" in e.value for e in at.error)
 
 
 def test_enterprise_is_a_contact_form_not_a_purchase():

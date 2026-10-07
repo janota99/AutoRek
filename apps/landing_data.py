@@ -272,8 +272,9 @@ FAQS = (
      "No. The purchase flow is a clearly labeled simulation: no payment processor is connected, nothing is charged, "
      "and card details are checked and discarded. Prices are placeholders."),
     ("Is the sign-in secure?",
-     "The sign-in in this prototype is simulated in your browser. It personalizes the page and does not control "
-     "access to any tool."),
+     "The sign-in in this prototype is simulated. The demo account needs a login, a password (kept only as a salted "
+     "hash for your session) and a code from an authenticator app that works offline. It personalizes the page and "
+     "does not control access to any tool."),
     ("What support is included?",
      "Starter and Professional include email support. Enterprise adds dedicated support. Response-time commitments "
      "have not been set yet."),

@@ -20,7 +20,7 @@ import json
 
 import streamlit as st
 
-from shared.billing import digits, validate_card, validate_gift_card
+from shared.billing import digits, validate_address, validate_card, validate_gift_card, verify_totp
 from shared.layout import APPS
 from shared.styles import style_tag
 
@@ -307,49 +307,72 @@ def _record(tier: Tier, annual: bool, method: str) -> None:
     })
 
 
-def payment_section(tier: Tier, annual: bool, *, key: str = "pp-pay-form", quiet: bool = False) -> bool:
-    """Payment method fields. Nothing is charged or stored: a passing form adds a register row and the
-    form is cleared. The card number, expiry, and CVC are validated and then dropped.
+def payment_section(tier: Tier, annual: bool, *, key: str = "pp-pay-form", quiet: bool = False,
+                    account: dict | None = None) -> bool:
+    """Payment fields. Nothing is charged or stored: a passing form adds a register row and the form is cleared.
+    The card number, expiry, and CVC are validated and then dropped.
+
+    Every method asks for a full billing address. When ``account`` carries an enrolled authenticator secret
+    (the landing page's purchase flow), the order also needs a current 6-digit code from the offline authenticator
+    app; a code works once (``account["totp_last"]`` remembers the last step used).
 
     Returns True on the run in which an order was recorded. ``quiet`` leaves the success message to the caller
     (the landing page moves on to its confirmation step instead)."""
+    secret = (account or {}).get("totp_secret") if (account or {}).get("totp_enrolled") else None
     st.subheader("Payment")
     st.warning("Demo checkout: no payment processor is connected, so nothing is charged. Do not enter a real card "
                "number here. To try the form, use a test number such as 4242 4242 4242 4242 with any future date.")
     method = st.radio("Payment method", _METHODS, horizontal=True, key=f"{key}-method")
     with st.form(key, clear_on_submit=True, border=True):
-        label, problems, last4_note = "", (), ""
         if method == _METHODS[0]:
             name = st.text_input("Name on card", autocomplete="cc-name")
             number = st.text_input("Card number", placeholder="1234 5678 9012 3456", max_chars=23, autocomplete="off")
-            c1, c2, c3 = st.columns(3)
-            expiry = c1.text_input("Expiration (MM/YY)", placeholder="MM/YY", max_chars=7, autocomplete="off")
+            c1, c2 = st.columns(2)
+            expiry = c1.text_input("Expiration date (MM/YY)", placeholder="MM/YY", max_chars=7, autocomplete="off")
             cvc = c2.text_input("Security code (CVC)", type="password", max_chars=4, autocomplete="off")
-            zip_code = c3.text_input("Billing ZIP", max_chars=10)
         elif method == _METHODS[1]:
             code = st.text_input("Gift card code", autocomplete="off")
             st.caption("Gift cards are not connected to a balance check in this demo.")
         else:
             st.info("PayPal would open its own sign-in window to approve the payment. That hand-off is not connected "
                     "in this demo.")
+        st.markdown("**Billing address**")
+        street = st.text_input("Street address", autocomplete="street-address")
+        a1, a2, a3 = st.columns([2, 1, 1])
+        city = a1.text_input("City", autocomplete="address-level2")
+        state = a2.text_input("State / region", autocomplete="address-level1")
+        postal = a3.text_input("ZIP / postal code", max_chars=10, autocomplete="postal-code")
+        country = st.text_input("Country", value="United States", autocomplete="country-name")
+        otp = ""
+        if secret:
+            st.markdown("**Two-factor authentication**")
+            otp = st.text_input("6-digit code from your authenticator app", max_chars=7, autocomplete="off",
+                                help="Generated offline by the authenticator app you set up when you created the account.")
         submitted = st.form_submit_button("Place order (demo)", type="primary")
     if not submitted:
         return False
+    label, problems = "", []
     if method == _METHODS[0]:
         check = validate_card(name, number, expiry, cvc)
         problems = list(check.problems)
-        if not zip_code.strip():
-            problems.append("Enter the billing ZIP code.")
         label = f"{check.brand} ending {check.last4}"
     elif method == _METHODS[1]:
         problems = list(validate_gift_card(code))
         label = f"Gift card ending {digits(code)[-4:]}" if not problems else ""
     else:
         label = "PayPal"
+    problems += validate_address(street, city, state, postal, country)
+    step = None
+    if secret:
+        step = verify_totp(secret, otp, last_used=account.get("totp_last", -1))
+        if step is None:
+            problems.append("The authentication code is not valid. Enter the current 6-digit code (a code works once).")
     if problems:
         for p in problems:
             st.error(p)
         return False
+    if step is not None:
+        account["totp_last"] = step
     _record(tier, annual, label)
     if not quiet:
         st.success("Demo order recorded in the charge register on the right. Nothing was charged, and your card details "

@@ -64,7 +64,7 @@ Streamlit widgets, since they download files and hold purchase state.
 - **Purchase sequence** (session state `pp_l_*`): plan and interval, review and total, account, simulated checkout,
   confirmation, onboarding. It reuses `apps/sales_page.py` (`TIERS`, `totals`, `order_summary`, `payment_section`,
   `contact_dialog`) and `shared/billing.py`, so prices and card checks live in one place. The account is a session-only
-  demo account with **no password**; checkout records "Demo: not charged" and discards card details. Onboarding's mapping
+  demo account (name, email, login, a password kept only as a salted hash, and an offline authenticator-app code, TOTP); checkout also needs a full billing address and a current code; checkout records "Demo: not charged" and discards card details. Onboarding's mapping
   step is a preview: each tool still maps your own file when you upload it. **Enter the workspace** calls
   `st.switch_page(..., query_params={"demo": "1"})`.
 - The older Dashboard-only Plans page (View Plans button) still exists and shares the same helpers.
