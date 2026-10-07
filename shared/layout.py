@@ -120,15 +120,15 @@ DASHBOARD_URL = "workspace"
 FEEDBACK_SCRIPT = "apps/feedback.py"
 
 
-WIDGETS_MENU = "Accountant Widgets"
-FEEDBACK_MENU = "Reviews & Feedback"
+WIDGETS_MENU = ":material/build: Tools"
+FEEDBACK_MENU = ":material/rate_review: Feedback"
 
 
 def build_navigation():
     """Register every page and return the one the visitor selected.
 
-    Top navigation: Home (the landing page, at "/"), Workspace (the Dashboard), an "Accountant Widgets"
-    dropdown holding the four tools, then Reviews & Feedback. Streamlit renders a named section as a dropdown. Feedback sits in a one-page
+    Top navigation: Home (the landing page, at "/"), Workspace (the Dashboard), a "Tools"
+    dropdown holding the four tools, then Feedback (the Reviews & Feedback page). Streamlit renders a named section as a dropdown. Feedback sits in a one-page
     section only to keep its place after the dropdown; suite_banner.js makes that label a direct link.
     """
     home = st.Page(LANDING_SCRIPT, title="Home", icon=":material/home:", default=True)

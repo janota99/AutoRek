@@ -303,3 +303,53 @@
     -webkit-font-feature-settings: "liga";
     -webkit-font-smoothing: antialiased;
 }
+
+
+/* Top navigation labels: one pattern for every item (icon, label, chevron on a uniform 8px gap),
+   slate by default, a light pill on hover, and a navy tint on the page you are on.
+   suite_banner.js sets data-pp-active on the active link or dropdown label. */
+[data-testid="stHeader"] a[data-testid="stTopNavLink"],
+[data-testid="stHeader"] [data-testid="stTopNavSection"] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"] > span,
+[data-testid="stHeader"] [data-testid="stTopNavSection"] > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;  /* icon to label inside a dropdown label */
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"] p,
+[data-testid="stHeader"] [data-testid="stTopNavSection"] p {
+    margin: 0;
+    color: inherit;
+    font-weight: inherit;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"] [data-testid="stIconMaterial"],
+[data-testid="stHeader"] [data-testid="stTopNavSection"] [data-testid="stIconMaterial"],
+[data-testid="stHeader"] [data-testid="stTopNavSection"] svg {
+    color: inherit;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"]:hover,
+[data-testid="stHeader"] [data-testid="stTopNavSection"]:hover {
+    color: #0f172a;
+    background-color: #f1f5f9;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"][data-pp-active],
+[data-testid="stHeader"] [data-testid="stTopNavSection"][data-pp-active] {
+    color: #1e3a8a;
+    font-weight: 600;
+    background-color: #eff6ff;
+}
