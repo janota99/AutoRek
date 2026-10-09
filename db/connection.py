@@ -5,7 +5,7 @@ organization named in `app.org_id`, which this module sets at the start of every
 it refuses a connection that is a superuser, can bypass row-level security, or is not an `app_runtime_role` member,
 so a mistaken owner connection string fails loudly instead of silently ignoring tenant isolation.
 
-Settings come from Streamlit secrets or environment variables. The variable names are deliberately NOT
+Settings come from environment variables (which win, so a test can point at a local database) or Streamlit secrets. The variable names are deliberately NOT
 `DATABASE_URL` (the owner string `db.migrate` uses), so the app can never pick up owner credentials by accident:
 
     # .streamlit/secrets.toml (never committed)          environment equivalent
@@ -48,8 +48,10 @@ def load_config(environ: Optional[Mapping[str, str]] = None, secrets: Any = None
             section = secrets["database"]
     except Exception:  # noqa: BLE001 - a missing or unreadable secrets file means "not configured"
         section = {}
-    url = section.get("url") or env.get(URL_ENV)
-    org = section.get("org_id") or env.get(ORG_ENV)
+    if env.get(URL_ENV) or env.get(ORG_ENV):  # an explicit environment setting wins over the secrets file, as a whole
+        url, org = env.get(URL_ENV), env.get(ORG_ENV)
+    else:
+        url, org = section.get("url"), section.get("org_id")
     if not url and not org:
         return None
     if not url or not org:

@@ -25,6 +25,16 @@ class StoredMapping:
 
 
 @dataclass(frozen=True)
+class StoredVersion:
+    template_id: Any
+    name: str
+    version: int
+    spec: dict
+    created_at: Any
+    created_by: str
+
+
+@dataclass(frozen=True)
 class SaveOutcome:
     template_id: Any
     version: int
@@ -41,6 +51,15 @@ def list_latest(conn) -> list[StoredMapping]:
     rows = conn.execute("SELECT template_id, name, category, version, spec FROM recon_mapping_latest "
                         "ORDER BY lower(name)").fetchall()
     return [StoredMapping(*row) for row in rows]
+
+
+def list_all_versions(conn) -> list[StoredVersion]:
+    """Every version of every library mapping (archived ones excluded), by name then newest version first."""
+    rows = conn.execute(
+        "SELECT t.template_id, t.name, v.version, v.spec, v.created_at, v.created_by "
+        "FROM recon_mapping_templates t JOIN recon_mapping_versions v ON v.template_id = t.template_id "
+        "WHERE t.archived_at IS NULL ORDER BY lower(t.name), v.version DESC").fetchall()
+    return [StoredVersion(*row) for row in rows]
 
 
 def save(conn, org_id: str, spec: ReconSpec, *, created_by: str, category: str = "Custom",

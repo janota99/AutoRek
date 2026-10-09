@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import html
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import Optional
 
 import pandas as pd
@@ -162,18 +162,53 @@ def _db_config():
         return None
 
 
-def _library() -> tuple[dict, bool]:
-    """(saved mappings by name, whether they come from the shared database). Falls back to this session on any problem."""
-    session = dict(st.session_state.setdefault(PRESETS_KEY, {}))
+@dataclass
+class LibEntry:
+    """One saved mapping and its versions, newest first: (version number or None, spec, when saved)."""
+    name: str
+    template_id: object
+    versions: list
+
+
+def _library() -> tuple[list, bool]:
+    """(saved mappings, whether they come from the shared database). Falls back to this session on any problem."""
+    session = [LibEntry(name, None, [(None, raw, "")]) for name, raw in st.session_state.setdefault(PRESETS_KEY, {}).items()]
     config = _db_config()
     if config is None:
         return session, False
     try:
         with tenant_connection(config) as conn:
-            return {m.name: m.spec for m in store.list_latest(conn)}, True
+            rows = store.list_all_versions(conn)
     except Exception as exc:  # noqa: BLE001 - never block the page because the library is unreachable
         st.session_state["cr_db_problem"] = f"The shared mapping library could not be reached ({_why(exc)})."
         return session, False
+    entries: dict = {}
+    for row in rows:
+        entry = entries.setdefault(row.template_id, LibEntry(row.name, row.template_id, []))
+        entry.versions.append((row.version, row.spec, row.created_at.strftime("%b %d, %H:%M")))
+    return list(entries.values()), True
+
+
+def _archive_entry(entry: LibEntry) -> None:
+    """Remove a mapping from the library: archived in the database (its versions are kept), or dropped from the session."""
+    st.session_state.pop("cr_confirm_archive", None)
+    if entry.template_id is None:
+        st.session_state.setdefault(PRESETS_KEY, {}).pop(entry.name, None)
+        st.session_state["cr_notice"] = f"Removed '{entry.name}' from this session."
+        return
+    config = _db_config()
+    try:
+        with tenant_connection(config) as conn:
+            store.archive(conn, entry.template_id)
+        st.session_state["cr_notice"] = f"Archived '{entry.name}'. Its versions are kept in the database."
+    except Exception as exc:  # noqa: BLE001
+        st.session_state["cr_db_problem"] = f"Could not archive '{entry.name}' ({_why(exc)})."
+
+
+def _use_saved(select_key: str, specs: dict) -> None:
+    """Start from the version chosen in the card's picker (or the only version)."""
+    chosen = st.session_state.get(select_key)
+    _use_template(specs.get(chosen) or next(iter(specs.values())))
 
 
 def _store_mapping(spec: ReconSpec, note: str = "") -> str:
@@ -212,9 +247,36 @@ def _template_description(spec: ReconSpec) -> str:
     return "; ".join(parts) + "."
 
 
+def _saved_card_actions(entry: LibEntry, shared: bool) -> None:
+    """Version picker, Use, and Archive/Remove (with a confirmation) for a saved mapping's card."""
+    key = hashlib.sha1(entry.name.encode()).hexdigest()[:8]
+    labels = {}
+    for number, spec, when in entry.versions:
+        label = "Current session version" if number is None else (
+            f"Version {number}{' (latest)' if number == entry.versions[0][0] else ''} - {when}")
+        labels[label] = spec
+    select_key = f"cr_vsel_{key}"
+    if len(labels) > 1:
+        st.selectbox("Version", list(labels), key=select_key, help="Load an earlier version of this mapping. "
+                     "Saving it again adds it as a new latest version; nothing is overwritten.")
+    st.button("Use template", key=f"cr_use_{key}", type="primary", width="stretch",
+              on_click=_use_saved, args=(select_key, labels))
+    if st.session_state.get("cr_confirm_archive") == entry.name:
+        st.warning(("Archive this mapping? It disappears from the library but all its versions are kept."
+                    if shared else "Remove this mapping from the session?"))
+        a, b = st.columns(2)
+        a.button("Yes, archive" if shared else "Yes, remove", key=f"cr_yes_{key}", width="stretch",
+                 on_click=_archive_entry, args=(entry,))
+        b.button("Cancel", key=f"cr_no_{key}", width="stretch",
+                 on_click=st.session_state.pop, args=("cr_confirm_archive", None))
+    else:
+        st.button("Archive" if shared else "Remove", key=f"cr_arch_{key}", icon=":material/archive:", width="stretch",
+                  on_click=st.session_state.__setitem__, args=("cr_confirm_archive", entry.name))
+
+
 def _step_template() -> None:
     render_section_heading("Choose a template", "Start from a ready mapping, one you saved this session, or a blank one.")
-    presets, shared = _library()
+    entries, shared = _library()
     notice = st.session_state.pop("cr_notice", None)
     if notice:
         st.success(notice)
@@ -229,15 +291,16 @@ def _step_template() -> None:
     categories = ["All", "Accounting / ERP", "Custom", "Saved mappings"]
     category = c2.segmented_control("Category", categories, default="All", key="cr_category") or "All"
 
-    cards = [(spec, cat, tag) for spec, cat, tag in BUILT_IN]
-    cards += [(ReconSpec.from_dict(raw), "Saved mappings", "Shared" if shared else "This session") for raw in presets.values()]
-    shown = [(s, c, t) for s, c, t in cards
+    cards = [(spec, cat, tag, None) for spec, cat, tag in BUILT_IN]
+    cards += [(ReconSpec.from_dict(e.versions[0][1]), "Saved mappings", "Shared" if shared else "This session", e)
+              for e in entries]
+    shown = [(s, c, t, e) for s, c, t, e in cards
              if category in ("All", c) and (not query or query in f"{s.name} {s.label_a} {s.label_b} {c}".casefold())]
     if not shown:
         st.info("No template matches that search.")
     for row_start in range(0, len(shown), 3):  # noqa: B007
         columns = st.columns(3, gap="medium")
-        for offset, (column, (spec, cat, tag)) in enumerate(zip(columns, shown[row_start: row_start + 3])):
+        for offset, (column, (spec, cat, tag, entry)) in enumerate(zip(columns, shown[row_start: row_start + 3])):
             index = row_start + offset
             with column, st.container(border=True, key=f"cr-tpl-{index}"):
                 blank = spec.amount is None
@@ -247,8 +310,11 @@ def _step_template() -> None:
                             unsafe_allow_html=True)
                 st.markdown(f"**{html.escape(spec.name)}**")
                 st.caption(_template_description(spec))
-                st.button("Use template" if not blank else "Start blank", key=f"cr_use_{index}", type="primary",
-                          width="stretch", on_click=_use_template, args=(asdict(spec),))
+                if entry is None:
+                    st.button("Use template" if not blank else "Start blank", key=f"cr_use_{index}", type="primary",
+                              width="stretch", on_click=_use_template, args=(asdict(spec),))
+                else:
+                    _saved_card_actions(entry, shared)
     st.markdown('<p class="cr-note">QuickBooks and Infinium is the only built-in example. Mappings you save while '
                 "using the tool appear here for the rest of the session.</p>", unsafe_allow_html=True)
     with st.expander("Load a saved mapping file from your computer"):

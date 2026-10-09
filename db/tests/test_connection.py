@@ -40,3 +40,13 @@ def test_error_text_shown_to_users_never_contains_a_connection_string():
     shown = _why(RuntimeError('could not connect using postgresql://app_login.x:SECRET@host:5432/postgres: refused'))
     assert "SECRET" not in shown and "RuntimeError" in shown
     assert "hunter2" not in _why(RuntimeError("bad password=hunter2 here"))
+
+
+def test_environment_settings_override_the_secrets_file_as_a_whole():
+    secrets = {"database": {"url": "postgresql://real:pw@prod/db", "org_id": ORG}}
+    other = "11111111-1111-4111-8111-111111111111"
+    chosen = load_config(environ={"AUTOREK_APP_DATABASE_URL": "postgresql://u:p@localhost/test", "AUTOREK_ORG_ID": other},
+                         secrets=secrets)
+    assert chosen == DatabaseConfig("postgresql://u:p@localhost/test", other)  # nothing is mixed in from the secrets
+    with pytest.raises(DatabaseConfigError):  # half an override is an error, not a silent fall back to production
+        load_config(environ={"AUTOREK_ORG_ID": other}, secrets=secrets)

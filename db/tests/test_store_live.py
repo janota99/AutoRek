@@ -74,3 +74,19 @@ def test_an_owner_connection_is_refused(db_url, org):
     with pytest.raises(DatabaseConfigError):
         with tenant_connection(owner):
             pass
+
+
+def test_every_version_is_listed_newest_first_and_archived_ones_disappear(config):
+    with tenant_connection(config) as conn:
+        a = store.save(conn, config.org_id, make_spec("Alpha"), created_by="tester")
+        store.save(conn, config.org_id, make_spec("Alpha", max_a_per_b=2), created_by="tester")
+        store.save(conn, config.org_id, make_spec("Alpha", max_a_per_b=4), created_by="tester")
+        store.save(conn, config.org_id, make_spec("Beta"), created_by="tester")
+    with tenant_connection(config) as conn:
+        rows = store.list_all_versions(conn)
+    assert [(r.name, r.version) for r in rows] == [("Alpha", 3), ("Alpha", 2), ("Alpha", 1), ("Beta", 1)]
+    assert [ReconSpec.from_dict(r.spec).max_a_per_b for r in rows[:3]] == [4, 2, 1]  # older versions keep their own settings
+    with tenant_connection(config) as conn:
+        store.archive(conn, a.template_id)
+    with tenant_connection(config) as conn:
+        assert [(r.name, r.version) for r in store.list_all_versions(conn)] == [("Beta", 1)]
