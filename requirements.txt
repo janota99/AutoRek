@@ -2,6 +2,7 @@ streamlit>=1.58      # the version this suite was built and tested on
 pandas>=2.2,<3        # pandas 3 changes string/copy semantics; re-test before lifting
 numpy>=1.26
 openpyxl>=3.1.5,<3.2  # Recon's excel_styles copies openpyxl's internal cell._style; re-test before lifting
+psycopg[binary]>=3.2  # optional shared mapping library (db/); the app runs without a database configured
 tzdata               # Recon's ZoneInfo("America/Chicago") on Windows
 
 # Tests: `py -m pytest` (Recon) and `node apps/invoice_hub/tests/test_layers.js` (Invoice Hub)

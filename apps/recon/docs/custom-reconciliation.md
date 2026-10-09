@@ -36,9 +36,16 @@ unmatched with a REVIEW control, not partly searched.
 
 ## Saved mappings
 
-Session only (`st.session_state["cr_presets"]`). A mapping can also be downloaded as JSON and loaded again. Loading
-a mapping onto files that lack one of its columns blanks that field and says which column is missing; the user
-picks a replacement. A preset never runs on columns the file does not have.
+Two places, chosen automatically. With a database configured (see `db/connection.py` and `.streamlit/secrets.toml.example`)
+mappings are saved to the organization's shared library (`store.py`, tables `recon_mapping_templates` and
+`recon_mapping_versions`): every save of a changed mapping adds an immutable version, saving an identical one writes
+nothing, and the template step shows them with a "Shared" tag. With no database, or if it cannot be reached, mappings
+live in the session (`st.session_state["cr_presets"]`) and the page says so. A mapping can also be downloaded as JSON and
+loaded again; loading one saves it the same way. Loading a mapping onto files that lack one of its columns blanks that
+field and names the missing column. A preset never runs on columns the file does not have.
+
+The app connects as `app_login` and refuses an owner or administrator connection. Its settings use
+`AUTOREK_APP_DATABASE_URL` and `AUTOREK_ORG_ID`, never `DATABASE_URL` (the owner string `db.migrate` uses).
 
 ## Tests
 

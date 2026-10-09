@@ -29,7 +29,9 @@ from ..matching.core import parse_amount_cents
 from ..ui_components import render_section_heading
 from shared.sample_data import sample_uploader
 from shared.status import status_badge, status_styler
+from db.connection import DatabaseConfigError, load_config, tenant_connection
 from .engine import ReconResult, normalize_value, reconcile
+from . import store
 from .export import build_workbook
 from .spec import (
     ID_POSITIONS, MAX_GROUP_SIZE, NORMALIZERS, ColumnPair, ReconSpec, find_column, validate_spec,
@@ -142,6 +144,45 @@ def _use_template(spec: dict) -> None:
     st.session_state[STEP_KEY] = 1
 
 
+def _db_config():
+    """The shared-library database from secrets or the environment, or None (session-only mode)."""
+    try:
+        return load_config(secrets=st.secrets)
+    except DatabaseConfigError as exc:
+        st.session_state["cr_db_problem"] = str(exc)
+        return None
+
+
+def _library() -> tuple[dict, bool]:
+    """(saved mappings by name, whether they come from the shared database). Falls back to this session on any problem."""
+    session = dict(st.session_state.setdefault(PRESETS_KEY, {}))
+    config = _db_config()
+    if config is None:
+        return session, False
+    try:
+        with tenant_connection(config) as conn:
+            return {m.name: m.spec for m in store.list_latest(conn)}, True
+    except Exception as exc:  # noqa: BLE001 - never block the page because the library is unreachable
+        st.session_state["cr_db_problem"] = f"The shared mapping library could not be reached ({type(exc).__name__})."
+        return session, False
+
+
+def _store_mapping(spec: ReconSpec, note: str = "") -> str:
+    """Save to the shared database when configured, else to this session. Returns the message to show."""
+    config = _db_config()
+    if config is not None:
+        try:
+            with tenant_connection(config) as conn:
+                out = store.save(conn, config.org_id, spec, created_by="app", note=note or None)
+            if out.created:
+                return f"Saved '{spec.name}' to your shared library as version {out.version}."
+            return f"'{spec.name}' is already saved with these exact settings (version {out.version}); nothing new was written."
+        except Exception as exc:  # noqa: BLE001 - keep the work: fall back to the session and say so
+            st.session_state["cr_db_problem"] = f"The shared library could not be reached ({type(exc).__name__})."
+    st.session_state.setdefault(PRESETS_KEY, {})[spec.name] = asdict(spec)
+    return f"Saved '{spec.name}' for this session only. Find it under Saved mappings on the Template step."
+
+
 def _import_preset() -> None:
     upload = st.session_state.get("cr_import")
     if upload is None:
@@ -151,8 +192,7 @@ def _import_preset() -> None:
     except (ValueError, UnicodeDecodeError) as exc:
         st.session_state["cr_notice"] = f"That file is not a saved mapping ({exc})."
         return
-    st.session_state[PRESETS_KEY][spec.name] = asdict(spec)
-    st.session_state["cr_notice"] = f"Loaded '{spec.name}'. Find it under Saved mappings."
+    st.session_state["cr_notice"] = _store_mapping(spec, note="loaded from a mapping file")
 
 
 def _template_description(spec: ReconSpec) -> str:
@@ -165,10 +205,15 @@ def _template_description(spec: ReconSpec) -> str:
 
 def _step_template() -> None:
     render_section_heading("Choose a template", "Start from a ready mapping, one you saved this session, or a blank one.")
-    presets: dict = st.session_state.setdefault(PRESETS_KEY, {})
+    presets, shared = _library()
     notice = st.session_state.pop("cr_notice", None)
     if notice:
         st.success(notice)
+    problem = st.session_state.pop("cr_db_problem", None)
+    if problem:
+        st.warning(f"{problem} Showing this session's mappings instead.")
+    st.caption("Saved mappings are shared with your organization." if shared
+               else "Saved mappings last until this browser session ends. Connect a database to share them.")
 
     c1, c2 = st.columns([2, 3], vertical_alignment="bottom")
     query = c1.text_input("Search templates", key="cr_search", placeholder="Search by name or system").strip().casefold()
@@ -176,7 +221,7 @@ def _step_template() -> None:
     category = c2.segmented_control("Category", categories, default="All", key="cr_category") or "All"
 
     cards = [(spec, cat, tag) for spec, cat, tag in BUILT_IN]
-    cards += [(ReconSpec.from_dict(raw), "Saved mappings", "Saved this session") for raw in presets.values()]
+    cards += [(ReconSpec.from_dict(raw), "Saved mappings", "Shared" if shared else "This session") for raw in presets.values()]
     shown = [(s, c, t) for s, c, t in cards
              if category in ("All", c) and (not query or query in f"{s.name} {s.label_a} {s.label_b} {c}".casefold())]
     if not shown:
@@ -456,8 +501,7 @@ def _volume_text(label_a: str, label_b: str, max_a: int, max_b: int) -> str:
 
 def _save_preset(name: str, spec: ReconSpec) -> None:
     saved = ReconSpec.from_dict({**asdict(spec), "name": name})
-    st.session_state[PRESETS_KEY][name] = asdict(saved)
-    st.session_state["cr_notice"] = f"Saved '{name}' for this session. Find it under Saved mappings on the Template step."
+    st.session_state["cr_notice"] = _store_mapping(saved)
 
 
 def _save_box(spec: ReconSpec, blocking: list[str], default_name: str) -> None:
@@ -465,7 +509,7 @@ def _save_box(spec: ReconSpec, blocking: list[str], default_name: str) -> None:
         st.markdown("**Save this mapping**")
         c1, c2, c3 = st.columns([2, 1, 1], vertical_alignment="bottom")
         name = c1.text_input("Mapping name", default_name, key=_k("cr", "savename")).strip()
-        c2.button("Save for this session", icon=":material/save:", disabled=bool(blocking) or not name,
+        c2.button("Save to library" if _db_config() else "Save for this session", icon=":material/save:", disabled=bool(blocking) or not name,
                   on_click=_save_preset, args=(name, spec), width="stretch", key="cr_save_btn")
         c3.download_button("Download as file", ReconSpec.from_dict({**asdict(spec), "name": name or spec.name}).to_json(),
                            file_name=f"{_safe(name or spec.name)}.json", mime="application/json",
@@ -473,6 +517,9 @@ def _save_box(spec: ReconSpec, blocking: list[str], default_name: str) -> None:
         notice = st.session_state.pop("cr_notice", None)
         if notice:
             st.success(notice)
+        problem = st.session_state.pop("cr_db_problem", None)
+        if problem:
+            st.warning(f"{problem} Your mapping was kept for this session.")
 
 
 # ---------------------------------------------------------------------------
