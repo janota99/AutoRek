@@ -23,6 +23,7 @@ An optional legacy-format export, `Sales_Reconciliation_Legacy_<run>.xlsx`, is a
 | `ui_components.py` | Streamlit UI blocks: CSS loading, KPI cards, stepper, results tabs, Downloads tab (with a "Workbook built in X s · page refreshed in Y s" readout). |
 | `ui_review.py` | The Downloads-tab panel for reviewer decisions. Calls `matching.review_decisions`; edits no engine result. |
 | `utils.py`, `config.py` | Run signature and formatting helpers; palette and time-zone constants. |
+| `custom/` | The optional Custom mapping mode of the Recon page (user-mapped columns, group matching, session-saved mappings). Separate from `matching/`; see [custom-reconciliation.md](custom-reconciliation.md). |
 | `assets/` | QuickBooks/Infinium logos as data URIs (`ui_assets.py`). The suite logo lives in `shared/assets/`. |
 | `tests/` | pytest suite. `conftest.py` holds the shared QB/Infinium mapping and run-metadata fixtures. |
 | `data/` | Sample QuickBooks/Infinium exports (real company data, gitignored). |

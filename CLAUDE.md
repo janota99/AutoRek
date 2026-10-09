@@ -12,6 +12,7 @@ tools for a bottling/packaging operation behind a shared top navigation bar:
 | Transaction Preparation & Review (`/sales-tax`; example workflow: sales-tax cleanup) | `apps/sales_tax/` | VBA-macro port: transaction cleanup against a vendor mapping and trial balance, plus vendor-list reconciliation. |
 | Invoice Lifecycle Hub (`/invoice-hub`) | `apps/invoice_hub/` | Static HTML/JS prototype of an Outlook invoice tracker, embedded as a Streamlit component. Its page has two tabs: Service overview and My Dashboard (the signed-in person's invoice workspace). |
 | Sales page (no URL) | `apps/sales_page.py` | Three-tier pricing page reachable only from the Dashboard's "View Plans" button in the top-right corner (session flag, not a registered page). Placeholder prices; no payment processing. |
+| Custom mapping mode (inside `/recon`) | `apps/recon/custom/` | The Recon page's Mode control switches to a custom mode: map columns, alignment columns, unique ID and Match ID placement, and 1-to-1 up to N-to-1 group sums for any two datasets; mappings save for the session. |
 | Reviews & Feedback (`/feedback`) | `apps/feedback.py` | Navigation-bar page (not a Dashboard card): the hub's reviews and feedback form, embedded. |
 
 The audience is an accountant/inventory controller, not a developer. Accuracy,
@@ -74,6 +75,7 @@ for that app.
 | **Recon**: module map, the `matching/` and `workpapers/` packages | [apps/recon/docs/architecture.md](apps/recon/docs/architecture.md) |
 | Recon matching order, fuzzy/alias rules, duplicates, historical rows, versions | [apps/recon/docs/matching-rules.md](apps/recon/docs/matching-rules.md) |
 | Recon known issues | [apps/recon/docs/known-issues.md](apps/recon/docs/known-issues.md) |
+| **Custom mapping mode** (inside Recon; user-mapped columns) | [apps/recon/docs/custom-reconciliation.md](apps/recon/docs/custom-reconciliation.md) |
 | **Sales Tax**: module map, positional rules, verification, known issues | [apps/sales_tax/docs/overview.md](apps/sales_tax/docs/overview.md) |
 | **Invoice Hub**: pages, Streamlit embedding, script order, tests | [apps/invoice_hub/docs/overview.md](apps/invoice_hub/docs/overview.md) |
 

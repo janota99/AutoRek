@@ -39,6 +39,7 @@ import pandas as pd
 import streamlit as st
 
 from apps.recon.config import CENTRAL_TIMEZONE
+from apps.recon.custom.ui import render as render_custom_reconciliation
 from apps.recon.ingestion import (
     detect_header_row,
     list_source_sheets,
@@ -83,6 +84,10 @@ from apps.recon.uploads import (
 # Main Application Flow
 # ---------------------------------------------------------------------------
 
+STANDARD_MODE = "QuickBooks and Infinium"
+CUSTOM_MODE = "Custom mapping"
+
+
 def main() -> None:
     # For the Downloads tab's "page refreshed in" timing readout.
     run_started = time.perf_counter()
@@ -97,6 +102,14 @@ def main() -> None:
         """,
         unsafe_allow_html=True,
     )
+    mode = st.segmented_control(
+        "Mode", [STANDARD_MODE, CUSTOM_MODE], default=STANDARD_MODE, key="recon_mode",
+        help="Standard runs the QuickBooks and Infinium rules. Custom mapping reconciles any two datasets "
+             "using columns and matching volume you choose.",
+    )
+    if mode == CUSTOM_MODE:
+        render_custom_reconciliation()
+        return
 
     # Keep the single progress indicator above every upload control even though
     # its final state is determined later in the application run.

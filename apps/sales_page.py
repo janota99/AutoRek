@@ -17,6 +17,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
 import json
+from pathlib import Path
 
 import streamlit as st
 
@@ -307,6 +308,9 @@ def _record(tier: Tier, annual: bool, method: str) -> None:
     })
 
 
+_PAYMENT_LOGOS = Path(__file__).resolve().parent.parent / "shared" / "assets" / "payment_methods.png"
+
+
 def payment_section(tier: Tier, annual: bool, *, key: str = "pp-pay-form", quiet: bool = False,
                     account: dict | None = None) -> bool:
     """Payment fields. Nothing is charged or stored: a passing form adds a register row and the form is cleared.
@@ -320,6 +324,8 @@ def payment_section(tier: Tier, annual: bool, *, key: str = "pp-pay-form", quiet
     (the landing page moves on to its confirmation step instead)."""
     secret = (account or {}).get("totp_secret") if (account or {}).get("totp_enrolled") else None
     st.subheader("Payment")
+    if _PAYMENT_LOGOS.is_file():  # the card and wallet brands this section is meant for
+        st.image(str(_PAYMENT_LOGOS), caption="Credit and debit card payments (demo checkout)", width="stretch")
     st.warning("Demo checkout: no payment processor is connected, so nothing is charged. Do not enter a real card "
                "number here. To try the form, use a test number such as 4242 4242 4242 4242 with any future date.")
     method = st.radio("Payment method", _METHODS, horizontal=True, key=f"{key}-method")

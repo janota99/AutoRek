@@ -1,9 +1,10 @@
 """Sales Tax Vendor Review Tool: a page of the combined app.
 
-Two tools, picked in the sidebar:
+Three tools, picked with the segmented control:
   - Transaction Cleanup (transaction_cleanup.py, with its logic in cleanup.py and its
     Excel output in excel_output.py)
   - Vendor Reconciliation (vendor_reconciliation.py)
+  - Sales Tax Calculator (tax_calculator_ui.py, with its logic in tax_calculator.py)
 File reading and the trial balance cache live in ingestion.py.
 """
 
@@ -13,11 +14,12 @@ import streamlit as st
 
 from shared.styles import inject_page
 from apps.sales_tax import ui
+from apps.sales_tax.tax_calculator_ui import render_tax_calculator
 from apps.sales_tax.transaction_cleanup import render_transaction_cleanup
 from apps.sales_tax.vendor_reconciliation import render_vendor_reconciliation
 
 
-TOOLS = ["Transaction Cleanup", "Vendor Reconciliation"]
+TOOLS = ["Transaction Cleanup", "Vendor Reconciliation", "Sales Tax Calculator"]
 
 
 # =====================================================================
@@ -59,6 +61,8 @@ def main():
     st.sidebar.markdown("### Transaction Preparation & Review")
     if tool == TOOLS[0]:
         render_transaction_cleanup()
+    elif tool == TOOLS[2]:
+        render_tax_calculator()
     else:
         st.sidebar.caption("Vendor Reconciliation compares two vendor listings by Vendor ID. It does not use the trial balance.")
         render_vendor_reconciliation()
