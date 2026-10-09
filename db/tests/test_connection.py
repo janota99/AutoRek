@@ -32,3 +32,11 @@ def test_half_configured_and_bad_ids_are_errors():
 
 def test_the_connection_string_is_never_in_the_repr():
     assert "secretpw" not in repr(DatabaseConfig("postgresql://u:secretpw@h/db", ORG))
+
+
+def test_error_text_shown_to_users_never_contains_a_connection_string():
+    pytest.importorskip("streamlit")
+    from apps.recon.custom.ui import _why
+    shown = _why(RuntimeError('could not connect using postgresql://app_login.x:SECRET@host:5432/postgres: refused'))
+    assert "SECRET" not in shown and "RuntimeError" in shown
+    assert "hunter2" not in _why(RuntimeError("bad password=hunter2 here"))

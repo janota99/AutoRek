@@ -144,6 +144,15 @@ def _use_template(spec: dict) -> None:
     st.session_state[STEP_KEY] = 1
 
 
+def _why(exc: Exception) -> str:
+    """The error's type and first line of its message, with anything that looks like a connection string removed."""
+    import re
+    first = (str(exc).strip().splitlines() or [""])[0]
+    first = re.sub(r"postgres(ql)?://\S+", "<connection string hidden>", first)
+    first = re.sub(r"(?i)password=\S+", "password=<hidden>", first)
+    return f"{type(exc).__name__}: {first[:220]}" if first else type(exc).__name__
+
+
 def _db_config():
     """The shared-library database from secrets or the environment, or None (session-only mode)."""
     try:
@@ -163,7 +172,7 @@ def _library() -> tuple[dict, bool]:
         with tenant_connection(config) as conn:
             return {m.name: m.spec for m in store.list_latest(conn)}, True
     except Exception as exc:  # noqa: BLE001 - never block the page because the library is unreachable
-        st.session_state["cr_db_problem"] = f"The shared mapping library could not be reached ({type(exc).__name__})."
+        st.session_state["cr_db_problem"] = f"The shared mapping library could not be reached ({_why(exc)})."
         return session, False
 
 
@@ -178,7 +187,7 @@ def _store_mapping(spec: ReconSpec, note: str = "") -> str:
                 return f"Saved '{spec.name}' to your shared library as version {out.version}."
             return f"'{spec.name}' is already saved with these exact settings (version {out.version}); nothing new was written."
         except Exception as exc:  # noqa: BLE001 - keep the work: fall back to the session and say so
-            st.session_state["cr_db_problem"] = f"The shared library could not be reached ({type(exc).__name__})."
+            st.session_state["cr_db_problem"] = f"The shared library could not be reached ({_why(exc)})."
     st.session_state.setdefault(PRESETS_KEY, {})[spec.name] = asdict(spec)
     return f"Saved '{spec.name}' for this session only. Find it under Saved mappings on the Template step."
 
