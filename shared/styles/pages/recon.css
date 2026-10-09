@@ -910,3 +910,87 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     font-size: 1.02rem !important;
     line-height: 1.5 !important;
 }
+
+
+/* ---------------------------------------------------------------------------
+   Custom mapping mode (apps/recon/custom/ui.py): template cards, dataset cards, mapping grid,
+   rule summary, pre-flight checks, and the sticky Back / Next / Run bar.
+   --------------------------------------------------------------------------- */
+.cr-chip {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 1.9rem; height: 1.9rem; margin-right: 0.35rem; vertical-align: middle;
+    border: 1px solid var(--pp-border); border-radius: 8px; background: var(--pp-surface); overflow: hidden;
+}
+.cr-chip img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
+.cr-chip--initial {
+    border-color: transparent; color: #fff; font-weight: 700; font-size: 0.95rem;
+    background: hsl(var(--cr-hue, 215) 55% 38%);
+}
+.cr-arrow { color: var(--pp-text-muted); margin: 0 0.35rem; font-weight: 700; }
+
+.cr-badge {
+    display: inline-block; padding: 0.12rem 0.55rem; border: 1px solid; border-radius: 999px;
+    font-size: 0.78rem; font-weight: 650; line-height: 1.4; white-space: nowrap;
+}
+.cr-badge--ok { background: var(--pp-status-pass-bg); border-color: var(--pp-status-pass-border); color: var(--pp-status-pass-text); }
+.cr-badge--warn { background: var(--pp-status-review-bg); border-color: var(--pp-status-review-border); color: var(--pp-status-review-text); }
+.cr-badge--bad { background: var(--pp-status-fail-bg); border-color: var(--pp-status-fail-border); color: var(--pp-status-fail-text); }
+.cr-badge--neutral { background: var(--pp-status-neutral-bg); border-color: var(--pp-status-neutral-border); color: var(--pp-status-neutral-text); }
+.cr-badge--info { background: var(--pp-accent-soft); border-color: var(--pp-accent-soft-hover); color: var(--pp-accent-strong); }
+
+.cr-tpl-head { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.25rem; }
+.cr-tpl-head .cr-badge { margin-left: auto; }
+.cr-note { color: var(--pp-text-muted); font-size: 0.9rem; margin: 0.5rem 0 0.75rem; }
+
+/* Dataset cards: a colored top edge tells source from target. */
+.st-key-cr-card-a { border-top: 4px solid var(--pp-accent) !important; }
+.st-key-cr-card-b { border-top: 4px solid #0f766e !important; }
+.cr-card-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+.cr-card-head .cr-chip { width: 2.4rem; height: 2.4rem; margin: 0; }
+.cr-role { display: block; color: var(--pp-text-muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.cr-card-title { display: block; color: var(--pp-navy); font-size: 1.1rem; font-weight: 700; }
+.cr-meta { margin-top: 0.4rem; color: var(--pp-text-muted); font-size: 0.86rem; }
+
+/* Mapping grid */
+.cr-grid-head {
+    display: flex; align-items: center; padding: 0.4rem 0.6rem; border-radius: 8px;
+    background: var(--pp-accent-soft); color: var(--pp-navy); font-size: 0.85rem; font-weight: 700;
+}
+.cr-grid-head--mid { justify-content: center; background: transparent; color: var(--pp-text-muted); }
+.cr-rule {
+    text-align: center; padding: 0.45rem 0.6rem; border: 1px dashed var(--pp-border-strong); border-radius: 8px;
+    color: var(--pp-text-secondary); font-size: 0.85rem; font-weight: 600; background: var(--pp-status-neutral-bg);
+}
+.cr-pill {
+    display: inline-block; margin: 0.35rem 0 0.5rem; padding: 0.25rem 0.8rem; border-radius: 999px;
+    background: var(--pp-navy); color: #fff; font-size: 0.85rem; font-weight: 650;
+}
+
+/* Rule summary: sticky beside step 3, plain on the review step. */
+[data-testid="stHorizontalBlock"]:has(.st-key-cr-summary) { align-items: stretch; }
+.st-key-cr-summary, .st-key-cr-summary-inline {
+    padding: 1rem; border: 1px solid var(--pp-border); border-radius: 12px; background: var(--pp-surface);
+}
+.st-key-cr-summary { position: sticky; top: 5rem; }
+.cr-sum-title { color: var(--pp-navy); font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.cr-sum-label { margin-top: 0.7rem; color: var(--pp-text-muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.cr-sum-row { margin-top: 0.15rem; color: var(--pp-text-secondary); font-size: 0.9rem; line-height: 1.45; }
+.cr-sum-row .cr-chip { width: 1.4rem; height: 1.4rem; margin-right: 0.2rem; }
+.cr-sum-dim { color: var(--pp-text-muted); }
+.cr-sum-missing { color: var(--pp-status-review-text); font-weight: 600; }
+.cr-sum-foot { margin-top: 0.9rem; padding-top: 0.7rem; border-top: 1px solid var(--pp-border-soft); color: var(--pp-navy); font-weight: 650; font-size: 0.9rem; }
+
+/* Pre-flight checks */
+.cr-check { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; margin-bottom: 0.4rem; border: 1px solid; border-radius: 8px; font-size: 0.93rem; }
+.cr-check-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; font-weight: 800; font-size: 0.85rem; background: rgba(255, 255, 255, 0.7); }
+.cr-check--ok { background: var(--pp-status-pass-bg); border-color: var(--pp-status-pass-border); color: var(--pp-status-pass-text); }
+.cr-check--warn { background: var(--pp-status-review-bg); border-color: var(--pp-status-review-border); color: var(--pp-status-review-text); }
+.cr-check--bad { background: var(--pp-status-fail-bg); border-color: var(--pp-status-fail-border); color: var(--pp-status-fail-text); }
+
+/* Sticky action bar */
+.st-key-cr-nav {
+    position: sticky; bottom: 0; z-index: 50; margin-top: 1.5rem; padding: 0.75rem 1rem;
+    border: 1px solid var(--pp-border); border-radius: 12px; background: var(--pp-surface);
+    box-shadow: 0 -4px 16px rgba(25, 54, 93, 0.1);
+}
+.st-key-cr-nav button[kind="primary"] { min-height: 3rem; font-size: 1.02rem; font-weight: 700; }

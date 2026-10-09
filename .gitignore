@@ -13,3 +13,6 @@ apps/recon/data/
 apps/sales_tax/data/
 apps/fifo_inventory/fifo_snapshots/
 apps/fifo_inventory/app_settings.json
+
+# Homework draft (not part of the project)
+docs/Homework3-Draft.docx

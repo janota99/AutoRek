@@ -8,7 +8,7 @@
     "annualPriceUsd": 200,
     "inherits": null,
     "features": [
-      "Sales Tax Review: tax classification and vendor reconciliation",
+      "Transaction Preparation & Review: vendor standardization, sales-tax review, and vendor-list reconciliation",
       "Standard CSV and Excel file uploads",
       "Basic reporting and email support"
     ],
@@ -27,9 +27,9 @@
     "annualPriceUsd": 1000,
     "inherits": "Everything in Starter",
     "features": [
-      "FIFO Inventory: inventory costs, control reviews, and fiscal period closes",
-      "Sales Reconciliation: QuickBooks and Infinium sales matching, with exception reviews",
-      "Multi-user workspace access and session history"
+      "Inventory Costing & Analytics: inventory costs, control reviews, and period closes (example workflow: strict FIFO)",
+      "Data Reconciliation Studio: match two sources to the cent and review exceptions (example workflow: QuickBooks and Infinium)",
+      "Planned: multi-user workspace access and saved session history"
     ],
     "featured": true,
     "requiresQuote": false,
@@ -46,9 +46,9 @@
     "annualPriceUsd": null,
     "inherits": "Everything in Professional",
     "features": [
-      "Invoice Lifecycle Hub: full tracking from Outlook through payment, with an analytics dashboard",
-      "Priority API integrations, such as custom QuickBooks or ERP sync",
-      "Advanced audit logs, custom user roles, and dedicated support"
+      "Prototype: Invoice Lifecycle Hub, tracking invoices from Outlook through payment (Outlook mail is simulated today)",
+      "Planned: priority API integrations, such as custom QuickBooks or ERP sync",
+      "Planned: advanced audit logs and custom user roles. Dedicated support is included."
     ],
     "featured": false,
     "requiresQuote": true,

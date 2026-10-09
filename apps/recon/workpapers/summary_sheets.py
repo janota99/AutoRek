@@ -42,7 +42,9 @@ from ..excel_styles import (
     fix_row_height,
 )
 from ..matching import parse_fiscal_period, ReconciliationResult
+from ..matching.review_decisions import adjusted_je_amount
 from .tables import (
+    _decisions_missing_support_expr,
     _je_support_manual_exclusions_expr,
     _review_holds_released_expr,
     _write_dataframe_values,
@@ -354,7 +356,13 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     # fill), so the PASS/FAIL state stays legible at a glance.
     headline_row = next_row
     total_rows = int(metrics["QuickBooks Rows"])
-    headline_text = f"{total_rows:,} of {total_rows:,} QBO rows accounted for — CONTROL: {metrics['Control Status']}"
+    export_ok = result.export_controls.empty or bool(result.export_controls["Status"].eq("PASS").all())
+    control_ok = control_ok and export_ok
+    # "At export" because it is a snapshot: nothing here re-checks edits made in Excel.
+    headline_text = (
+        f"{total_rows:,} of {total_rows:,} QBO rows accounted for — "
+        f"EXPORT CONTROLS: {'PASS' if control_ok else 'FAIL'} (checked when generated)"
+    )
     centered_band(
         headline_row, headline_text,
         GREEN_LIGHT if control_ok else RED_LIGHT,
@@ -424,10 +432,10 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
 
     # Journal Entry Bridge: the engine's automated total is immutable and
     # never overwritten by a reviewer selection (see the Reviewer Disposition
-    # columns on Unresolved Exceptions) -- it is bridged to what actually
-    # posts through two purely additive manual adjustments. With no reviewer
-    # overrides, both adjustments are zero and Final Approved JE = Engine
-    # Proposed JE exactly.
+    # columns on Unresolved Exceptions) -- it is bridged to the reviewer-
+    # adjusted total through two purely additive manual adjustments. With no
+    # reviewer overrides, both adjustments are zero and the adjusted JE =
+    # Engine Proposed JE exactly. The adjusted total is a calculation.
     bridge_title_row = next_row
     unmerged_band(
         bridge_title_row, "JOURNAL ENTRY BRIDGE", SLATE,
@@ -463,7 +471,7 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     final_row = row
     for col in range(1, end_col + 1):
         ws.cell(final_row, col).fill = PatternFill("solid", fgColor=GREEN_LIGHT)
-    final_label_cell = ws.cell(final_row, 1, "FINAL APPROVED JE")
+    final_label_cell = ws.cell(final_row, 1, "REVIEWER-ADJUSTED JE (calculated; live)")
     final_value_cell = ws.cell(final_row, value_col, "=" + "+".join(bridge_value_cells))
     final_label_cell.font = Font(name=FONT_NAME, size=11, bold=True, color=TEXT)
     final_label_cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
@@ -472,7 +480,37 @@ def build_posting_summary_sheet(wb: Workbook, result: ReconciliationResult) -> N
     final_value_cell.alignment = Alignment(horizontal="right", vertical="center", indent=1)
     final_value_cell.border = _total_border()
     fix_row_height(ws, final_row, 22)
-    next_row = final_row + 2
+
+    # A live total is not the exported one: say which is which, and flag any
+    # difference between them.
+    adjusted_at_export = adjusted_je_amount(result)
+    final_value_ref = f"{value_col_letter}{final_row}"
+    status_rows = [
+        ("Reviewer-adjusted JE recorded at export", adjusted_at_export, ACCOUNTING_CURRENCY_FORMAT),
+        (
+            "Live check: workbook total less total at export (must be 0.00)",
+            f"=ROUND({final_value_ref}-{value_col_letter}{final_row + 1},2)", ACCOUNTING_CURRENCY_FORMAT,
+        ),
+        (
+            "Live check: reviewer decisions missing date or comment (must be 0)",
+            "=" + _decisions_missing_support_expr(), ACCOUNTING_COUNT_FORMAT,
+        ),
+    ]
+    row = final_row + 1
+    for label, value, number_format in status_rows:
+        for col in range(1, end_col + 1):
+            ws.cell(row, col).fill = PatternFill("solid", fgColor=SLATE_LIGHT)
+        ws.cell(row, 1, label).font = Font(name=FONT_NAME, size=10, color=TEXT)
+        ws.cell(row, 1).alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        cell = ws.cell(row, value_col, value)
+        cell.font = Font(name=FONT_NAME_NUMERIC, size=10, color=TEXT)
+        cell.alignment = Alignment(horizontal="right" if number_format else "left", vertical="center", indent=1)
+        if number_format:
+            cell.number_format = number_format
+            cell.border = _thin_border()
+        fix_row_height(ws, row, 18)
+        row += 1
+    next_row = row + 1
 
     nav_row = next_row
     ws.merge_cells(start_row=nav_row, start_column=1, end_row=nav_row, end_column=end_col)

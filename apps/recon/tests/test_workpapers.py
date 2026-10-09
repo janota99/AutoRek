@@ -32,6 +32,7 @@ EXPECTED_PRIMARY_SHEETS = [
     "Unresolved Exceptions",
     "Aggregates",
     "Raw Data",
+    "Audit & Controls",
 ]
 
 EXPECTED_LEGACY_SHEETS = [
@@ -1002,7 +1003,7 @@ def test_duplicate_review_hold_section_renders_with_documented_disposition_dropd
     assert cell.value == "Pending Review"
     assert cell.protection.locked is False, "reviewer must be able to edit the disposition cell"
     headers = [c.value for c in ws[disposition_header_row]]
-    for label in ("Reviewer", "Review Date", "Comment"):
+    for label in ("Review Date", "Comment"):
         col = headers.index(label) + 1
         assert ws.cell(data_row, col).protection.locked is False, label
 
@@ -1740,7 +1741,7 @@ def test_posting_summary_is_the_first_sheet_and_states_the_equation(qb_mapping, 
     total = metrics["QuickBooks Rows"]
     assert f"CURRENT RECONCILIATION PERIOD: PD-{int(result.metadata['fiscal_period']):02d}" in text
     assert f"{total:,} of {total:,} QBO rows accounted for" in text
-    assert f"CONTROL: {metrics['Control Status']}" in text
+    assert f"EXPORT CONTROLS: {metrics['Control Status']} (checked when generated)" in text
     # The KPI ribbon names every category as its own column header, with row
     # counts and dollars as plain numeric cells beneath each one.
     for label in ("Total QBO Rows", "Matched", "Review Hold", "Duplicate Excluded", "JE Support"):
@@ -2223,7 +2224,7 @@ def test_je_support_table_offers_only_pending_review_or_exclude(qb_mapping, inf_
     ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Unresolved Exceptions"]
     header_row = next(row for row in ws.iter_rows() if any(c.value == "Exception Status" for c in row))
     headers = [c.value for c in header_row]
-    for label in ("Reviewer Disposition", "Reviewer", "Review Date", "Comment"):
+    for label in ("Reviewer Disposition", "Review Date", "Comment"):
         assert label in headers
     disposition_col = headers.index("Reviewer Disposition") + 1
     disposition_letter = get_column_letter(disposition_col)
@@ -2340,10 +2341,11 @@ def test_posting_summary_bridge_reduces_to_engine_je_with_no_overrides(qb_mappin
     )
     assert released_to_je == 0
 
-    # So, by construction, Final Approved JE = Engine Proposed JE + 0 - 0.
+    # So, by construction, Reviewer-Adjusted JE = Engine Proposed JE + 0 - 0.
     posting = wb["Posting Summary"]
     text = " ".join(str(c.value) for row in posting.iter_rows() for c in row if c.value)
-    assert "Engine Proposed JE" in text and "FINAL APPROVED JE" in text
+    assert "Engine Proposed JE" in text and "REVIEWER-ADJUSTED JE" in text
+    assert "APPROVED" not in text.upper()
     posting_numbers = [c.value for row in posting.iter_rows() for c in row if isinstance(c.value, (int, float))]
     assert result.metrics["Proposed JE Amount"] in posting_numbers
 
@@ -2367,7 +2369,7 @@ def test_posting_summary_bridge_formulas_reference_the_reviewer_columns(qb_mappi
     excluded_row = next(r for r in rows if r[0].value and "Manual JE Exclusions" in str(r[0].value))
     final_row = next(
         r for r in rows
-        if r[0].row != bridge_row and r[0].value and "FINAL APPROVED JE" in str(r[0].value)
+        if r[0].row != bridge_row and r[0].value and "REVIEWER-ADJUSTED JE" in str(r[0].value)
     )
 
     engine_cell = next(c for c in engine_row if c.value not in (None, engine_row[0].value))

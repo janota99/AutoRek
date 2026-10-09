@@ -5,12 +5,14 @@ tools for a bottling/packaging operation behind a shared top navigation bar:
 
 | Page (URL) | Code | What it does |
 |---|---|---|
-| Dashboard (`/`) | `apps/dashboard.py` | Landing page: one card per app, built from the registry in `shared/layout.py`. Every page also carries the account strip (greeting, role, account menu) in its top-right corner. |
-| FIFO Inventory (`/fifo-inventory`) | `apps/fifo_inventory/` | 13-period strict FIFO costing of raw materials; PASS/REVIEW/FAIL controls; period close. |
-| Sales Reconciliation (`/recon`) | `apps/recon/` | Matches QuickBooks sales to Infinium; builds the reconciliation workpaper. |
-| Sales Tax Review (`/sales-tax`) | `apps/sales_tax/` | VBA-macro port: transaction cleanup against a vendor mapping and trial balance, plus vendor-list reconciliation. |
+| Home (`/`) | `apps/landing.py` | Front landing page: opening message, solution explorer with a populated demo, customization walkthrough (available vs planned), sample downloads, plans, and a simulated 6-step purchase sequence (plan, review, account, checkout, confirmation, onboarding). Example numbers come from `apps/landing_data.py`. It has no second header: while it shows, Streamlit's page links are hidden and a small public bar sits beside the `st.logo` wordmark. `apps/demo_banner.py` adds a "Back to solutions" banner to a solution opened with `?demo=1`. Planned or prototype benefits in `apps/sales_page.py` carry a `Planned: ` / `Prototype: ` prefix, which renders as a tag; keep `mongodb/plans.json` in step. |
+| Workspace (`/workspace`) | `apps/dashboard.py` | The Dashboard: one card per app, built from the registry in `shared/layout.py`. Every page also carries the account strip (greeting, role, account menu) in its top-right corner. |
+| Inventory Costing & Analytics (`/fifo-inventory`; example workflow: FIFO) | `apps/fifo_inventory/` | 13-period strict FIFO costing of raw materials; PASS/REVIEW/FAIL controls; period close. |
+| Data Reconciliation Studio (`/recon`; example workflow: QuickBooks and Infinium) | `apps/recon/` | Matches QuickBooks sales to Infinium; builds the reconciliation workpaper. |
+| Transaction Preparation & Review (`/sales-tax`; example workflow: sales-tax cleanup) | `apps/sales_tax/` | VBA-macro port: transaction cleanup against a vendor mapping and trial balance, plus vendor-list reconciliation. |
 | Invoice Lifecycle Hub (`/invoice-hub`) | `apps/invoice_hub/` | Static HTML/JS prototype of an Outlook invoice tracker, embedded as a Streamlit component. Its page has two tabs: Service overview and My Dashboard (the signed-in person's invoice workspace). |
 | Sales page (no URL) | `apps/sales_page.py` | Three-tier pricing page reachable only from the Dashboard's "View Plans" button in the top-right corner (session flag, not a registered page). Placeholder prices; no payment processing. |
+| Custom mapping mode (inside `/recon`) | `apps/recon/custom/` | The Recon page's Mode control switches to a custom mode: map columns, alignment columns, unique ID and Match ID placement, and 1-to-1 up to N-to-1 group sums for any two datasets; mappings save for the session. |
 | Reviews & Feedback (`/feedback`) | `apps/feedback.py` | Navigation-bar page (not a Dashboard card): the hub's reviews and feedback form, embedded. |
 
 The audience is an accountant/inventory controller, not a developer. Accuracy,
@@ -21,7 +23,7 @@ auditability, and "never silently change the books" beat convenience everywhere.
 ```powershell
 pip install -r requirements.txt
 streamlit run app.py                          # always from this folder (C:\AutoRek)
-py -m pytest                                  # Recon's 355 tests plus the mongodb/ sample-data checks; keep them free of FutureWarnings
+py -m pytest                                  # Recon's 418 tests plus the mongodb/ sample-data checks; keep them free of FutureWarnings
 node apps/invoice_hub/tests/test_layers.js    # Invoice Hub; prints ALL TESTS PASSED
 ```
 
@@ -46,6 +48,9 @@ checks and for how to prove a refactor changed nothing.
   calculation change bumps `ENGINE_VERSION`. The P12 seed values are real opening balances.
 - **Recon:** amounts must agree exactly to the signed cent. Ambiguity stays unresolved for review.
   Never add a "closest match" rule. Bump `MATCHING_RULE_VERSION` when match results can change.
+  Weak references never create an accepted match, and a match whose other identifier points at a
+  different record is refused, not ordered. Reviewer decisions never overwrite engine classifications.
+  There is no approval or sign-off step (`apps/recon/docs/matching-rules.md`).
 - **Sales Tax:** the source and mapping files are read **by position**. Blank ≠ conflict.
   The download stays disabled until the dollar control check is $0.00.
 - **Invoice Hub:** sign-in is simulated in the browser; never present it as real access
@@ -70,6 +75,7 @@ for that app.
 | **Recon**: module map, the `matching/` and `workpapers/` packages | [apps/recon/docs/architecture.md](apps/recon/docs/architecture.md) |
 | Recon matching order, fuzzy/alias rules, duplicates, historical rows, versions | [apps/recon/docs/matching-rules.md](apps/recon/docs/matching-rules.md) |
 | Recon known issues | [apps/recon/docs/known-issues.md](apps/recon/docs/known-issues.md) |
+| **Custom mapping mode** (inside Recon; user-mapped columns) | [apps/recon/docs/custom-reconciliation.md](apps/recon/docs/custom-reconciliation.md) |
 | **Sales Tax**: module map, positional rules, verification, known issues | [apps/sales_tax/docs/overview.md](apps/sales_tax/docs/overview.md) |
 | **Invoice Hub**: pages, Streamlit embedding, script order, tests | [apps/invoice_hub/docs/overview.md](apps/invoice_hub/docs/overview.md) |
 

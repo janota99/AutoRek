@@ -1,9 +1,9 @@
 [
   {
     "_id": "fifo-inventory",
-    "title": "FIFO Inventory",
+    "title": "Inventory Costing & Analytics",
     "route": "/fifo-inventory",
-    "summary": "Calculate inventory costs, review controls, and close fiscal periods.",
+    "summary": "Calculate inventory costs, review controls, and close periods. Example workflow: strict FIFO.",
     "actionLabel": "Open workspace",
     "badge": null,
     "isPrototype": false,
@@ -15,9 +15,9 @@
   },
   {
     "_id": "recon",
-    "title": "Sales Reconciliation",
+    "title": "Data Reconciliation Studio",
     "route": "/recon",
-    "summary": "Match QuickBooks and Infinium sales and review exceptions.",
+    "summary": "Match two sources to the cent and review exceptions. Example workflow: QuickBooks and Infinium sales.",
     "actionLabel": "Open workspace",
     "badge": null,
     "isPrototype": false,
@@ -29,9 +29,9 @@
   },
   {
     "_id": "sales-tax",
-    "title": "Sales Tax Review",
+    "title": "Transaction Preparation & Review",
     "route": "/sales-tax",
-    "summary": "Review tax classifications and reconcile vendor transactions.",
+    "summary": "Standardize vendors, review sales tax, and reconcile vendor lists. Example workflow: the sales-tax cleanup.",
     "actionLabel": "Open workspace",
     "badge": null,
     "isPrototype": false,

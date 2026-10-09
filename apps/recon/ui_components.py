@@ -23,6 +23,7 @@ from shared.status import status_badge, status_styler
 from shared.styles import inject_page
 
 from .matching import QB_ID, ReconciliationResult, numeric_sum
+from .ui_review import render_review_panel
 from .utils import format_currency
 from .workpapers import (
     build_legacy_workbook,
@@ -698,8 +699,12 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
         with st.expander("Normalization and assessment detail", expanded=False):
             st.dataframe(result.assessments, width="stretch", hide_index=True, height=320)
     with downloads_tab:
+        export_result = render_review_panel(result)
         st.markdown("#### Accounting workpaper")
-        st.caption("Five sheets: Posting Summary, Reconciliation Detail, Unresolved Exceptions, Aggregates, and Raw Data.")
+        st.caption(
+            "Six sheets: Posting Summary, Reconciliation Detail, Unresolved Exceptions, Aggregates, "
+            "Raw Data, and Audit & Controls."
+        )
         if "primary_workbook" not in st.session_state:
             if st.button(
                 "Prepare Sales Reconciliation",
@@ -710,7 +715,7 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
                 try:
                     build_started = time.perf_counter()
                     with st.spinner("Preparing the accounting workpaper..."):
-                        st.session_state.primary_workbook = build_primary_workbook(result)
+                        st.session_state.primary_workbook = build_primary_workbook(export_result)
                     st.session_state.primary_workbook_timing = {
                         "build": time.perf_counter() - build_started,
                     }

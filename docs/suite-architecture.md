@@ -11,7 +11,8 @@ streamlit run app.py
   shared/layout.py          APPS registry, st.navigation(position="top") (the apps plus Reviews & Feedback),
                             st.logo, theme injection, and the account strip (st.html + shared/suite_banner.js)
   shared/styles/            every stylesheet, in one place (see "Stylesheets" below); base/ is injected before each page's own CSS
-  apps/dashboard.py         landing page: one card per APPS entry (one st.html block)
+  apps/landing.py           Home (/): front landing page, see "Landing page" below
+  apps/dashboard.py         Workspace (/workspace): one card per APPS entry (one st.html block)
   apps/sales_page.py        Sales page (3 purchase tiers); NOT a registered page, drawn by the Dashboard only
   apps/feedback.py          Reviews & Feedback page: the Invoice Hub's feedback.html, embedded
   apps/dashboard.js         its behavior (spotlight, entrance, animated Recon logo, client-side nav); styling is styles/pages/dashboard.css
@@ -44,6 +45,53 @@ nothing, and every application stays open to anyone. Never describe it as access
   nav overflow so a page link is never covered by the strip.
 - Scripts inlined through `st.html` must not contain `<` followed by a letter, even in a comment:
   Streamlit's sanitizer drops the whole script. `suite_banner.js` avoids `<` entirely.
+
+## Landing page (Home, `/`)
+
+`apps/landing.py` is the default page. Sections 1-4 (navigation, opening, solution explorer, walkthrough) and 7-8 (FAQ and
+background, closing) are `st.html` blocks styled by `styles/pages/landing.css` and driven by `apps/landing.js`; the JS
+delegates its handlers from `document` and binds once, because the page is several blocks. Deliverables and plans are
+Streamlit widgets, since they download files and hold purchase state.
+
+- **Numbers.** `apps/landing_data.py` computes every example figure in integer cents from small synthetic row lists
+  (reconciliation counts, FIFO cost, the transaction control), and builds the three sample CSV downloads from the same
+  rows. `shared/tests/test_landing.py` checks they tie out. It does not call the real engines, so change both if a
+  workflow's rules change.
+- **Demo.** Each solution tab opens on its populated Results view; **Inspect inputs** shows the source rows and
+  **Rerun example** replays the animation. **Try This Workflow** links to the real tool at `?demo=1`.
+- **Available vs Planned.** The walkthrough (`WALKTHROUGH` in `landing_data.py`) labels every capability. Keep Planned items
+  honest: nothing listed there is built.
+- **Purchase sequence** (session state `pp_l_*`): plan and interval, review and total, account, simulated checkout,
+  confirmation, onboarding. It reuses `apps/sales_page.py` (`TIERS`, `totals`, `order_summary`, `payment_section`,
+  `contact_dialog`) and `shared/billing.py`, so prices and card checks live in one place. The account is a session-only
+  demo account (name, email, login, a password kept only as a salted hash, and an offline authenticator-app code, TOTP); checkout also needs a full billing address and a current code; checkout records "Demo: not charged" and discards card details. Onboarding's mapping
+  step is a preview: each tool still maps your own file when you upload it. **Enter the workspace** calls
+  `st.switch_page(..., query_params={"demo": "1"})`.
+- The older Dashboard-only Plans page (View Plans button) still exists and shares the same helpers.
+- The "Where it came from" text (`BACKGROUND`) is a draft written from the repository's history; replace it with the
+  owner's own account.
+
+## Dashboard layout
+
+The Dashboard is one `st.html` block: a left rail (Overview, Applications; Projects, Reports and Settings are greyed
+"Soon" placeholders with no page behind them) beside the workspace: a Get started panel, the application cards, and a
+"How your data is handled" drawer. Each card has **Open workspace**, **Try demo**, and **View details** (supported files,
+inputs, outputs, limitations, and plan availability, from `AppEntry` in `shared/layout.py` and `TIERS`).
+
+- **Try demo** links to `/<app>?demo=1`. `shared/sample_data.py:_seed_demo` loads each uploader's sample once per session
+  when it sees that parameter, so the workflow opens populated. It reuses the existing sample files and builders; nothing
+  else changes, and FIFO still disables Close & Commit while a sample is loaded.
+- **There is no saved-project store, account, or billing system.** The stats strip says "Demo access" and links to the Plans
+  page. No fiscal-period selector lives on the Dashboard: each application sets its own period.
+- `_DATA_HANDLING` in `apps/dashboard.py` states what is stored where (session uploads, in-memory Excel outputs, and the few
+  files written to the server's disk). Update it if an app starts storing something new.
+- **Demo checkout and charge register** (Plans page). After choosing Starter or Professional, a Payment section offers card
+  (name, number, MM/YY, CVC, ZIP), gift card, or PayPal. `shared/billing.py` validates (Luhn, expiry, CVC length) and keeps
+  only brand and last four digits; the form clears on submit. A passing order adds a row to the session-only charge register
+  marked "Demo: not charged". No processor is connected. A real checkout must use a processor's hosted card fields so card
+  numbers never reach this app; replace `_payment_section` then.
+- The Plans page adds a comparison table (`_comparison_html` in `apps/sales_page.py`). Rows marked "To be confirmed" are
+  undecided business terms; the app enforces no plan limits.
 
 ## Sales page (Dashboard-only)
 
@@ -129,7 +177,7 @@ All CSS lives in `shared/styles/`; `shared/styles/__init__.py` is the only code 
 
 | What | Command (from the repo root) |
 |---|---|
-| Recon unit tests (355) | `py -m pytest`. `pytest.ini` sets `pythonpath = .` and disables the cache folder. Add `-W error::FutureWarning` to keep the suite free of pandas deprecations. |
+| Recon unit tests (418) | `py -m pytest`. `pytest.ini` sets `pythonpath = .` and disables the cache folder. Add `-W error::FutureWarning` to keep the suite free of pandas deprecations. |
 | Invoice Hub tests | `node apps/invoice_hub/tests/test_layers.js` (prints `ALL TESTS PASSED`) |
 | One page, headless | `PYTHONPATH=. PYTHONIOENCODING=utf-8 py -c "from streamlit.testing.v1 import AppTest; at = AppTest.from_file('apps/<pkg>/app.py', default_timeout=120).run(); print(at.exception)"` |
 

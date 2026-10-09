@@ -38,11 +38,11 @@ If the ending count is more than beginning + receipts, usage is negative: consum
 Runs `calculate_fifo` for every alias in `PRODUCTS`, reading from the Master Grid:
 - Beginning qty column = previous period (`"11"` for P12); **P1 uses `"13"`** (prior fiscal year's P13).
 - Ending qty column = the current period (`"12"`).
-- Beginning value column = beginning column + `V` (`"11V"`).
+- No value column is read. Beginning value is the sum of the stored layers; ending value is derived (below).
 
 Per product it also computes:
 - **Beginning quantity variance** = sum of the stored layers − the Master Grid beginning qty. Any nonzero amount (beyond qty tolerance) is a **FAIL and blocks closing**.
-- **Known value variance** = Master Grid beginning value − the stored layers' value. It may be nonzero, because the user's legacy spreadsheet has its own rounding drift. What's checked is the **drift** versus the value accepted at the last close (`last_committed_value_variance`); drift beyond ±$0.01 → REVIEW.
+- **Ending value is derived, never entered.** It is the value of the layers left on hand after oldest-first consumption (`metrics['end_val']`), and it appears in the Excel report. The Master Grid's value columns (`01V`–`13V`) are optional and ignored. The former "known value variance drift" control compared them with the layers; it was removed in engine 2.2.0 (`ENGINE_VERSION`), so a period can be processed from ending quantities alone. The `fifo_value_variance` figures remain in snapshots only so older ones still load.
 
 A product that raises an exception becomes a `_failed_product_result` (beginning layers passed through untouched, `processing_error` set) instead of aborting the batch.
 

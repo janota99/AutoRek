@@ -96,6 +96,8 @@ def assign_match_references(
             "qb_amount": cents_to_float(_amount_total(qb, ordered_q)),
             "inf_amount": cents_to_float(_amount_total(inf, ordered_i)),
             "key": "",
+            "evidence_summary": group.evidence_summary,
+            "identifier_discrepancy": group.identifier_discrepancy,
         })
 
     if not historical_clearances.empty:
@@ -117,6 +119,12 @@ def assign_match_references(
                 "qb_amount": round(float(ordered["Primary Amount" if primary_is_qb else "Secondary Amount"].sum()), 2),
                 "inf_amount": round(float(ordered["Secondary Amount" if primary_is_qb else "Primary Amount"].sum()), 2),
                 "key": clearance_id,
+                "evidence_summary": str(first.get("Evidence Summary", "") or ""),
+                "identifier_discrepancy": "; ".join(
+                    dict.fromkeys(
+                        str(v) for v in ordered.get("Identifier Discrepancy", []) if v
+                    )
+                ),
             })
 
     for relationship in relationships:
@@ -159,6 +167,8 @@ def assign_match_references(
             "QuickBooks Row IDs": "; ".join(relationship["qb_ids"]),
             "Infinium Row IDs": "; ".join(relationship["inf_ids"]),
             "Clearance ID": relationship["key"],
+            "Evidence Summary": relationship["evidence_summary"],
+            "Identifier Discrepancy": relationship["identifier_discrepancy"],
         })
 
     register = pd.DataFrame(register_records, columns=MATCH_REGISTER_COLUMNS)

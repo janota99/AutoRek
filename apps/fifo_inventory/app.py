@@ -21,7 +21,7 @@ from apps.fifo_inventory.upload_templates import (
 )
 
 from apps.fifo_inventory.excel_export import (
-    export_master_excel, value_variance_drift_is_acceptable,
+    export_master_excel,
 )
 
 from apps.fifo_inventory import app_settings
@@ -48,7 +48,8 @@ from shared.styles import inject_page
 # UI LAYOUT & INGESTION
 # ==========================================
 # Page title, icon, and wide layout come from st.navigation in the root app.py.
-st.title(":material/inventory_2: 13-Period Batch FIFO Inventory Tracker")
+st.title(":material/inventory_2: Inventory Costing & Analytics")
+st.caption("Example workflow: 13-period batch FIFO inventory tracker")
 
 inject_page("fifo")
 
@@ -247,12 +248,6 @@ with tab_processing:
                             "Upload is missing required quantity period header(s): " +
                             ", ".join(f"{p:02d}" for p in missing_period_headers)
                         )
-                    missing_value_headers = sorted(required_periods - set(value_period_cols))
-                    if missing_value_headers:
-                        debug['errors'].append(
-                            "Upload is missing required value period header(s): " +
-                            ", ".join(f"{p:02d}V" for p in missing_value_headers)
-                        )
                     missing_aliases = [alias for alias in PRODUCTS if alias not in updates]
                     if missing_aliases:
                         debug['errors'].append(f"Upload is missing known product alias(es): {missing_aliases}")
@@ -264,15 +259,6 @@ with tab_processing:
                     if missing_required_values:
                         debug['errors'].append(
                             "Required inventory quantities are blank or invalid: " + ", ".join(missing_required_values[:20])
-                        )
-                    missing_required_value_figures = [
-                        f"Alias {alias} / P{period:02d}V value"
-                        for alias in PRODUCTS for period in required_periods
-                        if alias in updates and 'value' not in updates[alias].get(period, {})
-                    ]
-                    if missing_required_value_figures:
-                        debug['errors'].append(
-                            "Required inventory values are blank or invalid: " + ", ".join(missing_required_value_figures[:20])
                         )
                     if duplicates:
                         debug['errors'].append(f"Duplicate aliases are not allowed: {sorted(set(duplicates))}")
@@ -330,7 +316,7 @@ with tab_processing:
                         st.dataframe(debug['preview'], width="stretch", hide_index=True)
 
         with st.expander("✏️ Manual Entry / Paste (Advanced — use only in select cases)", expanded=False):
-            st.caption("Alias and Description are locked control fields. Only fiscal-period quantities can be edited.")
+            st.caption("Alias and Description are locked control fields. Enter fiscal-period quantities; value columns are optional and ignored.")
             edited_master_grid = st.data_editor(
                 st.session_state['master_grid'], num_rows="fixed", width="stretch", hide_index=True,
                 disabled=['PRODUCT ALIAS', 'DESCRIPTION'], key='master_grid_editor_widget'
@@ -340,15 +326,12 @@ with tab_processing:
         edited_master_grid = st.session_state['master_grid']
 
         _effective_tolerances = app_settings.get_effective_tolerances()
-        with st.expander("Help: Beginning Value Variance"):
+        with st.expander("Help: inventory values"):
             st.markdown(
-                "Computed automatically each period: this Master Grid's beginning-period value column (`" + (
-                    "13V" if current_period == 1 else f"{current_period - 1:02d}V"
-                ) + "` right now) is compared with the FIFO layers actually carried forward. Nothing to enter. "
-                "Drift outside the accepted range ("
-                f"${_effective_tolerances['drift_min']:,.3f} to ${_effective_tolerances['drift_max']:,.2f}, "
-                "adjustable under Inventory Analysis → Settings) versus the last period close is flagged after you "
-                "calculate a preview."
+                "Enter **quantities only**. The Master Grid's value columns (`01V`-`13V`) are optional and are never "
+                "used in the calculation: the beginning value comes from the FIFO layers stored at the last close, "
+                "and the ending value for this period is calculated from the layers left on hand. Read it from "
+                "the downloaded Excel report."
             )
 
         global_receipts_data = pd.DataFrame()
@@ -484,24 +467,6 @@ with tab_processing:
                                "value effect prices the quantity difference at the stored layer average; it is not an "
                                "independent comparison to a book-value source.")
                     st.dataframe(pd.DataFrame(variance_rows), width="stretch", hide_index=True)
-
-            _tol_for_preview = app_settings.get_effective_tolerances()
-            value_variance_alert_rows = [{
-                'Alias': res['alias'], 'Product': res['prod_name'],
-                'Prior Accepted Variance ($)': round(res.get('value_variance_prior', 0.0), 2),
-                'This Period Variance ($)': round(res.get('value_variance_current', 0.0), 2),
-                'Drift ($)': round(res.get('value_variance_drift', 0.0), 2),
-            } for res in staged['all_results']
-              if not value_variance_drift_is_acceptable(res.get('value_variance_drift', 0.0), tolerances=_tol_for_preview)]
-            if value_variance_alert_rows:
-                with st.expander(f"🧾 Known Value Variance Changed — {len(value_variance_alert_rows)} product(s)", expanded=True):
-                    st.caption(f"These products' accepted value variance moved outside the normal, accepted range of "
-                               f"${_tol_for_preview['drift_min']:,.3f} to ${_tol_for_preview['drift_max']:,.2f} (adjustable "
-                               "under Inventory Analysis → Settings) since the last period close. Drift inside that range (small rounding-level "
-                               "movement in either direction) is treated as normal and isn't flagged. This requires "
-                               "acknowledgment below but does not block closing the period — confirm it reflects a "
-                               "deliberate reconciliation, not an unexplained change.")
-                    st.dataframe(pd.DataFrame(value_variance_alert_rows), width="stretch", hide_index=True)
 
             st.download_button(
                 label="📥 Download Preview Excel Report", data=staged['excel_data'],

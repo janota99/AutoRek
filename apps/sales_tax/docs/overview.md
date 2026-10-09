@@ -1,7 +1,7 @@
 # Sales Tax Review: overview, rules, known issues
 
-A Streamlit port of a VBA macro with two tools, picked in the sidebar:
-**Transaction Cleanup** and **Vendor Reconciliation**.
+A Streamlit port of a VBA macro with three tools, picked with the segmented control under the page
+title: **Transaction Cleanup**, **Vendor Reconciliation**, and **Sales Tax Calculator**.
 
 ## Module map
 
@@ -11,7 +11,11 @@ A Streamlit port of a VBA macro with two tools, picked in the sidebar:
 | `transaction_cleanup.py` | The Transaction Cleanup screen: uploads, sidebar options, trial balance cache controls, Run Cleanup, results, new-vendor classification. |
 | `cleanup.py` | Transaction Cleanup logic, no Streamlit: `validate_inputs`, GL account building, conflict detectors, `process_transactions`, new-vendor checks, the input fingerprint. Also `clean_key_series`, which Vendor Reconciliation shares. |
 | `excel_output.py` | Sheet naming and grouping, the formatted cleanup workbook, the updated mapping workbook. |
+| `ui.py` | Markup only: page title, progress stepper, numbered upload-card heading, KPI tiles (styles: `shared/styles/pages/sales-tax.css`, `st-*` classes). Reads no file and changes no number. |
 | `vendor_reconciliation.py` | Compares two vendor listings by Vendor ID (Added/Removed/Renamed/Unchanged) and builds an updated 6-column mapping file. |
+| `tax_calculator.py` | Sales Tax Calculator logic, no Streamlit: Texas 6.25% State rate, 2.00% local cap (8.25% combined), SaaS 80% taxable base, preset and custom `Location`s, `calculate`, `compare`. `Decimal`; each tax line rounded half-up to the cent. Standalone: reads no upload and feeds no workbook. Tests: `tests/test_tax_calculator.py`. |
+| `tax_calculator_ui.py` | The calculator screen: price, location, and sale-type inputs, the summary card, the scenario comparison table, and the custom-location form (kept in session state only). Styles: `stc-*` in `sales-tax.css`. |
+| `tax_tape.py` | Draws the compact PNG/PDF "tape" of one calculator result (Pillow) for attaching to invoices as backup. Draws a `TaxResult` that was already computed; recomputes nothing. |
 | `ingestion.py` | File reading with size limits, the on-disk trial balance cache, excluded vendor IDs. No Streamlit. |
 | `data/` | `trial_balance_cache.xlsx` (the live cache) plus sample input files. Real company data, gitignored. |
 

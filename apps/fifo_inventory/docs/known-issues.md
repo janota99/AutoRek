@@ -5,7 +5,7 @@ Confirm with the user before changing behavior — some of it may be intentional
 
 ## Behavior
 
-1. **Drift min/max settings don't do anything.** The Settings tab (`insights.py`) saves `drift_min` / `drift_max`, and `app.py` shows them to the user as the accepted range, but `excel_export.value_variance_drift_is_acceptable` ignores `tolerances` and always applies ±$0.01. Either wire them in or remove them from the UI and captions.
+1. **(Resolved: drift control and its settings were removed in engine 2.2.0.)** Previously: drift min/max settings didn't do anything. The Settings tab (`insights.py`) saves `drift_min` / `drift_max`, and `app.py` shows them to the user as the accepted range, but `excel_export.value_variance_drift_is_acceptable` ignores `tolerances` and always applies ±$0.01. Either wire them in or remove them from the UI and captions.
 2. **The close gate ignores user tolerances.** `fifo_calculations.summarize_control_counts` calls `_compute_summary_control_status` without `tolerances`, so the PASS/REVIEW/FAIL counts that allow or block **Close** use the built-in defaults, while the Excel report uses the Settings values. The two can disagree.
 3. **A stale-preview warning won't fire for settings changes.** The run signature doesn't include tolerances, even though the stale message says "Inputs or settings changed".
 4. **The receipt fiscal year isn't checked.** `extract_period` only reads the period number, so a `P12 FYE 2025` row is accepted in FY2026 P12.

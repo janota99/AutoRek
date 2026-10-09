@@ -24,11 +24,14 @@ from .core import (
     _historical_row_indexes,
     _identity_columns,
     _matched_row_indexes,
+    _split_reference_ids,
     cents_to_float,
     INF_ID,
     QB_ID,
     ReconciliationResult,
 )
+from .evidence import FINDING_CONFLICTING_LINKS
+from .export_checks import assert_exportable
 from .engine import perform_matching, prepare_working_frame
 from .exceptions import (
     build_ambiguous_duplicate_candidates,
@@ -212,6 +215,10 @@ def build_reconciliation(
         initially_unmatched_inf,
         qb_secondary_active,
         inf_secondary_active,
+        source_files={
+            "QuickBooks Secondary (Historical)": metadata.get("qb_secondary_filename"),
+            "Infinium Secondary (Historical)": metadata.get("inf_secondary_filename"),
+        },
     )
 
     # Matching and historical clearance are now final: give every accepted
@@ -300,11 +307,33 @@ def build_reconciliation(
     # relationships with differing amounts. These rows are not ordinary
     # missing-record accruals: both sides are withheld from automatic posting
     # and itemized in their own auditor-facing review population.
+    # Rows whose PO and invoice point at different Infinium transactions are
+    # held as conflicting identifier links (see the candidate table). They are
+    # kept out of the variance / ambiguity classifiers below: those would
+    # otherwise pair the row with whichever link they happen to see first.
+    conflict_qb: set[int] = set()
+    conflict_inf: set[int] = set()
+    if not candidates.empty:
+        conflict_ids = set(
+            candidates.loc[candidates["Evidence Finding"] == FINDING_CONFLICTING_LINKS, "QuickBooks Row ID"]
+        )
+        conflict_qb = {idx for idx in unmatched_qb if qb.at[idx, QB_ID] in conflict_ids}
+        conflicting_inf_ids = {
+            piece
+            for text in candidates.loc[candidates["QuickBooks Row ID"].isin(conflict_ids), "Conflicting Infinium IDs"]
+            for piece in _split_reference_ids(text)
+        }
+        conflict_inf = {idx for idx in unmatched_inf if inf.at[idx, INF_ID] in conflicting_inf_ids}
+
     (
         amount_variance_analysis,
         amount_variance_review_hold_qb,
         amount_variance_review_hold_inf,
-    ) = build_reference_amount_variances(qb, inf, unmatched_qb, unmatched_inf)
+    ) = build_reference_amount_variances(
+        qb, inf,
+        [idx for idx in unmatched_qb if idx not in conflict_qb],
+        [idx for idx in unmatched_inf if idx not in conflict_inf],
+    )
     unmatched_qb = sorted(
         set(unmatched_qb).difference(amount_variance_review_hold_qb)
     )
@@ -319,7 +348,9 @@ def build_reconciliation(
     # are likewise withheld from accrual rather than posted as an ordinary
     # exception; see build_ambiguous_duplicate_candidates.
     ambiguous_duplicate_analysis, ambiguous_duplicate_qb = build_ambiguous_duplicate_candidates(
-        qb, inf, unmatched_qb, unmatched_inf
+        qb, inf,
+        [idx for idx in unmatched_qb if idx not in conflict_qb],
+        [idx for idx in unmatched_inf if idx not in conflict_inf],
     )
     unmatched_qb = sorted(
         set(unmatched_qb).difference(ambiguous_duplicate_qb)
@@ -391,6 +422,7 @@ def build_reconciliation(
     )
     qb_dispositions = build_qb_dispositions(
         paired_rows, qb, set(po_reuse_error_qb_index_map(po_reuse_errors)), match_register,
+        candidates=candidates,
     )
     assessments = build_match_assessments(
         matches, historical_clearances, unmatched_qb, qb, inf, candidates,
@@ -729,4 +761,5 @@ def build_reconciliation(
         customer_cases_without_bottles=customer_cases_without_bottles,
     )
     validate_reconciliation(result)
+    result.export_controls = assert_exportable(result)
     return result

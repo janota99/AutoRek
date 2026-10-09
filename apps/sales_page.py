@@ -12,12 +12,16 @@ from __future__ import annotations
 import html
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
+from zoneinfo import ZoneInfo
 
 import json
+from pathlib import Path
 
 import streamlit as st
 
+from shared.billing import digits, validate_address, validate_card, validate_gift_card, verify_totp
 from shared.layout import APPS
 from shared.styles import style_tag
 
@@ -28,6 +32,9 @@ _CYCLE_KEY = "pp_cycle"       # session_state: billing selector
 _MONTHLY, _ANNUAL = "Monthly", "Annual (2 months free)"
 _ANNUAL_MONTHS_BILLED = 10    # twelve months for the price of ten
 TAX_RATE = Decimal("0.0825")  # placeholder sales tax rate shown in the order summary
+TBC = "To be confirmed"
+REGISTER_KEY = "pp_register"   # session_state: demo charge register (this session only; never card numbers)
+_METHODS = ("Credit / debit card", "Gift card", "PayPal")
 _SENT_KEY = "pp_contact_sent"  # session_state: contact form submitted (stub)
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -44,6 +51,12 @@ class Tier:
     featured: bool = False
     action: str = "Choose plan"
     tool_ids: tuple[str, ...] = ()   # the applications this tier adds (shared.layout.APPS url_paths)
+    # Comparison table rows. TBC means the business has not decided it yet; nothing in the app enforces a plan limit.
+    users: str = TBC
+    organizations: str = TBC
+    processing: str = TBC
+    storage: str = "Not available yet"
+    support: str = TBC
 
 
 TIERS: tuple[Tier, ...] = (
@@ -52,35 +65,40 @@ TIERS: tuple[Tier, ...] = (
         audience="Small businesses and single-focus accountants",
         monthly_price=20,
         features=(
-            "Sales Tax Review: tax classification and vendor reconciliation",
+            "Transaction Preparation & Review: vendor standardization, sales-tax review, and vendor-list reconciliation",
             "Standard CSV and Excel file uploads",
             "Basic reporting and email support",
         ),
         tool_ids=("sales-tax",),
+        support="Email support",
     ),
     Tier(
         id="professional", name="Professional", positioning="Most popular",
         audience="Growing businesses and mid-sized accounting teams",
         monthly_price=100, inherits="Everything in Starter",
         features=(
-            "FIFO Inventory: inventory costs, control reviews, and fiscal period closes",
-            "Sales Reconciliation: QuickBooks and Infinium sales matching, with exception reviews",
-            "Multi-user workspace access and session history",
+            "Inventory Costing & Analytics: inventory costs, control reviews, and period closes (example workflow: strict FIFO)",
+            "Data Reconciliation Studio: match two sources to the cent and review exceptions (example workflow: QuickBooks and Infinium)",
+            "Planned: multi-user workspace access and saved session history",
         ),
         featured=True,
         tool_ids=("fifo-inventory", "recon"),
+        users="Multiple users (planned; seat count to be confirmed)",
+        support="Email support",
     ),
     Tier(
         id="enterprise", name="Enterprise", positioning="Premium",
         audience="Large organizations that need end-to-end automation",
         monthly_price=None, inherits="Everything in Professional",
         features=(
-            "Invoice Lifecycle Hub: full tracking from Outlook through payment, with an analytics dashboard",
-            "Priority API integrations, such as custom QuickBooks or ERP sync",
-            "Advanced audit logs, custom user roles, and dedicated support",
+            "Prototype: Invoice Lifecycle Hub, tracking invoices from Outlook through payment (Outlook mail is simulated today)",
+            "Planned: priority API integrations, such as custom QuickBooks or ERP sync",
+            "Planned: advanced audit logs and custom user roles. Dedicated support is included.",
         ),
         action="Contact sales",
         tool_ids=("invoice-hub",),
+        users="Custom user roles (planned)",
+        support="Dedicated support",
     ),
 )
 
@@ -93,16 +111,70 @@ def _price(tier: Tier, annual: bool) -> tuple[str, str]:
     return f"${tier.monthly_price:,}", "per month"
 
 
-def _tier_html(tier: Tier, annual: bool) -> str:
+def comparison_html() -> str:
+    """Side-by-side plan table. Each tier's applications include those of the tiers below it."""
+    titles = {app.url_path: app.title for app in APPS}
+    apps_by_tier, running = [], []
+    for t in TIERS:
+        running = running + [titles[i] for i in t.tool_ids]
+        apps_by_tier.append(running)
+
+    def money(t: Tier, annual: bool) -> str:
+        if t.monthly_price is None:
+            return "Quoted to your organization"
+        if annual:
+            return (f"${t.monthly_price * _ANNUAL_MONTHS_BILLED:,} billed once a year "
+                    f"(${t.monthly_price * 12 - t.monthly_price * _ANNUAL_MONTHS_BILLED:,} less than 12 monthly payments)")
+        return f"${t.monthly_price:,} per month"
+
+    rows = (
+        ("Monthly price", [money(t, False) for t in TIERS]),
+        ("Annual price (full charge)", [money(t, True) for t in TIERS]),
+        ("Included applications", ["<br>".join(map(html.escape, a)) for a in apps_by_tier]),
+        ("Users", [t.users for t in TIERS]),
+        ("Organizations", [t.organizations for t in TIERS]),
+        ("Processing limits", [t.processing for t in TIERS]),
+        ("Saved-project storage", [t.storage for t in TIERS]),
+        ("Support", [t.support for t in TIERS]),
+    )
+    head = "".join(f"<th scope='col'>{html.escape(t.name)}</th>" for t in TIERS)
+    body = "".join(
+        f"<tr><th scope='row'>{label}</th>" + "".join(f"<td>{c if label == 'Included applications' else html.escape(c)}</td>" for c in cells) + "</tr>"
+        for label, cells in rows
+    )
+    return (
+        '<table class="pp-cmp"><caption>Compare plans</caption>'
+        f"<thead><tr><th scope='col'><span class='pp-sr'>Feature</span></th>{head}</tr></thead><tbody>{body}</tbody></table>"
+        '<p class="pp-cmp-note">&ldquo;To be confirmed&rdquo; means that limit has not been decided; the app enforces no '
+        "plan-specific limits today. Saved projects are not built yet. Prices are placeholders.</p>"
+    )
+
+
+_TAGGED = {"Planned: ": "planned", "Prototype: ": "prototype"}
+
+
+def _feature_li(text: str) -> str:
+    """One feature line. A leading "Planned: " or "Prototype: " becomes a small tag, so a benefit that is not
+    built yet is never shown as an included one."""
+    for prefix, kind in _TAGGED.items():
+        if text.startswith(prefix):
+            return (f'<li><span class="pp-tag" data-kind="{kind}">{prefix[:-2]}</span> '
+                    f'{html.escape(text[len(prefix):])}</li>')
+    return f"<li>{html.escape(text)}</li>"
+
+
+def tier_html(tier: Tier, annual: bool, footer: str = "") -> str:
+    """The card body. ``footer`` (optional HTML) sits under the features, inside the same block, so the
+    card's button stays the only other element and lines up across cards."""
     headline, unit = _price(tier, annual)
     items = ([f'<li class="pp-inherit">{html.escape(tier.inherits)}</li>'] if tier.inherits else [])
-    items += [f"<li>{html.escape(f)}</li>" for f in tier.features]
+    items += [_feature_li(f) for f in tier.features]
     return (
         f'<p class="pp-tier-label">{html.escape(tier.positioning)}</p>'
         f'<h3 class="pp-tier-name">{html.escape(tier.name)}</h3>'
         f'<p class="pp-tier-for">{html.escape(tier.audience)}</p>'
         f'<p class="pp-price">{headline} {f"<small>{html.escape(unit)}</small>" if unit else ""}</p>'
-        f'<ul class="pp-feats">{"".join(items)}</ul>'
+        f'<ul class="pp-feats">{"".join(items)}</ul>{footer}'
     )
 
 
@@ -181,36 +253,141 @@ def _compare_bar() -> str:
             f'data-plans="{html.escape(json.dumps(plans), quote=True)}">{hint}</div>')
 
 
-def _money(cents: int) -> str:
+def money(cents: int) -> str:
     return f"${cents // 100:,}.{cents % 100:02d}"
 
 
-def _totals(tier: Tier, annual: bool) -> tuple[int, int, int]:
+def totals(tier: Tier, annual: bool) -> tuple[int, int, int]:
     """(base, tax, total) in cents. Tax is rounded half-up to the penny."""
     base = tier.monthly_price * 100 * (_ANNUAL_MONTHS_BILLED if annual else 1)
     tax = int((Decimal(base) * TAX_RATE).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
     return base, tax, base + tax
 
 
-def _order_summary(tier: Tier, annual: bool) -> str:
+def order_summary(tier: Tier, annual: bool) -> str:
     note = ("Online checkout is not connected yet, so nothing has been charged and no order "
             "has been placed.")
     if tier.monthly_price is None:
         return ('<div class="pp-order"><strong>Enterprise</strong> is quoted to your organization. Our '
                 "team will scope the integrations, user roles, and support before agreeing a price."
                 f"<br>{note}</div>")
-    base, tax, total = _totals(tier, annual)
+    base, tax, total = totals(tier, annual)
     cycle = "year" if annual else "month"
-    rows = (f"<tr><td>{html.escape(tier.name)} base price (per {cycle})</td><td>{_money(base)}</td></tr>"
-            f"<tr><td>Sales tax ({TAX_RATE * 100:.2f}%)</td><td>{_money(tax)}</td></tr>"
-            f'<tr class="pp-total"><td>Total</td><td>{_money(total)}</td></tr>')
+    rows = (f"<tr><td>{html.escape(tier.name)} base price (per {cycle})</td><td>{money(base)}</td></tr>"
+            f"<tr><td>Sales tax ({TAX_RATE * 100:.2f}%)</td><td>{money(tax)}</td></tr>"
+            f'<tr class="pp-total"><td>Total</td><td>{money(total)}</td></tr>')
     # Keyed by plan and cycle so the browser re-runs the fade-in each time the total changes.
     return (f'<div class="pp-order" data-k="{tier.id}-{cycle}"><table class="pp-lines">{rows}</table>'
             f"{note}</div>")
 
 
+def _register_html() -> str:
+    """The charge register: one row per order recorded this session. It holds the card brand and last four
+    digits only, never the number, expiry, or security code."""
+    entries = st.session_state.get(REGISTER_KEY, [])
+    if not entries:
+        return ('<div class="pp-register"><h2>Charge register</h2><p class="pp-cmp-note">No charges yet. Orders you '
+                "place appear here. Nothing is charged in this demo.</p></div>")
+    items = "".join(
+        f'<li><div class="pp-reg-top"><strong>{money(e["total"])}</strong><span>{html.escape(e["date"])}</span></div>'
+        f'<div>{html.escape(e["plan"])} ({html.escape(e["cycle"])})</div>'
+        f'<div class="pp-reg-sub">{money(e["base"])} + {money(e["tax"])} tax</div>'
+        f'<div>{html.escape(e["method"])}</div>'
+        f'<div class="pp-reg-status">{html.escape(e["status"])}</div></li>'
+        for e in reversed(entries)
+    )
+    return f'<aside class="pp-register"><h2>Charge register</h2><ul>{items}</ul></aside>'
+
+
+def _record(tier: Tier, annual: bool, method: str) -> None:
+    base, tax, total = totals(tier, annual)
+    st.session_state.setdefault(REGISTER_KEY, []).append({
+        "date": datetime.now(ZoneInfo("America/Chicago")).strftime("%Y-%m-%d %H:%M"),
+        "plan": tier.name, "cycle": "Annual" if annual else "Monthly",
+        "base": base, "tax": tax, "total": total, "method": method, "status": "Demo: not charged",
+    })
+
+
+_PAYMENT_LOGOS = Path(__file__).resolve().parent.parent / "shared" / "assets" / "payment_methods.png"
+
+
+def payment_section(tier: Tier, annual: bool, *, key: str = "pp-pay-form", quiet: bool = False,
+                    account: dict | None = None) -> bool:
+    """Payment fields. Nothing is charged or stored: a passing form adds a register row and the form is cleared.
+    The card number, expiry, and CVC are validated and then dropped.
+
+    Every method asks for a full billing address. When ``account`` carries an enrolled authenticator secret
+    (the landing page's purchase flow), the order also needs a current 6-digit code from the offline authenticator
+    app; a code works once (``account["totp_last"]`` remembers the last step used).
+
+    Returns True on the run in which an order was recorded. ``quiet`` leaves the success message to the caller
+    (the landing page moves on to its confirmation step instead)."""
+    secret = (account or {}).get("totp_secret") if (account or {}).get("totp_enrolled") else None
+    st.subheader("Payment")
+    if _PAYMENT_LOGOS.is_file():  # the card and wallet brands this section is meant for
+        st.image(str(_PAYMENT_LOGOS), caption="Credit and debit card payments (demo checkout)", width="stretch")
+    st.warning("Demo checkout: no payment processor is connected, so nothing is charged. Do not enter a real card "
+               "number here. To try the form, use a test number such as 4242 4242 4242 4242 with any future date.")
+    method = st.radio("Payment method", _METHODS, horizontal=True, key=f"{key}-method")
+    with st.form(key, clear_on_submit=True, border=True):
+        if method == _METHODS[0]:
+            name = st.text_input("Name on card", autocomplete="cc-name")
+            number = st.text_input("Card number", placeholder="1234 5678 9012 3456", max_chars=23, autocomplete="off")
+            c1, c2 = st.columns(2)
+            expiry = c1.text_input("Expiration date (MM/YY)", placeholder="MM/YY", max_chars=7, autocomplete="off")
+            cvc = c2.text_input("Security code (CVC)", type="password", max_chars=4, autocomplete="off")
+        elif method == _METHODS[1]:
+            code = st.text_input("Gift card code", autocomplete="off")
+            st.caption("Gift cards are not connected to a balance check in this demo.")
+        else:
+            st.info("PayPal would open its own sign-in window to approve the payment. That hand-off is not connected "
+                    "in this demo.")
+        st.markdown("**Billing address**")
+        street = st.text_input("Street address", autocomplete="street-address")
+        a1, a2, a3 = st.columns([2, 1, 1])
+        city = a1.text_input("City", autocomplete="address-level2")
+        state = a2.text_input("State / region", autocomplete="address-level1")
+        postal = a3.text_input("ZIP / postal code", max_chars=10, autocomplete="postal-code")
+        country = st.text_input("Country", value="United States", autocomplete="country-name")
+        otp = ""
+        if secret:
+            st.markdown("**Two-factor authentication**")
+            otp = st.text_input("6-digit code from your authenticator app", max_chars=7, autocomplete="off",
+                                help="Generated offline by the authenticator app you set up when you created the account.")
+        submitted = st.form_submit_button("Place order (demo)", type="primary")
+    if not submitted:
+        return False
+    label, problems = "", []
+    if method == _METHODS[0]:
+        check = validate_card(name, number, expiry, cvc)
+        problems = list(check.problems)
+        label = f"{check.brand} ending {check.last4}"
+    elif method == _METHODS[1]:
+        problems = list(validate_gift_card(code))
+        label = f"Gift card ending {digits(code)[-4:]}" if not problems else ""
+    else:
+        label = "PayPal"
+    problems += validate_address(street, city, state, postal, country)
+    step = None
+    if secret:
+        step = verify_totp(secret, otp, last_used=account.get("totp_last", -1))
+        if step is None:
+            problems.append("The authentication code is not valid. Enter the current 6-digit code (a code works once).")
+    if problems:
+        for p in problems:
+            st.error(p)
+        return False
+    if step is not None:
+        account["totp_last"] = step
+    _record(tier, annual, label)
+    if not quiet:
+        st.success("Demo order recorded in the charge register on the right. Nothing was charged, and your card details "
+                   "were not saved.")
+    return True
+
+
 @st.dialog("Contact sales")
-def _contact_dialog() -> None:
+def contact_dialog() -> None:
     """Enterprise enquiry form. Submission is a stub: nothing is sent or stored."""
     if st.session_state.get(_SENT_KEY):
         st.success("Thanks. Your inquiry has been noted. Inquiries are responded to within 2-3 business days.")
@@ -246,22 +423,31 @@ def render() -> None:
         st.session_state.pop(PLAN_KEY, None)
         st.rerun()
 
-    cycle = st.segmented_control("Billing", [_MONTHLY, _ANNUAL], default=_MONTHLY, key=_CYCLE_KEY)
-    annual = cycle == _ANNUAL
+    # The charge register sits to the right of the plans, so it stays in view beside the order and payment fields.
+    main, side = st.columns([3.2, 1.2], gap="large")
+    with main:
+        cycle = st.segmented_control("Billing", [_MONTHLY, _ANNUAL], default=_MONTHLY, key=_CYCLE_KEY)
+        annual = cycle == _ANNUAL
 
-    for tier, col in zip(TIERS, st.columns(len(TIERS), gap="large")):
-        with col, st.container(key=f"pp-plan-{tier.id}", border=True):
-            st.html(_tier_html(tier, annual))
-            if st.button(tier.action, key=f"pp-choose-{tier.id}", width="stretch",
-                         type="primary" if tier.featured else "secondary"):
-                st.session_state[PLAN_KEY] = tier.id
-                if tier.monthly_price is None:
-                    st.session_state.pop(_SENT_KEY, None)
-                    _contact_dialog()
+        for tier, col in zip(TIERS, st.columns(len(TIERS), gap="large")):
+            with col, st.container(key=f"pp-plan-{tier.id}", border=True):
+                st.html(tier_html(tier, annual))
+                if st.button(tier.action, key=f"pp-choose-{tier.id}", width="stretch",
+                             type="primary" if tier.featured else "secondary"):
+                    st.session_state[PLAN_KEY] = tier.id
+                    if tier.monthly_price is None:
+                        st.session_state.pop(_SENT_KEY, None)
+                        contact_dialog()
 
-    # Under the cards, not above them, so the hover text never crowds the choices.
-    st.html(f"{_compare_bar()}<script>{_HOVER_JS}</script>", unsafe_allow_javascript=True)
+        # Under the cards, not above them, so the hover text never crowds the choices.
+        st.html(f"{_compare_bar()}<script>{_HOVER_JS}</script>", unsafe_allow_javascript=True)
 
-    chosen = next((t for t in TIERS if t.id == st.session_state.get(PLAN_KEY)), None)
-    if chosen:
-        st.html(_order_summary(chosen, annual))
+        st.html(comparison_html())
+
+        chosen = next((t for t in TIERS if t.id == st.session_state.get(PLAN_KEY)), None)
+        if chosen:
+            st.html(order_summary(chosen, annual))
+            if chosen.monthly_price is not None:
+                payment_section(chosen, annual)
+    with side:
+        st.html(_register_html())

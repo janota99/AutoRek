@@ -34,6 +34,7 @@ from ..excel_styles import (
     _write_total_row,
     fix_row_height,
 )
+from ..matching.review_decisions import WORKBOOK_DISPOSITION
 from ..matching import (
     AMOUNT_CENTS,
     build_fiscal_exception_summary,
@@ -97,8 +98,30 @@ def _group_summary_rows(ws, first_row: int, last_row: int) -> None:
     ws.sheet_format.outlineLevelRow = 1
 
 
+def _decision_cells_by_row(result: ReconciliationResult):
+    """QuickBooks row ID -> (Reviewer Disposition, Review Date, Comment)
+    for every decision applied in the application, so the workbook opens with
+    the same decisions the Audit & Controls sheet lists. A row without one stays
+    Pending Review. The engine's own columns are never touched."""
+    cells = {}
+    adjustments = result.review_adjustments
+    if adjustments is None or adjustments.empty:
+        return lambda row_id: ("Pending Review", "", "")
+    for record in adjustments.to_dict("records"):
+        comment = record["Reason"]
+        if record["Support Reference"]:
+            comment += f" | Support: {record['Support Reference']}"
+        if record["Infinium Row IDs"]:
+            comment += f" | Matched to: {record['Infinium Row IDs']}"
+        cells[record["QuickBooks Row ID"]] = (
+            WORKBOOK_DISPOSITION[record["Reviewer Action"]], record["Decision Date"], comment,
+        )
+    return lambda row_id: cells.get(row_id, ("Pending Review", "", ""))
+
+
 def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ws = wb.create_sheet(UNRESOLVED_EXCEPTIONS_SHEET)
+    decision_cells = _decision_cells_by_row(result)
 
     # QuickBooks is the sole accrual and journal-entry basis, so this sheet
     # keeps everything with accrual relevance -- the raw QuickBooks exception
@@ -109,7 +132,7 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     source_headers = list(result.qb_raw.columns)
     headers = source_headers + [
         "Referenced Match Ref.", "Exception Status", "Reference Amount Difference",
-        "Reviewer Disposition", "Reviewer", "Review Date", "Comment",
+        "Reviewer Disposition", "Review Date", "Comment",
     ]
     referenced_offset = len(source_headers) + 1
     status_offset = referenced_offset + 1
@@ -120,8 +143,7 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     # the automated JE, and only "Exclude" (with a documented reason) pulls
     # it out -- see the Posting Summary bridge (Manual JE Exclusions).
     disposition_offset = difference_offset + 1
-    reviewer_offset = disposition_offset + 1
-    review_date_offset = reviewer_offset + 1
+    review_date_offset = disposition_offset + 1
     note_offset = review_date_offset + 1
     # An exception can point at an accepted match two ways -- a consumed
     # PO/invoice candidate, or a duplicate group with a matched member --
@@ -162,7 +184,7 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
                 referenced_by_qb_index.get(int(qidx)) or None,
                 exception_status,
                 reference_amount_difference,
-                "Pending Review", "", "", "",
+                *decision_cells(row_data[QB_ID]),
             ]
         )
     frame = pd.DataFrame(records, columns=headers)
@@ -223,7 +245,7 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ]
     reference_amount_frames = [frame for frame in reference_amount_frames if frame is not None]
     reference_amounts = (
-        pd.concat(reference_amount_frames, ignore_index=True).set_index("QuickBooks Row ID")
+        pd.concat([f.astype(object) for f in reference_amount_frames], ignore_index=True).set_index("QuickBooks Row ID")
         if reference_amount_frames else pd.DataFrame(columns=["Infinium Amount", "Amount Difference"])
     )
     review_frame = pd.DataFrame({
@@ -245,10 +267,11 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
         "Referenced Match Ref.": review_ledger["Related Match Ref."].values,
         "Related Infinium Row IDs": review_ledger["Related Infinium Row IDs"].values,
     })
-    review_frame["Reviewer Disposition"] = "Pending Review"
-    review_frame["Reviewer"] = ""
-    review_frame["Review Date"] = ""
-    review_frame["Comment"] = ""
+    review_frame["Candidate Evidence"] = review_ledger["Candidate Evidence"].values
+    decided = [decision_cells(row_id) for row_id in review_ledger["QBO Row ID"]]
+    review_frame["Reviewer Disposition"] = [d[0] for d in decided]
+    review_frame["Review Date"] = [d[1] for d in decided]
+    review_frame["Comment"] = [d[2] for d in decided]
     review_headers = list(review_frame.columns)
     review_end_col = len(review_headers)
     review_hold_count = result.metrics["Final Disposition - Review Hold Rows"]
@@ -471,7 +494,6 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ws.column_dimensions[get_column_letter(status_offset)].width = 48
     ws.column_dimensions[get_column_letter(difference_offset)].width = 24
     ws.column_dimensions[get_column_letter(disposition_offset)].width = 22
-    ws.column_dimensions[get_column_letter(reviewer_offset)].width = 18
     ws.column_dimensions[get_column_letter(review_date_offset)].width = 14
     ws.column_dimensions[get_column_letter(note_offset)].width = 36
     _set_widths(ws, 1, len(source_headers), header_row, total_row)
@@ -648,7 +670,6 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
         reason_col = review_headers.index("Reason") + 1
         row_id_col = review_headers.index("Row ID") + 1
         disposition_col = review_headers.index("Reviewer Disposition") + 1
-        reviewer_col = review_headers.index("Reviewer") + 1
         review_date_col = review_headers.index("Review Date") + 1
         comment_col = review_headers.index("Comment") + 1
         for offset, record in enumerate(review_frame.to_dict("records")):
@@ -661,7 +682,7 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
                 _style_match_ref_link(ws.cell(row, review_ref_col), pointer, detail_ref_letter)
             else:
                 ws.cell(row, review_ref_col).alignment = Alignment(horizontal="center", vertical="center")
-            for col in (reviewer_col, review_date_col, comment_col):
+            for col in (review_date_col, comment_col):
                 ws.cell(row, col).protection = Protection(locked=False)
         disposition_validation = DataValidation(
             type="list",
@@ -738,7 +759,6 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     ws.column_dimensions[get_column_letter(review_headers.index("Reason Code") + 1)].width = 26
     ws.column_dimensions[get_column_letter(review_headers.index("Reason") + 1)].width = 52
     ws.column_dimensions[get_column_letter(review_headers.index("Reviewer Disposition") + 1)].width = 22
-    ws.column_dimensions[get_column_letter(review_headers.index("Reviewer") + 1)].width = 18
     ws.column_dimensions[get_column_letter(review_headers.index("Review Date") + 1)].width = 14
     ws.column_dimensions[get_column_letter(review_headers.index("Comment") + 1)].width = 36
 
@@ -846,8 +866,8 @@ def build_unresolved_sheet(wb: Workbook, result: ReconciliationResult) -> None:
     )
     _write_caption_band(
         ws, je_caption_row, 1, section_end_col,
-        "Post only after review and approval. Debit 017-00000-110160.0 Accrued Income and credit "
-        "017-91000-400000-0 Income-Manufacturing for the Final Approved JE (the engine's TRUE_UNMATCHED "
+        "Post only after review. Debit 017-00000-110160.0 Accrued Income and credit "
+        "017-91000-400000-0 Income-Manufacturing for the reviewer-adjusted JE (the engine's TRUE_UNMATCHED "
         "total, plus Review Holds released to JE, less any documented manual exclusions -- see the "
         "Posting Summary bridge); evaluate reversals and negative source values before posting.",
         SLATE,

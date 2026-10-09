@@ -15,6 +15,12 @@
     --pp-border-strong: #c9d4e0;
     --pp-border-soft: #e6ecf2;
     --pp-hover: #eef3f9;
+    /* One button spec for the whole suite (Streamlit's own buttons, the landing page, the pricing cards).
+       --pp-primary is the theme primaryColor in .streamlit/config.toml. */
+    --pp-primary: #1e3a8a;
+    --pp-primary-hover: #19365d;
+    --pp-btn-radius: 0.5rem;
+    --pp-btn-height: 2.75rem;
     --pp-accent: #2563eb;
     --pp-accent-strong: #1d4ed8;
     --pp-accent-soft: #eff6ff;

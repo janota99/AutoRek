@@ -37,6 +37,15 @@ def _flag(key: str) -> str:
     return f"_sample_loaded_{key}"
 
 
+def _seed_demo(key: str) -> None:
+    """The Dashboard's "Try demo" link opens an app at ?demo=1. Load that uploader's sample once per
+    session, so the workflow opens populated; "Clear sample" and real uploads still work as usual."""
+    seeded = f"_demo_seeded_{key}"
+    if st.query_params.get("demo") == "1" and not st.session_state.get(seeded):
+        st.session_state[seeded] = True
+        st.session_state[_flag(key)] = True
+
+
 def _sample_bytes(key: str, sample_file, sample_builder, cache_token):
     """(filename, bytes) for a sample. A built sample is cached in session state under `cache_token`,
     so its bytes (and therefore the file digest downstream code keys on) stay identical across
@@ -88,6 +97,7 @@ def sample_uploader(
             clear()
         return uploaded, False
 
+    _seed_demo(key)
     if st.session_state.get(flag):
         filename, data = _sample_bytes(key, sample_file, sample_builder, cache_token)
         sample = SampleUpload(filename, data)

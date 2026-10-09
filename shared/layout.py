@@ -54,35 +54,48 @@ class AppEntry:
     badge: str = ""  # optional maturity label on the card, e.g. "Prototype"
     inputs: tuple[str, ...] = ()   # what the tool takes in; shown when the Dashboard card is hovered
     outputs: tuple[str, ...] = ()  # what it produces; shown with the inputs
+    files: tuple[str, ...] = ()    # supported file types; shown under "View details"
+    limits: tuple[str, ...] = ()   # known limitations; shown under "View details"
 
 
 APPS: list[AppEntry] = [
     AppEntry(
-        title="FIFO Inventory",
+        title="Inventory Costing & Analytics",
         icon=":material/inventory_2:",
         script="apps/fifo_inventory/app.py",
         url_path="fifo-inventory",
-        summary="Calculate inventory costs, review controls, and close fiscal periods.",
+        summary="Calculate inventory costs, review controls, and close periods. Example workflow: strict FIFO.",
         inputs=("Master Grid: ending inventory by period", "Current-period receipts"),
         outputs=("PASS / REVIEW / FAIL controls", "Master Excel report", "Closed-period snapshot"),
+        files=("Excel (.xlsx) or CSV",),
+        limits=("Periods close in sequence, oldest first.",
+                "A preview never changes the official layers; only Close & Commit does.",
+                "Close & Commit is disabled while demo data is loaded."),
     ),
     AppEntry(
-        title="Sales Reconciliation",
+        title="Data Reconciliation Studio",
         icon=":material/compare_arrows:",
         script="apps/recon/app.py",
         url_path="recon",
-        summary="Match QuickBooks and Infinium sales and review exceptions.",
+        summary="Match two sources to the cent and review exceptions. Example workflow: QuickBooks and Infinium sales.",
         inputs=("QuickBooks sales export", "Infinium sales export", "Optional historical files"),
         outputs=("Matched and unmatched transactions", "Exceptions for review", "Reconciliation workpaper (Excel)"),
+        files=("Excel (.xlsx) or CSV",),
+        limits=("Amounts must agree to the cent.",
+                "Ambiguous matches stay unresolved for your review; the app never picks the closest one."),
     ),
     AppEntry(
-        title="Sales Tax Review",
+        title="Transaction Preparation & Review",
         icon=":material/receipt_long:",
         script="apps/sales_tax/app.py",
         url_path="sales-tax",
-        summary="Review tax classifications and reconcile vendor transactions.",
+        summary="Standardize vendors, review sales tax, and reconcile vendor lists. Example workflow: the sales-tax cleanup.",
         inputs=("Source transactions (11 columns)", "Vendor mapping", "Cached trial balance"),
         outputs=("Cleaned transactions workbook", "Updated vendor mapping", "Vendor list comparison"),
+        files=("Excel (.xlsx), up to 25 MB each", "CSV for the excluded-vendor list (up to 2 MB)"),
+        limits=("Source and mapping files are read by column position, not by header name.",
+                "The download stays disabled until the dollar control check is $0.00.",
+                "The trial balance is a cache shared by everyone using the app."),
     ),
     AppEntry(
         title="Invoice Lifecycle Hub",
@@ -94,33 +107,39 @@ APPS: list[AppEntry] = [
         badge="Prototype",
         inputs=("Outlook invoice mail (simulated in this prototype)",),
         outputs=("AP and AR stage tracking", "Personal invoice dashboard", "Reviews and feedback"),
+        files=("None: this prototype uses simulated invoice mail",),
+        limits=("Prototype: Outlook mail and sign-in are simulated in your browser.",
+                "Sign-in personalizes the page; it is not access control."),
     ),
 ]
 
+LANDING_SCRIPT = "apps/landing.py"
 DASHBOARD_SCRIPT = "apps/dashboard.py"
+DASHBOARD_URL = "workspace"
 # Reviews & Feedback is a page in the navigation bar, not an application card on the Dashboard.
 FEEDBACK_SCRIPT = "apps/feedback.py"
 
 
-WIDGETS_MENU = "Accountant Widgets"
-FEEDBACK_MENU = "Reviews & Feedback"
+WIDGETS_MENU = ":material/build: Tools"
+FEEDBACK_MENU = ":material/rate_review: Feedback"
 
 
 def build_navigation():
     """Register every page and return the one the visitor selected.
 
-    Top navigation: Dashboard, an "Accountant Widgets" dropdown holding the four tools, then
-    Reviews & Feedback. Streamlit renders a named section as a dropdown. Feedback sits in a one-page
+    Top navigation: Home (the landing page, at "/"), Workspace (the Dashboard), a "Tools"
+    dropdown holding the four tools, then Feedback (the Reviews & Feedback page). Streamlit renders a named section as a dropdown. Feedback sits in a one-page
     section only to keep its place after the dropdown; suite_banner.js makes that label a direct link.
     """
-    dashboard = st.Page(DASHBOARD_SCRIPT, title="Dashboard", icon=":material/dashboard:", default=True)
+    home = st.Page(LANDING_SCRIPT, title="Home", icon=":material/home:", default=True)
+    dashboard = st.Page(DASHBOARD_SCRIPT, title="Workspace", icon=":material/dashboard:", url_path=DASHBOARD_URL)
     widgets = [
         st.Page(app.script, title=app.title, icon=app.icon, url_path=app.url_path)
         for app in APPS
     ]
     feedback = st.Page(FEEDBACK_SCRIPT, title="Reviews & Feedback", icon=":material/rate_review:",
                        url_path="feedback")
-    return st.navigation({"": [dashboard], WIDGETS_MENU: widgets, FEEDBACK_MENU: [feedback]}, position="top")
+    return st.navigation({"": [home, dashboard], WIDGETS_MENU: widgets, FEEDBACK_MENU: [feedback]}, position="top")
 
 
 def apply_template() -> None:

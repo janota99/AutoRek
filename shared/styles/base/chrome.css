@@ -61,11 +61,11 @@
 /* Streamlit's navigation bar collapses extra pages into a "more" menu to fit its width; leave room
    for the strip so it never covers a page link. */
 .stApp:has(.pp-suite-banner) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 11rem);
+    max-width: calc(100% - 19rem);
 }
 
 .stApp:has(.pp-suite-banner[data-state="in"]) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 21rem);
+    max-width: calc(100% - 29rem);
 }
 
 .pp-sb-hello {
@@ -231,7 +231,7 @@
 .st-key-pp-open-pricing {
     position: fixed;
     top: 0.65rem;
-    right: 16rem;
+    right: 24rem;
     z-index: 1000001;
     width: auto;
 }
@@ -240,10 +240,10 @@
     min-height: 2.25rem;
     padding: 0.3rem 1.1rem;
     border: 1px solid var(--pp-accent);
-    border-radius: 9999px;
+    border-radius: var(--pp-btn-radius);
     background: var(--pp-accent-soft);
     box-shadow: none;
-    transition: all 0.2s ease-in-out;
+    transition: background 0.15s ease;
 }
 
 .st-key-pp-open-pricing button,
@@ -254,19 +254,17 @@
 }
 
 .st-key-pp-open-pricing button:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--pp-shadow-accent);
     background: var(--pp-accent-soft-hover);
     color: var(--pp-accent-strong);
 }
 
 /* Room for the button in the navigation row so it never covers a page link. */
 .stApp:has(.st-key-pp-open-pricing) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 29rem);
+    max-width: calc(100% - 37rem);
 }
 
 .stApp:has(.st-key-pp-open-pricing):has(.pp-suite-banner[data-state="in"]) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 44rem);
+    max-width: calc(100% - 52rem);
 }
 
 /* Sample-data controls (shared/sample_data.py): an amber "Demo data" badge whenever a sample stands in for an upload. */
@@ -279,4 +277,79 @@
     height: 2.75rem !important;
     width: auto !important;
     border-radius: 6px;
+}
+
+/* Demo banner (apps/demo_banner.py): above a solution's tool when it was opened from a "Try ..." button. */
+.st-key-pp-demo-bar { margin: .5rem 0 1rem; padding: .9rem 1.2rem; border-radius: .75rem; background: linear-gradient(135deg, var(--pp-navy), var(--pp-accent)); }
+.pp-demo-copy { color: #dbeafe; }
+.pp-demo-copy h2 { display: flex; align-items: center; gap: .5rem; margin: .25rem 0 .2rem; padding: 0; color: #fff; font-size: 1.35rem; font-weight: 800; }
+.pp-demo-copy p { margin: 0; font-size: .95rem; line-height: 1.5; }
+.pp-demo-tag { display: inline-block; padding: .1rem .6rem; border-radius: 999px; background: rgba(255, 255, 255, .16); color: #fff; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.st-key-pp-demo-bar button { background: #fff; border-color: #fff; color: var(--pp-navy); }
+.st-key-pp-demo-bar button:hover { background: var(--pp-accent-soft); border-color: var(--pp-accent-soft); color: var(--pp-navy); }
+.st-key-pp-demo-bar button p { color: var(--pp-navy); font-weight: 600; white-space: nowrap; }
+.pp-demo-copy .material-symbols-rounded { font-size: 1.4rem; }
+
+/* Material Symbols glyphs in hand-written HTML (landing page, demo banner): Streamlit registers the font but not this class. */
+.material-symbols-rounded {
+    font-family: "Material Symbols Rounded";
+    font-weight: normal;
+    font-style: normal;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    direction: ltr;
+    font-feature-settings: "liga";
+    -webkit-font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* Top navigation labels: one pattern for every item (icon, label, chevron on a uniform 8px gap),
+   slate by default, a light pill on hover, and a navy tint on the page you are on.
+   suite_banner.js sets data-pp-active on the active link or dropdown label. */
+[data-testid="stHeader"] a[data-testid="stTopNavLink"],
+[data-testid="stHeader"] [data-testid="stTopNavSection"] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"] > span,
+[data-testid="stHeader"] [data-testid="stTopNavSection"] > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;  /* icon to label inside a dropdown label */
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"] p,
+[data-testid="stHeader"] [data-testid="stTopNavSection"] p {
+    margin: 0;
+    color: inherit;
+    font-weight: inherit;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"] [data-testid="stIconMaterial"],
+[data-testid="stHeader"] [data-testid="stTopNavSection"] [data-testid="stIconMaterial"],
+[data-testid="stHeader"] [data-testid="stTopNavSection"] svg {
+    color: inherit;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"]:hover,
+[data-testid="stHeader"] [data-testid="stTopNavSection"]:hover {
+    color: #0f172a;
+    background-color: #f1f5f9;
+}
+
+[data-testid="stHeader"] a[data-testid="stTopNavLink"][data-pp-active],
+[data-testid="stHeader"] [data-testid="stTopNavSection"][data-pp-active] {
+    color: #1e3a8a;
+    font-weight: 600;
+    background-color: #eff6ff;
 }

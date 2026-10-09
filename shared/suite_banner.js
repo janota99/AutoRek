@@ -52,6 +52,9 @@
 
   // Keep the strip just left of Streamlit's own toolbar (Share, star, edit, menu) so it never covers it.
   // Use the leftmost control right of the navigation links; Share and star can mount after the strip does (re-placed every second below).
+  // Streamlit also draws its "Running..." status (with the Stop button) just left of the toolbar, only while a script runs.
+  // Reserve its room permanently: the strip then never jumps or covers it.
+  var STATUS_ROOM = 128;
   function place(banner) {
     var left = Infinity;
     document.querySelectorAll('[data-testid="stToolbar"] button, [data-testid="stToolbar"] a')
@@ -61,7 +64,7 @@
         if (r.width > 0) left = Math.min(left, r.left);
       });
     var right = isFinite(left) ? window.innerWidth - left + 16 : 16;
-    banner.style.setProperty('--pp-sb-right', Math.max(16, right) + 'px');
+    banner.style.setProperty('--pp-sb-right', Math.max(16, right) + STATUS_ROOM + 'px');
     // The Dashboard's "View Plans" button sits just left of the strip, whatever its width.
     var plans = document.querySelector('.st-key-pp-open-pricing');
     if (plans) plans.style.right = (window.innerWidth - banner.getBoundingClientRect().left + 12) + 'px';
@@ -189,15 +192,32 @@
   }, 1000);
   setInterval(render, 60000);
 
-  // "Reviews & Feedback" is a one-page dropdown section in the navigation bar; clicking its label
+  // "Feedback" (the Reviews & Feedback page) is a one-page dropdown section in the navigation bar; clicking its label
   // goes straight to the page instead of opening a menu with a single entry.
   document.addEventListener('click', function (event) {
     var section = event.target.closest && event.target.closest('[data-testid="stTopNavSection"]');
-    if (!section || section.textContent.trim() !== 'Reviews & Feedback') return;
+    if (!section || section.textContent.trim() !== 'rate_review Feedback' && section.textContent.trim() !== 'Feedback') return;
     var link = Array.prototype.slice.call(document.querySelectorAll('a[data-testid="stTopNavDropdownLink"]'))
       .find(function (a) { return /\/feedback\/?$/.test(a.pathname); });
     if (link) { event.preventDefault(); event.stopPropagation(); link.click(); }
   }, true);
+
+  // Mark the navigation item for the current page (a link, or the dropdown label holding it) so
+  // chrome.css can tint it. Streamlit re-renders the bar, so this runs on a timer.
+  function markActiveNav() {
+    var path = location.pathname.replace(/\/+$/, '') || '/';
+    function onPage(a) { return (a.pathname.replace(/\/+$/, '') || '/') === path; }
+    Array.prototype.forEach.call(document.querySelectorAll('a[data-testid="stTopNavLink"]'), function (a) {
+      if (onPage(a)) a.setAttribute('data-pp-active', ''); else a.removeAttribute('data-pp-active');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-testid="stTopNavSection"]'), function (section) {
+      var popover = section.parentElement && section.parentElement.nextElementSibling;
+      var links = popover ? popover.querySelectorAll('a[data-testid="stTopNavDropdownLink"]') : [];
+      var active = Array.prototype.some.call(links, onPage);
+      if (active) section.setAttribute('data-pp-active', ''); else section.removeAttribute('data-pp-active');
+    });
+  }
+  setInterval(markActiveNav, 500);
 
   window.ppSuiteBanner = { render: render };
   render();

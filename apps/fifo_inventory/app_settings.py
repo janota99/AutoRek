@@ -41,11 +41,6 @@ DEFAULT_TOLERANCES = {
     'qty_tolerance': float(QTY_TOLERANCE),
     'value_tolerance': float(VALUE_TOLERANCE),
     'zero_cost_tolerance': float(ZERO_COST_TOLERANCE),
-    # The Known Value Variance Drift accepted band. Deliberately asymmetric:
-    # see the longer explanation that used to live next to this constant in
-    # excel_export.py, now folded into the labels shown in the Settings tab.
-    'drift_min': -0.001,
-    'drift_max': 0.01,
 }
 
 _KEYS = tuple(DEFAULT_TOLERANCES.keys())
@@ -54,8 +49,6 @@ _LABELS = {
     'qty_tolerance': "Quantity Tolerance (units)",
     'value_tolerance': "Value Tolerance ($)",
     'zero_cost_tolerance': "Zero-Cost Layer Threshold ($/unit)",
-    'drift_min': "Known Value Variance Drift — accepted minimum ($)",
-    'drift_max': "Known Value Variance Drift — accepted maximum ($)",
 }
 
 _HELP = {
@@ -63,14 +56,9 @@ _HELP = {
                       "Beginning/Receipt/Depletion Quantity Agreement and Ending Quantity to Open Layers.",
     'value_tolerance': "How close a dollar comparison must be to count as tied out. Used for Receipt Value "
                         "Agreement, Layer Value Conservation, Ending Value to Open Layers, and the dollar effect "
-                        "of a beginning quantity variance. This does NOT affect the Known Value Variance Drift "
-                        "band below, which has its own dedicated min/max.",
+                        "of a beginning quantity variance.",
     'zero_cost_tolerance': "A layer's unit cost at or below this is treated as unpriced/zero-cost for the "
                             "'Unpriced Layer Count' review flag and the Executive Summary's zero-cost footnote.",
-    'drift_min': "The most negative period-over-period change in accepted Known Value Variance that is still "
-                 "treated as normal and not flagged for review.",
-    'drift_max': "The most positive period-over-period change in accepted Known Value Variance that is still "
-                 "treated as normal and not flagged for review.",
 }
 
 
@@ -86,8 +74,6 @@ def _validate(tolerances):
     for key in ('qty_tolerance', 'value_tolerance', 'zero_cost_tolerance'):
         if tolerances[key] < 0:
             raise ValueError(f"{_LABELS[key]} cannot be negative.")
-    if tolerances['drift_min'] > tolerances['drift_max']:
-        raise ValueError("The Known Value Variance Drift minimum cannot be greater than its maximum.")
     return {key: float(tolerances[key]) for key in _KEYS}
 
 

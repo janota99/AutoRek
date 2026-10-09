@@ -14,6 +14,7 @@ from pathlib import Path
 import streamlit as st
 
 from apps import sales_page
+from apps.sales_page import TIERS
 from shared.layout import APPS
 from shared.styles import style_tag
 
@@ -63,17 +64,61 @@ _ICONS = {
 _GENERIC = _SVG.format('<rect x="3" y="3" width="18" height="18" rx="3"/>')
 
 
+def _plan_names(app) -> str:
+    """The plans that include an application, lowest first (from the Plans page)."""
+    names = [t.name for t in TIERS if app.url_path in t.tool_ids]
+    first = next(i for i, t in enumerate(TIERS) if app.url_path in t.tool_ids)
+    return f"{names[0]} and above" if first < len(TIERS) - 1 else f"{names[0]} only"
+
+
+def _list(items) -> str:
+    return "<ul>" + "".join(f"<li>{html.escape(i)}</li>" for i in items) + "</ul>"
+
+
+def _details(app) -> str:
+    """The "View details" drawer on a card: what it accepts, needs, produces, and cannot do."""
+    sections = (
+        ("Supported files", app.files), ("Required inputs", app.inputs),
+        ("Example outputs", app.outputs), ("Limitations", app.limits),
+    )
+    body = "".join(f"<h4>{label}</h4>{_list(items)}" for label, items in sections if items)
+    body += f"<h4>Plan availability</h4><p>{html.escape(_plan_names(app))}. Every application is open in this demo.</p>"
+    return f'<div class="pp-details" hidden>{body}</div>'
+
+
+_RAIL = (
+    ("Overview", "pp-overview", True),
+    ("Applications", "pp-apps", True),
+    ("Projects", "", False),
+    ("Reports", "", False),
+    ("Settings", "", False),
+)
+
+
+def _rail() -> str:
+    items = "".join(
+        (f'<a href="#{anchor}" data-scroll="{anchor}">{label}</a>' if live
+         else f'<span class="pp-rail-off" aria-disabled="true">{label}<em>Soon</em></span>')
+        for label, anchor, live in _RAIL
+    )
+    return f'<nav class="pp-rail" aria-label="Workspace">{items}</nav>'
+
+
 def _card(app) -> str:
     badge = f'<span class="pp-badge">{html.escape(app.badge)}</span>' if app.badge else ""
+    path = html.escape(app.url_path)
     # The hover preview (dashboard.js) reads these as data, not as markup.
     facts = json.dumps({"title": app.title, "inputs": list(app.inputs), "outputs": list(app.outputs)})
     return (
-        f'<a class="pp-card" href="/{html.escape(app.url_path)}" target="_self" '
-        f'data-facts="{html.escape(facts, quote=True)}">'
-        f'<div class="pp-icon" data-icon="{html.escape(app.url_path)}"></div>'
+        f'<div class="pp-card" data-href="/{path}" data-facts="{html.escape(facts, quote=True)}">'
+        f'<div class="pp-icon" data-icon="{path}"></div>'
         f'<h3 class="pp-title">{html.escape(app.title)}{badge}</h3>'
         f'<p class="pp-summary">{html.escape(app.summary)}</p>'
-        f'<span class="pp-action">{html.escape(app.action)} &rarr;</span></a>'
+        '<div class="pp-actions">'
+        f'<a class="pp-action" href="/{path}" target="_self" data-route>{html.escape(app.action)} &rarr;</a>'
+        f'<a class="pp-ghost" href="/{path}?demo=1" target="_self" title="Opens with sample data loaded; no company files needed">Try demo</a>'
+        '<button type="button" class="pp-link" aria-expanded="false">View details</button></div>'
+        f'{_details(app)}</div>'
     )
 
 
@@ -83,24 +128,57 @@ def _icons_json() -> str:
     return json.dumps(icons).replace("<", "\\u003c")
 
 
+_GET_STARTED = (
+    '<section class="pp-panel pp-start" aria-labelledby="pp-start-h"><h2 id="pp-start-h">Get started</h2>'
+    '<ol class="pp-steps">'
+    "<li><strong>Try a demo.</strong> Choose <em>Try demo</em> on any application below. It opens with sample data "
+    "already loaded, so you can see the workflow without company files.</li>"
+    "<li><strong>Download a template.</strong> Each application has a <em>Download Sample Templates</em> drawer "
+    "showing the file layout it expects.</li>"
+    "<li><strong>Run it on your own files.</strong> Upload your exports, run the application, and download the "
+    "Excel workbook it produces.</li></ol>"
+    '<p class="pp-muted">Fiscal period is set inside each application, so a period is never applied to the wrong tool.</p>'
+    "</section>"
+)
+
+# What is stored where, from the code: uploads live in the browser session; Excel outputs are built in memory
+# for download; a few small files are written to the server's disk. Update this if that changes.
+_DATA_HANDLING = (
+    '<details class="pp-panel pp-data"><summary>How your data is handled</summary><ul>'
+    "<li><strong>Uploads</strong> are held in memory for your browser session only. Leaving an application or closing "
+    "the tab clears them.</li>"
+    "<li><strong>Excel outputs</strong> are built on request for you to download. The apps keep no copy.</li>"
+    "<li><strong>Saved on the server's disk:</strong> FIFO closed-period snapshots and settings; the Sales Tax trial "
+    "balance cache, which everyone using the app shares; and Recon's confirmed vendor aliases, with who confirmed "
+    "each one and when. To remove any of these, delete the files from the app's folders.</li>"
+    "<li><strong>Access:</strong> the sign-in is simulated in your browser and is not access control. Anyone who can "
+    "open this app can open every tool and the stored data above.</li>"
+    "<li><strong>Demo data</strong> is synthetic: made-up vendors, customers, and amounts.</li></ul></details>"
+)
+
 page = (
     f"{style_tag('dashboard')}"
-    '<div class="pp-dash">'
-    '<header class="pp-hero"><p class="pp-brand">Janota Fin Automatations</p>'
-    "<h1>Accounting Workspace</h1><p>Pick an application to get started.</p>"
-    "</header>"
+    '<div class="pp-dash"><div class="pp-shell">'
+    f"{_rail()}"
+    '<div class="pp-main">'
+    '<header class="pp-hero" id="pp-overview"><p class="pp-brand">Janota Fin Automatations</p>'
+    '<h1>Accounting Workspace</h1><p>Pick an application to get started.</p></header>'
     '<div class="pp-stats">'
     '<span class="pp-stat"><span class="pp-dot"></span>Session <strong>Active</strong></span>'
     f'<span class="pp-stat">Applications <strong>{len(APPS)} available</strong></span>'
-    '<span class="pp-stat">Plan <strong>None selected</strong></span></div>'
+    '<span class="pp-stat">Access <strong>Demo access</strong>'
+    '<button type="button" class="pp-link" data-open-plans>Compare plans</button></span></div>'
     '<div class="pp-notice" role="note"><span class="pp-notice-icon" aria-hidden="true">i</span>'
     '<p><strong>Uploaded files:</strong> Switching applications clears uploads '
     "from the application you leave. Open applications in separate browser tabs to retain each session.</p>"
     '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
+    f"{_GET_STARTED}"
+    '<h2 class="pp-section" id="pp-apps">Applications</h2>'
     f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
     '<div class="pp-preview" role="status" aria-live="polite">'
     '<span class="pp-preview-hint">Hover over an application to preview what it takes in and produces.</span></div>'
-    "</div>"
+    f"{_DATA_HANDLING}"
+    "</div></div></div>"
     f"<script>window.PP_ICONS = {_icons_json()};\n"
     f"{(_HERE / 'dashboard.js').read_text(encoding='utf-8')}</script>"
 )

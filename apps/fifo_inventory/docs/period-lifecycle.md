@@ -7,7 +7,7 @@
 | `inventory_layers` | `FIFOLayerStore` | `{alias: [layer, ...]}` — the official current layers. |
 | `fifo_period_history` | `FIFOLayerStore` | List of closed-period records, oldest first. |
 | `fifo_last_closed_period` | `FIFOLayerStore` | `{fiscal_year, period, period_key, run_signature}` or `None`. |
-| `fifo_value_variance` | `FIFOLayerStore` | `{alias: float}` known value variance (working value). |
+| `fifo_value_variance` | `FIFOLayerStore` | `{alias: float}` legacy known value variance; no longer updated (engine 2.2.0), kept so old snapshots load. |
 | `master_grid` | `app.py` | Normalized Master Grid DataFrame. |
 | `staged_fifo_run` | `app.py` | The current preview: results, staged layers, Excel bytes, signature. |
 | `last_fifo_report` | `app.py` | Excel bytes for the period just closed. |
