@@ -46,7 +46,10 @@ other app module.
 
 ## Verifying changes
 
-There are no unit tests. Prove a refactor didn't change output by running old and new
+`py -m pytest apps/sales_tax` runs `tests/test_golden.py` (the sample files, frozen), `tests/test_rules.py`
+(each rule on tiny frames, plus the trial balance cache redirected to a scratch folder), and
+`tests/test_tax_calculator.py`. Neither touches `data/`. They do not drive the page. For a larger
+refactor, also prove nothing changed by running old and new
 `process_transactions` + `build_workbook` on the files in `data/`. Do it for both padding
 modes, with and without `DEFAULT_EXCLUDED_IDS`, and compare the frames, stats, and every
 workbook cell. The September 2026 split was verified this way on 104,446 rows.

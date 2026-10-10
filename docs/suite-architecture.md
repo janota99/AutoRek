@@ -176,7 +176,7 @@ All CSS lives in `shared/styles/`; `shared/styles/__init__.py` is the only code 
 
 | What | Command (from the repo root) |
 |---|---|
-| Recon unit tests (418) | `py -m pytest`. `pytest.ini` sets `pythonpath = .` and disables the cache folder. Add `-W error::FutureWarning` to keep the suite free of pandas deprecations. |
+| Unit tests (Recon, FIFO, Sales Tax, db, mongodb) | `py -m pytest`. `pytest.ini` sets `pythonpath = .` and disables the cache folder. Add `-W error::FutureWarning` to keep the suite free of pandas deprecations. |
 | Invoice Hub tests | `node apps/invoice_hub/tests/test_layers.js` (prints `ALL TESTS PASSED`) |
 | One page, headless | `PYTHONPATH=. PYTHONIOENCODING=utf-8 py -c "from streamlit.testing.v1 import AppTest; at = AppTest.from_file('apps/<pkg>/app.py', default_timeout=120).run(); print(at.exception)"` |
 
@@ -188,7 +188,10 @@ AppTest caveats:
   fail under `select_index` and `set_value`.
 - Set `FIFO_SNAPSHOT_DIR` to a scratch folder so a headless FIFO run can't write real snapshots.
 
-FIFO and Sales Tax have no unit tests. When restructuring them, prove nothing changed:
+FIFO and Sales Tax are covered by unit and golden-file tests (`apps/fifo_inventory/tests/`,
+`apps/sales_tax/tests/`). Run them first. A golden failure means a number moved: decide whether that
+was intended, then regenerate with `GOLDEN_UPDATE=1` and review the git diff. The tests do not
+drive the page, so when restructuring the UI also prove nothing changed:
 
 - **FIFO:** render the old and new page through the same AppTest interactions and compare every element.
 - **Sales Tax:** run the old and new `process_transactions` / `build_workbook` on

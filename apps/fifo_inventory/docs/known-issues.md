@@ -24,4 +24,4 @@ If you meet a copy of the old file, the code and these docs are right. It had cl
 ## Tooling
 
 - The headless page check is in [docs/suite-architecture.md](../../../docs/suite-architecture.md#testing-and-verification) (use `apps/fifo_inventory/app.py`). Its `PYTHONIOENCODING=utf-8` setting is needed because the app's emoji crash the Windows cp1252 console. Set `FIFO_SNAPSHOT_DIR` to a scratch folder first if the check shouldn't touch real snapshots.
-- No tests yet. `fifo_snapshots/` and `app_settings.json` hold real data and settings; the root `.gitignore` keeps them out of version control.
+- Tests are in `tests/` (`py -m pytest apps/fifo_inventory`). They run against a fake session state and scratch folders, so they never touch `fifo_snapshots/` or `app_settings.json`. Known issues 4 and 5 above are pinned by tests; fixing one will fail its test on purpose. `fifo_snapshots/` and `app_settings.json` hold real data and settings; the root `.gitignore` keeps them out of version control.

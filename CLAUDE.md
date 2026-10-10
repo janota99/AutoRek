@@ -23,12 +23,13 @@ auditability, and "never silently change the books" beat convenience everywhere.
 ```powershell
 pip install -r requirements.txt
 streamlit run app.py                          # always from this folder (C:\AutoRek)
-py -m pytest                                  # Recon's 418 tests plus the mongodb/ sample-data checks; keep them free of FutureWarnings
+py -m pytest                                  # Recon, FIFO, Sales Tax, db/ and mongodb/ checks; keep them free of FutureWarnings
 node apps/invoice_hub/tests/test_layers.js    # Invoice Hub; prints ALL TESTS PASSED
 ```
 
-FIFO and Sales Tax have no unit tests. See `docs/suite-architecture.md` for headless page
-checks and for how to prove a refactor changed nothing.
+FIFO and Sales Tax tests live in each app's `tests/` folder (engine rules, controls, snapshots,
+cleanup rules, and golden files frozen with `shared/golden.py`). See `docs/suite-architecture.md`
+for headless page checks and for how to prove a refactor changed nothing.
 
 ## Rules that always apply
 

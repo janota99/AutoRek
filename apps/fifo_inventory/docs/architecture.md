@@ -21,6 +21,9 @@ Dependencies: everything imports `user_inputs`; `fifo_layer_store` uses `ingesti
 
 ## Verifying changes
 
+- **Tests first:** `py -m pytest apps/fifo_inventory`. `tests/test_golden.py` freezes a multi-product run; a
+  failure means a number moved. Regenerate only with `GOLDEN_UPDATE=1` and review the diff, and bump
+  `ENGINE_VERSION` for an intended calculation change.
 - **Engine:** call `calculate_fifo(...)` directly from a `py -c` script run at the repo root
   (`from apps.fifo_inventory.fifo_calculations import calculate_fifo`), with a small
   `pandas.DataFrame` of receipts. It has no Streamlit dependency.

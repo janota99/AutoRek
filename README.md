@@ -205,7 +205,7 @@ Before you commit, check `git status` and add specific files rather than everyth
 ## Known limitations and roadmap
 
 - Sign-in is simulated in the browser; it personalizes the app but is not access control.
-- FIFO and Sales Tax have no unit tests yet (Recon and the Invoice Hub do).
+- The FIFO and Sales Tax tests cover the engines and rules, not the Streamlit pages; page behavior is checked headless (see `docs/suite-architecture.md`).
 - Prices on the Plans page are placeholders; there is no payment processing.
 - Planned: database-backed storage (see `mongodb/`), then moving the repository to private.
 
@@ -240,7 +240,7 @@ and PostgreSQL version of the invoice tracker. The Streamlit app doesn't use it.
 Run these from the repository folder:
 
 ```powershell
-py -m pytest                                  # Sales Reconciliation unit tests
+py -m pytest                                  # Recon, FIFO, Sales Tax, and shared unit tests
 node apps/invoice_hub/tests/test_layers.js    # Invoice Hub; prints "ALL TESTS PASSED"
 ```
 

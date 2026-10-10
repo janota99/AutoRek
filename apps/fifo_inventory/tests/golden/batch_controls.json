@@ -1,0 +1,281 @@
+{
+ "counts": {
+  "FAIL": 1,
+  "PASS": 3,
+  "REVIEW": 0
+ },
+ "per_product": {
+  "2": {
+   "checks": [
+    "PASS",
+    [
+     [
+      "Processing Integrity",
+      "PASS",
+      "Calculation completed without an exception"
+     ],
+     [
+      "Beginning Quantity Agreement",
+      "PASS",
+      "0-unit variance"
+     ],
+     [
+      "Estimated Value Effect of Beginning Qty Variance",
+      "PASS",
+      "$0.00 estimated effect"
+     ],
+     [
+      "Receipt Quantity Agreement",
+      "PASS",
+      "700,000 receipt units tied"
+     ],
+     [
+      "Receipt Value Agreement",
+      "PASS",
+      "$19,300.00 receipt value tied"
+     ],
+     [
+      "Depletion Quantity Agreement",
+      "PASS",
+      "1,100,000 depleted units tied"
+     ],
+     [
+      "Layer Value Conservation",
+      "PASS",
+      "$0.00 rollforward variance"
+     ],
+     [
+      "Ending Quantity to Open Layers",
+      "PASS",
+      "Open layers equal 1,100,000 units"
+     ],
+     [
+      "Ending Value to Open Layers",
+      "PASS",
+      "Open layers equal $29,900.00"
+     ],
+     [
+      "FIFO Chronology",
+      "PASS",
+      "No chronological violations"
+     ],
+     [
+      "Unpriced Layer Count",
+      "PASS",
+      "0 unpriced open or depleted layers"
+     ]
+    ]
+   ],
+   "summary": {
+    "exception_message": "",
+    "overall_status": "PASS",
+    "reconciliation_status": "PASS",
+    "valuation_status": "PASS"
+   }
+  },
+  "3": {
+   "checks": [
+    "PASS - Zero Balance",
+    [
+     [
+      "Processing Integrity",
+      "PASS",
+      "Calculation completed without an exception"
+     ],
+     [
+      "Beginning Quantity Agreement",
+      "PASS",
+      "0-unit variance"
+     ],
+     [
+      "Estimated Value Effect of Beginning Qty Variance",
+      "PASS",
+      "$0.00 estimated effect"
+     ],
+     [
+      "Receipt Quantity Agreement",
+      "PASS",
+      "50,000 receipt units tied"
+     ],
+     [
+      "Receipt Value Agreement",
+      "PASS",
+      "$400.00 receipt value tied"
+     ],
+     [
+      "Depletion Quantity Agreement",
+      "PASS",
+      "250,000 depleted units tied"
+     ],
+     [
+      "Layer Value Conservation",
+      "PASS",
+      "$0.00 rollforward variance"
+     ],
+     [
+      "Ending Quantity to Open Layers",
+      "PASS",
+      "Open layers equal 0 units"
+     ],
+     [
+      "Ending Value to Open Layers",
+      "PASS",
+      "Open layers equal $0.00"
+     ],
+     [
+      "FIFO Chronology",
+      "PASS",
+      "No chronological violations"
+     ],
+     [
+      "Unpriced Layer Count",
+      "PASS",
+      "0 unpriced open or depleted layers"
+     ]
+    ]
+   ],
+   "summary": {
+    "exception_message": "",
+    "overall_status": "PASS - Zero Balance",
+    "reconciliation_status": "PASS",
+    "valuation_status": "PASS"
+   }
+  },
+  "4": {
+   "checks": [
+    "PASS - No Activity",
+    [
+     [
+      "Processing Integrity",
+      "PASS",
+      "Calculation completed without an exception"
+     ],
+     [
+      "Beginning Quantity Agreement",
+      "PASS",
+      "0-unit variance"
+     ],
+     [
+      "Estimated Value Effect of Beginning Qty Variance",
+      "PASS",
+      "$0.00 estimated effect"
+     ],
+     [
+      "Receipt Quantity Agreement",
+      "PASS",
+      "0 receipt units tied"
+     ],
+     [
+      "Receipt Value Agreement",
+      "PASS",
+      "$0.00 receipt value tied"
+     ],
+     [
+      "Depletion Quantity Agreement",
+      "PASS",
+      "0 depleted units tied"
+     ],
+     [
+      "Layer Value Conservation",
+      "PASS",
+      "$0.00 rollforward variance"
+     ],
+     [
+      "Ending Quantity to Open Layers",
+      "PASS",
+      "Open layers equal 40,000 units"
+     ],
+     [
+      "Ending Value to Open Layers",
+      "PASS",
+      "Open layers equal $400.00"
+     ],
+     [
+      "FIFO Chronology",
+      "PASS",
+      "No chronological violations"
+     ],
+     [
+      "Unpriced Layer Count",
+      "PASS",
+      "0 unpriced open or depleted layers"
+     ]
+    ]
+   ],
+   "summary": {
+    "exception_message": "",
+    "overall_status": "PASS - No Activity",
+    "reconciliation_status": "PASS",
+    "valuation_status": "PASS"
+   }
+  },
+  "5": {
+   "checks": [
+    "FAIL",
+    [
+     [
+      "Processing Integrity",
+      "PASS",
+      "Calculation completed without an exception"
+     ],
+     [
+      "Beginning Quantity Agreement",
+      "PASS",
+      "0-unit variance"
+     ],
+     [
+      "Estimated Value Effect of Beginning Qty Variance",
+      "PASS",
+      "$0.00 estimated effect"
+     ],
+     [
+      "Receipt Quantity Agreement",
+      "PASS",
+      "0 receipt units tied"
+     ],
+     [
+      "Receipt Value Agreement",
+      "PASS",
+      "$0.00 receipt value tied"
+     ],
+     [
+      "Depletion Quantity Agreement",
+      "FAIL",
+      "Depleted layers do not sum to FIFO usage quantity"
+     ],
+     [
+      "Layer Value Conservation",
+      "PASS",
+      "$0.00 rollforward variance"
+     ],
+     [
+      "Ending Quantity to Open Layers",
+      "FAIL",
+      "Open layers total 10,000 vs ending 12,000"
+     ],
+     [
+      "Ending Value to Open Layers",
+      "PASS",
+      "Open layers equal $5,000.00"
+     ],
+     [
+      "FIFO Chronology",
+      "PASS",
+      "No chronological violations"
+     ],
+     [
+      "Unpriced Layer Count",
+      "PASS",
+      "0 unpriced open or depleted layers"
+     ]
+    ]
+   ],
+   "summary": {
+    "exception_message": "Rollforward quantity does not balance (2,000 unit variance); Open layers do not equal ending quantity",
+    "overall_status": "FAIL",
+    "reconciliation_status": "PASS",
+    "valuation_status": "PASS"
+   }
+  }
+ }
+}
