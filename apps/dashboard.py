@@ -86,24 +86,6 @@ def _details(app) -> str:
     return f'<div class="pp-details" hidden>{body}</div>'
 
 
-_RAIL = (
-    ("Overview", "pp-overview", True),
-    ("Applications", "pp-apps", True),
-    ("Projects", "", False),
-    ("Reports", "", False),
-    ("Settings", "", False),
-)
-
-
-def _rail() -> str:
-    items = "".join(
-        (f'<a href="#{anchor}" data-scroll="{anchor}">{label}</a>' if live
-         else f'<span class="pp-rail-off" aria-disabled="true">{label}<em>Soon</em></span>')
-        for label, anchor, live in _RAIL
-    )
-    return f'<nav class="pp-rail" aria-label="Workspace">{items}</nav>'
-
-
 def _card(app) -> str:
     badge = f'<span class="pp-badge">{html.escape(app.badge)}</span>' if app.badge else ""
     path = html.escape(app.url_path)
@@ -158,19 +140,17 @@ _DATA_HANDLING = (
 
 page = (
     f"{style_tag('dashboard')}"
-    '<div class="pp-dash"><div class="pp-shell">'
-    f"{_rail()}"
-    '<div class="pp-main">'
-    '<header class="pp-hero" id="pp-overview"><p class="pp-brand">Janota Fin Automatations</p>'
-    '<h1>Accounting Workspace</h1><p>Pick an application to get started.</p></header>'
+    '<div class="pp-dash"><div class="pp-main">'
+    '<header class="pp-hero" id="pp-overview"><p class="pp-brand">Janota Fin Automations</p>'
+    '<h1>Accounting Workspace</h1><p>Choose an application to get started.</p></header>'
     '<div class="pp-stats">'
-    '<span class="pp-stat"><span class="pp-dot"></span>Session <strong>Active</strong></span>'
+    '<span class="pp-stat"><span class="pp-dot"></span>Workspace <strong>Ready</strong></span>'
     f'<span class="pp-stat">Applications <strong>{len(APPS)} available</strong></span>'
-    '<span class="pp-stat">Access <strong>Demo access</strong>'
+    '<span class="pp-stat">Plan <strong>Free preview</strong>'
     '<button type="button" class="pp-link" data-open-plans>Compare plans</button></span></div>'
     '<div class="pp-notice" role="note"><span class="pp-notice-icon" aria-hidden="true">i</span>'
-    '<p><strong>Uploaded files:</strong> Switching applications clears uploads '
-    "from the application you leave. Open applications in separate browser tabs to retain each session.</p>"
+    '<p><strong>Tip:</strong> Each application keeps its own files while you work. '
+    "To keep two applications loaded at once, open the second in a new browser tab.</p>"
     '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
     f"{_GET_STARTED}"
     '<h2 class="pp-section" id="pp-apps">Applications</h2>'
@@ -178,7 +158,7 @@ page = (
     '<div class="pp-preview" role="status" aria-live="polite">'
     '<span class="pp-preview-hint">Hover over an application to preview what it takes in and produces.</span></div>'
     f"{_DATA_HANDLING}"
-    "</div></div></div>"
+    "</div></div>"
     f"<script>window.PP_ICONS = {_icons_json()};\n"
     f"{(_HERE / 'dashboard.js').read_text(encoding='utf-8')}</script>"
 )

@@ -90,8 +90,8 @@
 
   // Outlook folders each queue is planned to read from (matches the service page).
   Hub.FOLDERS = {
-    AP: 'Outlook / Janota Fin Automatations / Payables / Bills',
-    AR: 'Outlook / Janota Fin Automatations / ACCTINV'
+    AP: 'Outlook / Janota Fin Automations / Payables / Bills',
+    AR: 'Outlook / Janota Fin Automations / ACCTINV'
   };
 
   Hub.SAMPLE_INVOICES = [

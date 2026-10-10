@@ -1,4 +1,4 @@
-# Janota Fin Automatations Accounting Apps
+# Janota Fin Automations Accounting Apps
 
 One Streamlit app (`streamlit run app.py`, run from this folder) that hosts four accounting
 tools for a bottling/packaging operation behind a shared top navigation bar:

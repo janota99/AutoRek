@@ -1,4 +1,4 @@
-# AutoRek: Janota Fin Automatations Accounting Apps
+# AutoRek: Janota Fin Automations Accounting Apps
 
 [![CI](https://github.com/janota99/AutoRek/actions/workflows/ci.yml/badge.svg)](https://github.com/janota99/AutoRek/actions/workflows/ci.yml)
 

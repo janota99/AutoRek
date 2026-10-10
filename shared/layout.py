@@ -13,7 +13,7 @@ import streamlit as st
 
 from .styles import inject_base
 
-SUITE_NAME = "Janota Fin Automatations Accounting Apps"
+SUITE_NAME = "Janota Fin Automations Accounting Apps"
 
 _SHARED_DIR = Path(__file__).resolve().parent
 _LOGO_PATH = _SHARED_DIR / "assets" / "janota_fin_logo.png"
@@ -36,7 +36,7 @@ _BANNER_HTML = (
     '</button>'
     '<div class="pp-sb-popover" role="menu" hidden>'
     '<div class="pp-sb-who"><strong data-slot="name"></strong><span data-slot="eyebrow"></span>'
-    '<span data-slot="email"></span><span>Simulated sign-in (prototype)</span></div>'
+    '<span data-slot="email"></span><span>Preview sign-in: personalizes only</span></div>'
     '<button type="button" class="pp-sb-item" role="menuitem" data-action="workspace">My invoice workspace</button>'
     '<button type="button" class="pp-sb-item" role="menuitem" data-action="signout">Sign out</button>'
     '</div></div></div>'
@@ -104,7 +104,7 @@ APPS: list[AppEntry] = [
         url_path="invoice-hub",
         # One page, two tabs: the service overview and the signed-in person's invoice dashboard.
         summary="See how invoices are tracked from Outlook through payment, and open your invoice dashboard.",
-        badge="Prototype",
+        badge="Preview",
         inputs=("Outlook invoice mail (simulated in this prototype)",),
         outputs=("AP and AR stage tracking", "Personal invoice dashboard", "Reviews and feedback"),
         files=("None: this prototype uses simulated invoice mail",),

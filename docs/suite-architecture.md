@@ -73,15 +73,14 @@ Streamlit widgets, since they download files and hold purchase state.
 
 ## Dashboard layout
 
-The Dashboard is one `st.html` block: a left rail (Overview, Applications; Projects, Reports and Settings are greyed
-"Soon" placeholders with no page behind them) beside the workspace: a Get started panel, the application cards, and a
-"How your data is handled" drawer. Each card has **Open workspace**, **Try demo**, and **View details** (supported files,
+The Dashboard is one `st.html` block: a Get started panel, the application cards, and a
+"How your data is handled" drawer. There is no left rail: the top navigation bar is the only navigation, and unbuilt features are not shown. Each card has **Open workspace**, **Try demo**, and **View details** (supported files,
 inputs, outputs, limitations, and plan availability, from `AppEntry` in `shared/layout.py` and `TIERS`).
 
 - **Try demo** links to `/<app>?demo=1`. `shared/sample_data.py:_seed_demo` loads each uploader's sample once per session
   when it sees that parameter, so the workflow opens populated. It reuses the existing sample files and builders; nothing
   else changes, and FIFO still disables Close & Commit while a sample is loaded.
-- **There is no saved-project store, account, or billing system.** The stats strip says "Demo access" and links to the Plans
+- **There is no saved-project store, account, or billing system.** The stats strip says "Free preview" and links to the Plans
   page. No fiscal-period selector lives on the Dashboard: each application sets its own period.
 - `_DATA_HANDLING` in `apps/dashboard.py` states what is stored where (session uploads, in-memory Excel outputs, and the few
   files written to the server's disk). Update it if an app starts storing something new.

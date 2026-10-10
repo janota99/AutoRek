@@ -38,8 +38,8 @@
 
 .pp-brand {
     margin: 0 0 0.5rem;
-    color: #4b81b8;
-    font-size: 0.95rem;
+    color: #2f6496;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -57,8 +57,8 @@
 
 .pp-hero p {
     margin: 0;
-    color: #475569;
-    font-size: 1.05rem;
+    color: #334155;
+    font-size: 1.15rem;
 }
 
 .pp-stats {
@@ -135,43 +135,6 @@
 .pp-notice-close:hover { background: #d6e3ef; color: var(--navy); }
 .pp-notice[hidden] { display: none; }
 
-/* Layout: a persistent left rail beside the workspace; the rail stays in view while the page scrolls. */
-.pp-shell {
-    display: grid;
-    grid-template-columns: 12.5rem minmax(0, 1fr);
-    gap: 2rem;
-    align-items: start;
-}
-
-.pp-rail {
-    position: sticky;
-    top: 4.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    padding: 0.5rem;
-    border: 1px solid var(--line);
-    border-radius: 0.7rem;
-    background: #ffffff;
-}
-
-.pp-rail a,
-.pp-rail-off {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.55rem 0.8rem;
-    border-radius: 0.45rem;
-    color: var(--navy);
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.pp-rail a:hover { background: var(--tile); }
-.pp-rail-off { color: #8a99ab; cursor: default; }
-.pp-rail-off em { font-size: 0.72rem; font-style: normal; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-
 .pp-panel {
     padding: 1rem 1.25rem;
     border: 1px solid var(--line);
@@ -198,7 +161,9 @@
 .pp-steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 700; line-height: 1.8rem; text-align: center; }
 .pp-steps strong { color: var(--navy); }
 
-.pp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.pp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin-top: auto; }
+.pp-actions > .pp-action,
+.pp-actions > .pp-ghost { box-sizing: border-box; display: inline-flex; align-items: center; min-height: 2.75rem; }
 .pp-ghost { padding: 0.55rem 1rem; border: 1px solid var(--blue); border-radius: 0.5rem; color: var(--blue-dark); font-size: 1rem; font-weight: 600; text-decoration: none; }
 .pp-ghost:hover { background: var(--tile); }
 .pp-link { padding: 0.3rem 0.2rem; border: 0; background: transparent; color: var(--blue-dark); font: 600 0.95rem Inter, "Segoe UI", system-ui, sans-serif; text-decoration: underline; cursor: pointer; }
@@ -216,12 +181,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
     gap: 1rem;
-    align-items: start;
+    align-items: stretch;  /* cards in a row share one height; actions sit on the same line */
 }
 
 @media (max-width: 1000px) {
-    .pp-shell { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
-    .pp-rail { position: static; flex-direction: row; flex-wrap: wrap; }
     .pp-steps { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -338,22 +301,21 @@
     border-radius: 0.25rem;
     background: #ffedd5;
     color: #b45309;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
 .pp-summary {
     flex: 1;
-    margin: 0 0 0.6rem;
+    margin: 0 0 1rem;
     color: #2f3e51;
-    font-size: 1.02rem;
+    font-size: 1.05rem;
     line-height: 1.5;
 }
 
 .pp-action {
-    align-self: flex-start;
     text-decoration: none;
     padding: 0.6rem 1.25rem;
     border-radius: 0.5rem;

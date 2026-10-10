@@ -307,8 +307,8 @@ def _faq_and_story() -> str:
         '<section class="pp-l-section pp-l-split" id="pp-l-faq" aria-labelledby="pp-l-faq-h"><div>'
         '<p class="pp-l-eyebrow">Questions</p><h2 id="pp-l-faq-h">Before you buy</h2>'
         f'{faqs}</div><aside class="pp-l-story"><p class="pp-l-eyebrow">Where it came from</p><h2>Built by the accounting work itself</h2>'
-        f'{story}<p class="pp-l-note">The Invoice Lifecycle Hub below is a prototype: its Outlook mail and sign-in are simulated.</p>'
-        '<a class="pp-l-btn pp-l-btn-ghost" href="/invoice-hub" target="_self" data-route>Preview the Invoice Workflow Hub (prototype)</a></aside></section>'
+        f'{story}<p class="pp-l-note">The Invoice Lifecycle Hub is an early preview: Outlook mail is simulated for now.</p>'
+        '<a class="pp-l-btn pp-l-btn-ghost" href="/invoice-hub" target="_self" data-route>Preview the Invoice Lifecycle Hub</a></aside></section>'
     )
 
 
@@ -333,8 +333,8 @@ def _footer() -> str:
         '<li><button type="button" data-scroll="pp-l-pricing">Plans and pricing</button></li>'
         '<li><a href="/workspace" target="_self" data-route>Workspace</a></li>'
         '<li><a href="/feedback" target="_self" data-route>Reviews &amp; Feedback</a></li></ul></nav>'
-        '<div class="pp-l-foot-note"><h4>Good to know</h4><p>Sign-in and checkout are simulated; nothing is charged and '
-        'prices are placeholders. The Invoice Lifecycle Hub is a prototype.</p></div></footer>'
+        '<div class="pp-l-foot-note"><h4>Beta preview</h4><p>No payment is taken during the beta, and sign-in is a '
+        'preview that personalizes only. The Invoice Lifecycle Hub is an early preview.</p></div></footer>'
     )
 
 
@@ -535,8 +535,8 @@ def _step_account() -> None:
 
 
 def _step_checkout(tier, annual: bool) -> None:
-    """Step 4: the clearly labeled simulated checkout."""
-    st.html('<p class="pp-l-sim">SIMULATED CHECKOUT &middot; Nothing is charged</p>')
+    """Step 4: the preview checkout; no processor is connected and nothing is charged."""
+    st.html('<p class="pp-l-sim">PREVIEW CHECKOUT &middot; No payment is taken</p>')
     st.html(sales_page.order_summary(tier, annual))
     if sales_page.payment_section(tier, annual, key="pp-l-pay", quiet=True, account=st.session_state.get(ACCOUNT)):
         st.session_state[STEP] = 5
@@ -617,7 +617,7 @@ def _scroll_on_step_change(step: int) -> None:
 def _purchase() -> None:
     st.html('<div class="pp-land"><section class="pp-l-section pp-l-sec-head" id="pp-l-pricing"><p class="pp-l-eyebrow">Choose a plan</p>'
             '<h2>Plans and pricing</h2><p class="pp-l-lede">Explicit prices, billed monthly or once a year (two months free). '
-            'The checkout that follows is a simulation: nothing is charged. Prices are placeholders.</p></section></div>')
+            'Beta preview: no payment is taken, and prices may change before launch.</p></section></div>')
     step = st.session_state.get(STEP, 1)
     tier = _tier(st.session_state.get(PLAN))
     if step > 1 and tier is None:

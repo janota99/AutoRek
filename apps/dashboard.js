@@ -129,16 +129,6 @@
     });
   });
 
-  // Sidebar: Overview and Applications scroll to their section.
-  root.querySelectorAll(".pp-rail [data-scroll]").forEach(function (a) {
-    a.addEventListener("click", function (ev) {
-      var target = document.getElementById(a.dataset.scroll);
-      if (!target) return;
-      ev.preventDefault();
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  });
-
   // Clicking the animated logo restarts its loop from the first frame.
   var logo = root.querySelector(".pp-logo");
   if (logo) {
