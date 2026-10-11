@@ -12,7 +12,7 @@
   'use strict';
 
   var STORAGE_KEY = 'invoiceTracker.reviews.v1';
-  var LIMITS = { name: [2, 80], department: [0, 80], feedback: [10, 1000] };
+  var LIMITS = { name: [2, 80], role: [0, 80], feedback: [10, 1000] };
 
   var form = document.getElementById('feedbackForm');
   if (!form) return;
@@ -26,7 +26,7 @@
 
   var fields = {
     name: form.elements.customerName,
-    department: form.elements.department,
+    role: form.elements.role,
     rating: form.elements.rating,
     recommendation: form.querySelector('input[name="recommendation"]'),
     feedback: form.elements.feedback
@@ -63,7 +63,7 @@
     var picked = form.querySelector('input[name="recommendation"]:checked');
     return {
       name: fields.name.value.trim(),
-      department: fields.department.value.trim(),
+      role: fields.role.value.trim(),
       rating: Number(fields.rating.value),
       recommend: picked ? picked.value : '',
       text: fields.feedback.value.trim()
@@ -74,7 +74,7 @@
     var errors = {};
     if (v.name.length < LIMITS.name[0]) errors.name = 'Enter your name (at least 2 characters).';
     else if (v.name.length > LIMITS.name[1]) errors.name = 'Name must be 80 characters or fewer.';
-    if (v.department.length > LIMITS.department[1]) errors.department = 'Keep this to 80 characters or fewer.';
+    if (v.role.length > LIMITS.role[1]) errors.role = 'Keep this to 80 characters or fewer.';
     if (!(v.rating >= 1 && v.rating <= 5)) errors.rating = 'Select a rating.';
     if (!v.recommend) errors.recommendation = 'Choose Yes or No.';
     if (v.text.length < LIMITS.feedback[0]) errors.feedback = 'Add a little more detail (at least 10 characters).';
@@ -214,7 +214,7 @@
 
     var review = {
       name: values.name,
-      role: values.department,
+      role: values.role,
       rating: values.rating,
       recommend: values.recommend,
       text: values.text,

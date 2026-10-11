@@ -77,7 +77,7 @@
       try { person = readSession(SESSION_KEY) && JSON.parse(readSession(PROFILE_KEY) || 'null'); } catch (e) { /* ignore */ }
       if (!person) return;
       var name = document.getElementById('customerName');
-      var role = document.getElementById('department');
+      var role = document.getElementById('role');
       if (name && !name.value) name.value = person.name || '';
       if (role && !role.value) role.value = person.eyebrow || '';
     });

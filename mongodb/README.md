@@ -33,7 +33,7 @@ Check the samples without a server: `py mongodb/check_samples.py`, or `py -m pyt
 |---|---|---|
 | `_id` | objectId | not used yet; the server generates it |
 | `name` | string, 2-80 chars | `values.name`, checked against `LIMITS.name` |
-| `role` | string or **null** | `values.department`. The field is optional: blank in the form is `null` here |
+| `role` | string or **null** | `values.role`. The field is optional: blank in the form is `null` here |
 | `rating` | number, whole, 1-5 | `Number(fields.rating.value)`, checked `>= 1 && <= 5` |
 | `recommend` | **bool** | the form stores `'yes'` / `'no'`; the database stores `true` / `false` |
 | `text` | string, 10-1000 chars | `values.text`, checked against `LIMITS.feedback` |
