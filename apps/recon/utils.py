@@ -83,6 +83,11 @@ def clear_prepared_workbooks() -> None:
         st.session_state.pop(key, None)
 
 
+def primary_workbook_prepared() -> bool:
+    """Whether the accounting workpaper for the current result has been prepared (display wording only)."""
+    return PREPARED_WORKBOOK_KEYS[0] in st.session_state
+
+
 def clear_results_if_signature_changed(signature: tuple[Any, ...]) -> None:
     if st.session_state.get("input_signature") != signature:
         st.session_state.input_signature = signature

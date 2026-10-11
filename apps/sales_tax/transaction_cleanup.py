@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from shared.messages import friendly_error
+from shared import workflow
 from shared.sample_data import sample_downloads, sample_uploader
 
 from . import ui
@@ -29,8 +30,10 @@ from .cleanup import (
     detect_mapping_conflicts,
     detect_trial_balance_conflicts,
     get_controlled_options,
+    input_digests,
     MAIN_SHEET_NAME,
     process_transactions,
+    run_status,
     validate_inputs,
     validate_new_vendor_classifications,
     VENDOR_COL_IDX,
@@ -125,9 +128,36 @@ _CLEANUP_STEPS = [
 ]
 
 
-def _draw_steps(slot, ready: bool, has_result: bool, control_ok: bool) -> None:
-    current = 0 if not ready else 1 if not has_result else 3 if control_ok else 2
-    slot.html(ui.stepper_html(_CLEANUP_STEPS, current))
+_SUMMARY_LABELS = {
+    "rows_kept": "Rows kept", "letter_rows_deleted": "Removed for a letter-prefixed code",
+    "duplicate_rows_deleted": "Removed as duplicates", "excluded_rows_deleted": "Removed for an excluded vendor",
+    "new_vendor_rows": "Rows for new vendors", "original_amount_total": "Original total",
+    "retained_amount_total": "Retained total", "removed_amount_total": "Removed total",
+    "control_difference": "Control difference",
+}
+_MONEY_KEYS = ("original_amount_total", "retained_amount_total", "removed_amount_total", "control_difference")
+
+
+def _summary(stats: dict, rows_kept: int) -> dict:
+    """The figures worth comparing between two runs, copied out of the run's own stats."""
+    return {"rows_kept": rows_kept, **{k: stats[k] for k in _SUMMARY_LABELS if k in stats}}
+
+
+def _draw_status(slot, missing: list, has_result: bool, inputs_current: bool, stats, changed: list) -> None:
+    """The step strip, what is blocking the next step, and what changed since the previous run."""
+    state = run_status(
+        missing, has_result, inputs_current,
+        stats["control_difference"] if stats else 0.0, changed, stats["new_vendor_rows"] if stats else 0)
+    money = {k: (lambda v: f"${v:,.2f}") for k in _MONEY_KEYS}
+    lines = []
+    if has_result and inputs_current:
+        lines = workflow.changes_since(
+            st.session_state.get("tc_prev_summary") or {}, st.session_state.get("tc_summary") or {},
+            _SUMMARY_LABELS, money)
+    slot.html(
+        ui.stepper_html(_CLEANUP_STEPS, state["step"])
+        + workflow.status_html(state["blockers"], state["ready"], tone=state["tone"], next_step=state["next_step"])
+        + workflow.changes_html(lines, "Since the previous run"))
 
 
 def render_transaction_cleanup():
@@ -300,25 +330,29 @@ def render_transaction_cleanup():
     )
 
     ready = bool(source_file and mapping_file and cached_tb_status.valid)
+    missing = []
+    if not source_file:
+        missing.append("Source Transactions")
+    if not mapping_file:
+        missing.append("Vendor Mapping")
+    if not cached_tb_status.valid:
+        missing.append("Trial Balance (upload once in the sidebar)")
     with left:
         run_clicked = st.button(
             "Run Cleanup", type="primary", disabled=not ready,
             icon=":material/play_arrow:", key="st-run-cleanup", width="stretch",
         )
         if not ready:
-            missing = []
-            if not source_file:
-                missing.append("Source Transactions")
-            if not mapping_file:
-                missing.append("Vendor Mapping")
-            if not cached_tb_status.valid:
-                missing.append("Trial Balance (upload once in the sidebar)")
             st.caption("Still needed: " + ", ".join(missing))
 
-    prior = st.session_state.get("tc_result") is not None and st.session_state.get("tc_fingerprint") == compute_input_fingerprint(
-        source_file.getvalue() if source_file else None, mapping_file.getvalue() if mapping_file else None,
-        cached_tb_status.fingerprint, excluded_ids, pad_side)
-    _draw_steps(steps_slot, ready, prior, prior and st.session_state["tc_stats"]["control_difference"] == 0)
+    source_bytes = source_file.getvalue() if source_file else None
+    mapping_bytes = mapping_file.getvalue() if mapping_file else None
+    has_result = st.session_state.get("tc_result") is not None
+    prior = has_result and st.session_state.get("tc_fingerprint") == compute_input_fingerprint(
+        source_bytes, mapping_bytes, cached_tb_status.fingerprint, excluded_ids, pad_side)
+    digests = input_digests(source_bytes, mapping_bytes, cached_tb_status.fingerprint, excluded_ids, pad_side)
+    changed = [] if prior or not has_result else workflow.changed_inputs(st.session_state.get("tc_digests", {}), digests)
+    _draw_status(steps_slot, missing, has_result, prior, st.session_state.get("tc_stats") if has_result else None, changed)
 
     with right:
         st.markdown("<div class='st-card-title'>Output &amp; Preview</div>", unsafe_allow_html=True)
@@ -346,6 +380,10 @@ def render_transaction_cleanup():
                     result_df, new_vendor_flags, stats, removed_df = process_transactions(
                         df_source, df_mapping, cached_tb_df, excluded_ids, pad_side
                     )
+                    # What the page showed before this run, kept so the new one can say what moved.
+                    st.session_state["tc_prev_summary"] = st.session_state.get("tc_summary")
+                    st.session_state["tc_summary"] = _summary(stats, len(result_df))
+                    st.session_state["tc_digests"] = digests
                     st.session_state["tc_result"] = result_df
                     st.session_state["tc_flags"] = new_vendor_flags
                     st.session_state["tc_stats"] = stats
@@ -359,7 +397,7 @@ def render_transaction_cleanup():
                     # different result set and shouldn't still be offered here.
                     st.session_state.pop("tc_updated_mapping_buf", None)
                     st.session_state.pop("tc_updated_mapping_count", None)
-                    _draw_steps(steps_slot, ready, True, stats["control_difference"] == 0)
+                    _draw_status(steps_slot, [], True, True, stats, [])
 
                     # Fires once, right when the run that found them completes - not
                     # on every later rerun of the script (e.g. from touching an
@@ -397,61 +435,16 @@ def render_transaction_cleanup():
             stats = st.session_state["tc_stats"]
             removed_df = st.session_state["tc_removed"]
 
-            st.subheader("Summary")
-
             control_ok = stats["control_difference"] == 0
-            st.markdown(ui.kpi_row([
-                ("Removed - Prefixes", f"{stats['letter_rows_deleted']:,}", "remove"),
-                ("Removed - Duplicates", f"{stats['duplicate_rows_deleted']:,}", "remove"),
-                ("Removed - Excluded", f"{stats['excluded_rows_deleted']:,}", "remove"),
-                ("Rows Kept", f"{len(result_df):,}", "keep"),
-            ]) + ui.kpi_row([
-                ("Vendors Matched", f"{stats['matched_vendor_rows']:,}", "good"),
-                ("GL Accounts Matched", f"{stats['matched_gl_rows']:,}", "good"),
-                ("New Vendors", f"{stats['new_vendor_rows']:,}", "warn"),
-            ]), unsafe_allow_html=True)
-
-            # Dollar control totals: proves Original = Retained + Removed, not just row counts. A non-zero
-            # control difference would mean the reconciliation itself is broken (a real bug), so it is
-            # called out in red rather than blended in with the other tiles.
-            st.markdown(ui.kpi_row([
-                ("Original Total", f"${stats['original_amount_total']:,.2f}", "keep"),
-                ("Retained Total", f"${stats['retained_amount_total']:,.2f}", "keep"),
-                ("Removed Total", f"${stats['removed_amount_total']:,.2f}", "keep"),
-                ("Control Difference", f"${stats['control_difference']:,.2f}", "good" if control_ok else "bad"),
-            ]), unsafe_allow_html=True)
-            if not control_ok:
-                st.error(
-                    "**The dollar control check failed.** Original Total does not equal Retained + Removed, "
-                    "which points to a problem in the cleanup itself. Do not use this run's output, and the "
-                    "download stays disabled."
-                )
-            elif stats['new_vendor_rows']:
-                st.info(
-                    f"Control check passed ($0.00 difference). {stats['new_vendor_rows']:,} transaction row(s) "
-                    "belong to vendors not in your mapping: classify them below, then build the updated mapping."
-                )
-            else:
-                st.success("Control check passed ($0.00 difference) and every vendor was found in your mapping. The workbook is ready to download.")
-
-            # Vendor/Amount column names, needed both for classification below
-            # and for the preview table's column_config further down.
             amount_col_name = result_df.columns[AMOUNT_COL_IDX]
             vendor_col_name = result_df.columns[VENDOR_COL_IDX]
 
+            # One row per DISTINCT new vendor (grouped on the same normalized key used for matching, not
+            # exact text), not one row per transaction - several transactions can share the same unmapped
+            # vendor, and this also collapses near-duplicates that differ only by casing/spacing into a
+            # single row to classify.
+            new_vendor_names = pd.Series([], dtype=object)
             if stats["new_vendor_rows"] > 0:
-                st.subheader("Classify New Vendors")
-                st.caption(
-                    f"{stats['new_vendor_rows']} transaction row(s) belong to vendors not "
-                    "found in the mapping file. Assign Taxability / Grouping below, then "
-                    "download an updated mapping file to use next run."
-                )
-
-                # One row per DISTINCT new vendor (grouped on the same normalized
-                # key used for matching, not exact text), not one row per
-                # transaction - several transactions can share the same unmapped
-                # vendor, and this also collapses near-duplicates that differ
-                # only by casing/spacing into a single row to classify.
                 new_vendor_subset = result_df.loc[new_vendor_flags, [vendor_col_name]].copy()
                 new_vendor_subset["_key"] = clean_key_series(new_vendor_subset[vendor_col_name])
                 new_vendor_names = (
@@ -459,6 +452,49 @@ def render_transaction_cleanup():
                     .sort_values()
                     .reset_index(drop=True)
                 )
+
+            # The headline: one figure and one sentence. The full counts are one click away.
+            if not control_ok:
+                st.html(workflow.headline_html(
+                    f"${stats['control_difference']:,.2f}", "control difference",
+                    "Original Total does not equal Retained + Removed, which points to a problem in the cleanup "
+                    "itself. Do not use this run's output; the download stays disabled.", "bad"))
+            elif len(new_vendor_names):
+                st.html(workflow.headline_html(
+                    f"{len(new_vendor_names):,}", "vendor(s) need a decision",
+                    f"They are not in your mapping ({stats['new_vendor_rows']:,} transaction row(s)). Classify them "
+                    f"below. {len(result_df):,} rows kept; the dollar control check passed ($0.00 difference).",
+                    "warn"))
+            else:
+                st.html(workflow.headline_html(
+                    f"{len(result_df):,}", "rows kept",
+                    "Every vendor was found in your mapping and the dollar control check passed ($0.00 "
+                    "difference). The workbook is ready to download.", "good"))
+
+            # Dollar control totals prove Original = Retained + Removed, not just row counts. A non-zero
+            # control difference would mean the reconciliation itself is broken (a real bug), so the
+            # expander opens by itself in that case.
+            with st.expander("Row counts and dollar control", expanded=not control_ok):
+                st.markdown(ui.kpi_row([
+                    ("Removed - Prefixes", f"{stats['letter_rows_deleted']:,}", "remove"),
+                    ("Removed - Duplicates", f"{stats['duplicate_rows_deleted']:,}", "remove"),
+                    ("Removed - Excluded", f"{stats['excluded_rows_deleted']:,}", "remove"),
+                    ("Rows Kept", f"{len(result_df):,}", "keep"),
+                ]) + ui.kpi_row([
+                    ("Vendors Matched", f"{stats['matched_vendor_rows']:,}", "good"),
+                    ("GL Accounts Matched", f"{stats['matched_gl_rows']:,}", "good"),
+                    ("New Vendors", f"{stats['new_vendor_rows']:,}", "warn"),
+                ]) + ui.kpi_row([
+                    ("Original Total", f"${stats['original_amount_total']:,.2f}", "keep"),
+                    ("Retained Total", f"${stats['retained_amount_total']:,.2f}", "keep"),
+                    ("Removed Total", f"${stats['removed_amount_total']:,.2f}", "keep"),
+                    ("Control Difference", f"${stats['control_difference']:,.2f}", "good" if control_ok else "bad"),
+                ]), unsafe_allow_html=True)
+
+            if stats["new_vendor_rows"] > 0:
+                st.subheader(f"Classify {len(new_vendor_names):,} new vendor(s)")
+                st.caption("Assign Taxability and Grouping, then download an updated mapping file to use next run.")
+
                 new_vendor_df = pd.DataFrame({
                     "Vendor": new_vendor_names,
                     "Taxability": "",
@@ -535,49 +571,49 @@ def render_transaction_cleanup():
                         key="dl_updated_mapping",
                     )
 
-            st.subheader("Preview")
-            st.caption(
-                "Showing the first 10 rows of each output sheet - the downloaded "
-                "workbook contains the full data."
-            )
+            with st.expander("Preview output sheets", expanded=False):
+                st.caption(
+                    "Showing the first 10 rows of each output sheet - the downloaded "
+                    "workbook contains the full data."
+                )
 
-            # Same New Vendor indicator used before, but only on the All
-            # Transactions tab - it's a UI-only aid (never written to the
-            # workbook), so the other tabs, which are plain slices of the
-            # actual output sheets, don't carry it.
-            display_df = result_df.copy()
-            display_df.insert(0, "New Vendor", new_vendor_flags.map({True: "New", False: ""}))
+                # Same New Vendor indicator used before, but only on the All
+                # Transactions tab - it's a UI-only aid (never written to the
+                # workbook), so the other tabs, which are plain slices of the
+                # actual output sheets, don't carry it.
+                display_df = result_df.copy()
+                display_df.insert(0, "New Vendor", new_vendor_flags.map({True: "New", False: ""}))
 
-            base_col_config = {
-                amount_col_name: st.column_config.NumberColumn("Amount", format="$%.2f"),
-                vendor_col_name: st.column_config.TextColumn(width="medium"),
-            }
-            all_transactions_col_config = {
-                **base_col_config,
-                "New Vendor": st.column_config.TextColumn(
-                    "New Vendor", width="small",
-                    help="Vendor not found in the mapping file",
-                ),
-            }
+                base_col_config = {
+                    amount_col_name: st.column_config.NumberColumn("Amount", format="$%.2f"),
+                    vendor_col_name: st.column_config.TextColumn(width="medium"),
+                }
+                all_transactions_col_config = {
+                    **base_col_config,
+                    "New Vendor": st.column_config.TextColumn(
+                        "New Vendor", width="small",
+                        help="Vendor not found in the mapping file",
+                    ),
+                }
 
-            # Same grouping the workbook itself uses, so each tab here lines up
-            # one-to-one with a sheet in the download.
-            preview_sheets = {MAIN_SHEET_NAME: (display_df, all_transactions_col_config)}
-            for label, sub_df in group_output_sheets(result_df, new_vendor_flags).items():
-                preview_sheets[label] = (sub_df, base_col_config)
-            if removed_df is not None and len(removed_df) > 0:
-                preview_sheets["Removed Transactions"] = (removed_df, base_col_config)
+                # Same grouping the workbook itself uses, so each tab here lines up
+                # one-to-one with a sheet in the download.
+                preview_sheets = {MAIN_SHEET_NAME: (display_df, all_transactions_col_config)}
+                for label, sub_df in group_output_sheets(result_df, new_vendor_flags).items():
+                    preview_sheets[label] = (sub_df, base_col_config)
+                if removed_df is not None and len(removed_df) > 0:
+                    preview_sheets["Removed Transactions"] = (removed_df, base_col_config)
 
-            tabs = st.tabs(list(preview_sheets.keys()))
-            for tab, (label, (sheet_df, sheet_col_config)) in zip(tabs, preview_sheets.items()):
-                with tab:
-                    st.caption(f"{min(10, len(sheet_df)):,} of {len(sheet_df):,} row(s) shown")
-                    st.dataframe(
-                        sheet_df.head(10),
-                        width="stretch",
-                        column_config=sheet_col_config,
-                        hide_index=True,
-                    )
+                tabs = st.tabs(list(preview_sheets.keys()))
+                for tab, (label, (sheet_df, sheet_col_config)) in zip(tabs, preview_sheets.items()):
+                    with tab:
+                        st.caption(f"{min(10, len(sheet_df)):,} of {len(sheet_df):,} row(s) shown")
+                        st.dataframe(
+                            sheet_df.head(10),
+                            width="stretch",
+                            column_config=sheet_col_config,
+                            hide_index=True,
+                        )
 
             buf, sheet_count = build_workbook(result_df, new_vendor_flags, removed_df)
             st.download_button(

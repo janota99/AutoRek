@@ -269,10 +269,20 @@ def _impact() -> str:
              ("travel_explore", "Every figure traces to a source row", "Open any number and see where it came from."))
     cards = "".join(f'<div class="pp-l-rule" data-reveal style="--d:{n * 90}ms">{_icon(ico)}<div><h3>{_E(t)}</h3><p>{_E(d)}</p></div></div>'
                     for n, (ico, t, d) in enumerate(rules))
+    # One figure and one sentence up front; the three rules and all six figures are one click away.
+    headline = (
+        f'<div class="pp-l-headline"><span class="pp-l-headline-v">{len(r["matched"])}</span>'
+        '<div><span class="pp-l-headline-l">sales pairs matched to the cent in the sample data</span>'
+        '<p class="pp-l-headline-s">Amounts agree to the cent, nothing is guessed, and every figure traces to a '
+        'source row.</p></div></div>'
+    )
     return (
         '<section class="pp-l-band pp-l-dark pp-l-impact" id="pp-l-proof" aria-labelledby="pp-l-proof-h">'
         '<p class="pp-l-eyebrow">Controls you can check</p><h2 id="pp-l-proof-h">Built so an accountant can sign off on it</h2>'
+        f'{headline}'
+        '<details class="pp-l-more"><summary>See the three rules and all six figures</summary>'
         f'<div class="pp-l-impact-grid"><div class="pp-l-rules">{cards}</div><div class="pp-l-stats">{tiles}</div></div>'
+        '</details>'
         '<p class="pp-l-note">These figures come from the sample data used throughout this page, not from customers.</p></section>'
     )
 
@@ -281,10 +291,20 @@ def _formats() -> str:
     tiles = "".join(
         f'<li data-reveal style="--d:{n * 50}ms" data-kind="{k}"><span class="pp-l-box">{_icon("check" if k == "now" else "schedule" if k == "planned" else "science")}</span>'
         f'<span>{_E(label)}<small class="pp-l-tag" data-kind="{k}">{_TAG_TEXT[k]}</small></span></li>' for n, (label, k) in enumerate(_FORMATS))
+    counts = {kind: sum(1 for _l, k in _FORMATS if k == kind) for kind in ("now", "planned", "prototype")}
+    headline = (
+        f'<div class="pp-l-headline"><span class="pp-l-headline-v">{counts["now"]}</span>'
+        '<div><span class="pp-l-headline-l">file types and sources work today</span>'
+        f'<p class="pp-l-headline-s">Start from the exports you already have. {counts["planned"]} more '
+        f'{"is" if counts["planned"] == 1 else "are"} planned and {counts["prototype"]} '
+        f'{"is an early preview" if counts["prototype"] == 1 else "are early previews"}; each is labeled below.</p></div></div>'
+    )
     return (
         '<section class="pp-l-band pp-l-teal pp-l-dark pp-l-formats" aria-labelledby="pp-l-fmt-h">'
         '<p class="pp-l-eyebrow">What you can bring</p><h2 id="pp-l-fmt-h">Reconcile, cost, and review the data you already have</h2>'
-        f'<ul class="pp-l-fmt-grid">{tiles}</ul></section>'
+        f'{headline}'
+        '<details class="pp-l-more"><summary>See every supported file and source</summary>'
+        f'<ul class="pp-l-fmt-grid">{tiles}</ul></details></section>'
     )
 
 

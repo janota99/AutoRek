@@ -9,7 +9,7 @@ title: **Transaction Cleanup**, **Vendor Reconciliation**, and **Sales Tax Calcu
 |---|---|
 | `app.py` | The page: loads its stylesheet (`shared/styles/pages/sales-tax.css`) and switches between the two tools. |
 | `transaction_cleanup.py` | The Transaction Cleanup screen: uploads, sidebar options, trial balance cache controls, Run Cleanup, results, new-vendor classification. |
-| `cleanup.py` | Transaction Cleanup logic, no Streamlit: `validate_inputs`, GL account building, conflict detectors, `process_transactions`, new-vendor checks, the input fingerprint. Also `clean_key_series`, which Vendor Reconciliation shares. |
+| `cleanup.py` | Transaction Cleanup logic, no Streamlit: `validate_inputs`, GL account building, conflict detectors, `process_transactions`, new-vendor checks, the input fingerprint. Also `input_digests` (which input changed) and `run_status` (what blocks the next step), both display wording only. Also `clean_key_series`, which Vendor Reconciliation shares. |
 | `excel_output.py` | Sheet naming and grouping, the formatted cleanup workbook, the updated mapping workbook. |
 | `ui.py` | Markup only: page title, progress stepper, numbered upload-card heading, KPI tiles (styles: `shared/styles/pages/sales-tax.css`, `st-*` classes). Reads no file and changes no number. |
 | `vendor_reconciliation.py` | Compares two vendor listings by Vendor ID (Added/Removed/Renamed/Unchanged) and builds an updated 6-column mapping file. |

@@ -527,3 +527,51 @@ def compute_input_fingerprint(source_bytes, mapping_bytes, cached_tb_fingerprint
     hasher.update(b"|")
     hasher.update(pad_side.encode())
     return hasher.hexdigest()
+
+
+# =====================================================================
+# WORKFLOW STATE - what is blocking the next step, and what changed.
+# Display-side only: nothing here reads a row or changes a number.
+# =====================================================================
+
+def input_digests(source_bytes, mapping_bytes, cached_tb_fingerprint, excluded_ids, pad_side) -> dict:
+    """A labeled, human-readable view of everything ``compute_input_fingerprint`` hashes, so the page can say
+    *which* input changed since the last run instead of only that one did."""
+    def short(data) -> str:
+        return hashlib.sha256(data).hexdigest()[:12] if data else ""
+
+    return {
+        "Source Transactions file": short(source_bytes),
+        "Vendor Mapping file": short(mapping_bytes),
+        "Trial Balance cache": cached_tb_fingerprint or "",
+        "Excluded vendor IDs": ",".join(sorted(excluded_ids)),
+        "GL account padding": pad_side,
+    }
+
+
+def run_status(missing: list, has_result: bool, inputs_current: bool, control_difference: float,
+               changed: list, new_vendor_rows: int) -> dict:
+    """The "what's blocking me" state for the cleanup page.
+
+    ``missing`` names the inputs not yet supplied. ``has_result`` says a run exists in this session;
+    ``inputs_current`` says it still matches every input (its fingerprint). Returns ``step`` (0-3, the
+    index into the page's step strip), ``blockers``, ``ready``, ``tone`` and ``next_step``.
+    """
+    if missing:
+        return {"step": 0, "blockers": [f"Add {item}." for item in missing], "tone": "blocked",
+                "ready": "", "next_step": ""}
+    if not has_result:
+        return {"step": 1, "blockers": [], "tone": "blocked", "ready": "Ready to run.",
+                "next_step": "Click Run Cleanup to apply the rules."}
+    if not inputs_current:
+        what = f" ({', '.join(changed)})" if changed else ""
+        return {"step": 1, "tone": "blocked", "ready": "", "next_step": "",
+                "blockers": [f"Inputs changed since the last run{what}. Run Cleanup again before downloading; "
+                             "the earlier results are hidden so they cannot be mistaken for current ones."]}
+    if round(control_difference, 2) != 0:
+        return {"step": 2, "tone": "fail", "ready": "", "next_step": "",
+                "blockers": [f"The dollar control check is ${control_difference:,.2f}, not $0.00. The download "
+                             "stays disabled and this run's output must not be used."]}
+    nxt = (f"{new_vendor_rows:,} transaction row(s) belong to vendors not in your mapping. Classify them "
+           "below to build an updated mapping." if new_vendor_rows else "Download the cleaned workbook.")
+    return {"step": 3, "blockers": [], "tone": "blocked", "ready": "Ready to download.", "next_step": nxt}

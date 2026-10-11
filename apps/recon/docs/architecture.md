@@ -13,6 +13,7 @@ An optional legacy-format export, `Sales_Reconciliation_Legacy_<run>.xlsx`, is a
 |---|---|
 | `app.py` | Page flow only: uploads, worksheet/header-row selection, mapping, validation, the Run button. |
 | `uploads.py` | File hashing, `st.cache_data` wrappers around ingestion, the per-file dataset summary. |
+| `run_status.py` | Streamlit-free wording for the status panel under the progress strip: upload blockers, a finished run's blockers (failed control, review hold), the figures compared between runs, and why a result was cleared. |
 | `ingestion.py` | Reading CSV/XLSX, header detection, subtotal-row filtering, column-mapping panels, source validation. |
 | `duplicates.py` | Duplicate detection, classification, and disposition. The lowest layer: imports nothing local. |
 | `fuzzy_po_matching.py` | The bounded fuzzy-PO and controlled-typo passes that run after every exact pass. |

@@ -19,6 +19,7 @@ from typing import Any, Optional
 import pandas as pd
 import streamlit as st
 
+from shared import workflow
 from shared.status import status_badge, status_styler
 from shared.styles import inject_page
 
@@ -613,9 +614,13 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
                 "No review holds or posting blockers were raised.</div>",
                 unsafe_allow_html=True,
             )
-        render_row_accounting(metrics)
-        st.markdown("#### Required controls")
-        render_controls_table(result.controls)
+        with st.expander("How the rows add up", expanded=False):
+            render_row_accounting(metrics)
+        with st.expander(
+            f"Required controls ({len(result.controls) - failed_controls} of {len(result.controls)} pass)",
+            expanded=bool(failed_controls),
+        ):
+            render_controls_table(result.controls)
         if metrics.get("Historical Clearances", 0):
             render_notice_panel(
                 "Historical timing differences cleared",
@@ -647,6 +652,13 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
         render_limited_dataframe(display_primary_preview(result), height=520)
 
     with exceptions_tab:
+        holds_now = int(metrics.get("Final Disposition - Review Hold Rows", 0))
+        if unmatched_qb or holds_now:
+            st.html(workflow.headline_html(
+                f"{unmatched_qb:,}", "QuickBooks item(s) need a decision",
+                f"Proposed journal entry {format_currency(metrics['Proposed JE Amount'])}; "
+                f"{holds_now:,} row(s) on review hold are excluded from it until a person decides.",
+                "warn"))
         unresolved = result.qb_work.loc[result.unmatched_qb, list(result.qb_raw.columns)].copy()
         if not result.candidates.empty:
             candidate_map = result.candidates.set_index("QuickBooks Row ID").to_dict("index")

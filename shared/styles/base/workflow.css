@@ -1,0 +1,41 @@
+/* Workflow state shared by every tool (shared/workflow.py): step strip, "what's blocking me",
+   "what changed", and the one-number headline. Status colors come from the --pp-status-* tokens, so
+   they match the PASS / REVIEW / FAIL badges. Keep this file free of less-than signs. */
+
+.pp-wf-steps { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 .75rem; padding: 0 !important; list-style: none; }
+.pp-wf-step { display: flex; flex: 1 1 11rem; align-items: center; gap: .6rem; min-width: 0; padding: .55rem .8rem; border: 1px solid var(--pp-border); border-radius: .6rem; background: var(--pp-surface); }
+.pp-wf-node { display: grid; flex: none; place-items: center; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--pp-border-strong); color: #fff; font-size: .85rem; font-weight: 800; }
+.pp-wf-copy { display: grid; min-width: 0; }
+.pp-wf-title { color: var(--pp-navy); font-size: .98rem; font-weight: 700; line-height: 1.25; }
+.pp-wf-detail { color: var(--pp-text-secondary); font-size: .85rem; line-height: 1.3; }
+.pp-wf-step[data-state="active"] { border-color: var(--pp-accent); background: var(--pp-accent-soft); box-shadow: 0 0 0 1px var(--pp-accent); }
+.pp-wf-step[data-state="active"] .pp-wf-node { background: var(--pp-accent-strong); }
+.pp-wf-step[data-state="complete"] .pp-wf-node { background: var(--pp-status-pass-text); }
+.pp-wf-step[data-state="todo"] .pp-wf-title { color: var(--pp-text-secondary); }
+
+.pp-wf-status { display: flex; gap: .75rem; align-items: flex-start; margin: 0 0 .75rem; padding: .7rem 1rem; border: 1px solid var(--pp-status-review-border); border-radius: .6rem; background: var(--pp-status-review-bg); color: var(--pp-status-review-text); font-size: 1rem; line-height: 1.45; }
+.pp-wf-status strong { display: block; font-weight: 700; }
+.pp-wf-status ul { margin: .25rem 0 0; padding-left: 1.2rem; }
+.pp-wf-status li { margin: .1rem 0; }
+.pp-wf-icon { display: grid; flex: none; place-items: center; width: 1.5rem; height: 1.5rem; margin-top: .05rem; border-radius: 50%; background: var(--pp-status-review-text); color: var(--pp-status-review-bg); font-size: .9rem; font-weight: 800; }
+.pp-wf-next { display: block; margin-top: .1rem; font-weight: 500; }
+.pp-wf-status[data-tone="ready"] { border-color: var(--pp-status-pass-border); background: var(--pp-status-pass-bg); color: var(--pp-status-pass-text); }
+.pp-wf-status[data-tone="ready"] .pp-wf-icon { background: var(--pp-status-pass-text); color: var(--pp-status-pass-bg); }
+.pp-wf-status[data-tone="fail"] { border-color: var(--pp-status-fail-border); background: var(--pp-status-fail-bg); color: var(--pp-status-fail-text); }
+.pp-wf-status[data-tone="fail"] .pp-wf-icon { background: var(--pp-status-fail-text); color: var(--pp-status-fail-bg); }
+
+.pp-wf-changes { margin: 0 0 .75rem; padding: .5rem 1rem; border: 1px solid var(--pp-border); border-radius: .6rem; background: var(--pp-surface); color: var(--pp-text-secondary); font-size: .95rem; }
+.pp-wf-changes summary { color: var(--pp-navy); font-weight: 700; cursor: pointer; }
+.pp-wf-changes ul { margin: .35rem 0 0; padding-left: 1.2rem; }
+
+.pp-wf-headline { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; align-items: center; margin: .25rem 0 .75rem; padding: .9rem 1.1rem; border: 1px solid var(--pp-border); border-left-width: 5px; border-radius: .6rem; background: var(--pp-surface); }
+.pp-wf-value { color: var(--pp-navy); font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.pp-wf-label { display: block; color: var(--pp-navy); font-size: 1.05rem; font-weight: 700; }
+.pp-wf-sentence { margin: .15rem 0 0 !important; color: var(--pp-text-secondary); font-size: 1rem; line-height: 1.45; }
+.pp-wf-headline[data-tone="good"] { border-left-color: var(--pp-status-pass-text); }
+.pp-wf-headline[data-tone="warn"] { border-left-color: var(--pp-status-review-border); }
+.pp-wf-headline[data-tone="bad"] { border-left-color: var(--pp-status-fail-text); }
+
+@media (max-width: 720px) {
+    .pp-wf-step { flex-basis: 100%; }
+}

@@ -21,7 +21,7 @@ from apps.fifo_inventory.upload_templates import (
 )
 
 from apps.fifo_inventory.excel_export import (
-    export_master_excel,
+    export_master_excel, _compute_summary_control_status,
 )
 
 from apps.fifo_inventory import app_settings
@@ -29,7 +29,7 @@ from apps.fifo_inventory import app_settings
 from apps.fifo_inventory.fifo_layer_store import FIFOLayerStore, SNAPSHOT_DIR
 
 from apps.fifo_inventory.fifo_calculations import (
-    _uploaded_file_digest, _build_run_signature,
+    _uploaded_file_digest, _build_run_signature, _dataframe_digest,
     stage_batch_calculation, summarize_control_counts
 )
 
@@ -41,7 +41,9 @@ from apps.fifo_inventory.sidebar import render_sidebar, render_history
 from apps.fifo_inventory.insights import render_insights
 from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
-from shared.status import status_tile
+from apps.fifo_inventory.period_status import STEPS, period_status
+from shared import workflow
+from shared.status import status_styler, status_tile
 from shared.styles import inject_page
 
 # ==========================================
@@ -100,6 +102,29 @@ def _blank_master_grid():
     return pd.DataFrame(rows)
 
 
+_SUMMARY_LABELS = {
+    'PASS': "Products passing", 'REVIEW': "Products to review", 'FAIL': "Products failing",
+    'receipt_rows': "Receipt rows", 'beg_val': "Beginning value", 'purch_val': "Purchases value",
+    'usage_val': "Usage value", 'end_val': "Ending value",
+}
+_MONEY_KEYS = ('beg_val', 'purch_val', 'usage_val', 'end_val')
+
+
+def _preview_summary(all_results, counts, receipt_rows):
+    """The few figures worth comparing between two previews of the same period."""
+    totals = {key: sum(res['metrics'][key] for res in all_results) for key in _MONEY_KEYS}
+    return {**{k: counts[k] for k in ('PASS', 'REVIEW', 'FAIL')}, 'receipt_rows': receipt_rows, **totals}
+
+
+def _input_labels(fiscal_year, period, as_of, master_grid, receipts):
+    """Each input the preview depends on, named and digested, so a stale preview can say what changed."""
+    return {
+        'Fiscal year': str(fiscal_year), 'Period': f"{int(period):02d}", 'As-of date': as_of.isoformat(),
+        'Ending inventory grid': _dataframe_digest(master_grid)[:12],
+        'Receipts': _dataframe_digest(receipts)[:12],
+    }
+
+
 fiscal_year, current_period, period_end_date, selected_key = render_sidebar(layer_store)
 
 app_flash = st.session_state.pop('app_flash', None)
@@ -122,6 +147,9 @@ tab_processing, tab_analysis, tab_history = st.tabs([
 ])
 
 with tab_processing:
+    # Filled at the end of this tab, once the page knows what is loaded, validated, and previewed.
+    flow_slot = st.empty()
+
     with st.container(border=True):
         st.subheader(":material/upload_file: Data Uploads")
         st.caption("Uploads only create a preview. FIFO history changes when you close the period.")
@@ -412,7 +440,14 @@ with tab_processing:
                 all_results, current_period, fiscal_year=fiscal_year, run_issues=run_issues,
                 tolerances=app_settings.get_effective_tolerances(),
             )
+            summary_book = st.session_state.setdefault('fifo_preview_summaries', {})
+            previous_summary = summary_book.get(selected_key)
+            summary = _preview_summary(all_results, counts, len(global_receipts_data))
+            summary_book[selected_key] = summary
             st.session_state['staged_fifo_run'] = {
+                'input_labels': _input_labels(fiscal_year, current_period, period_end_date,
+                                              edited_master_grid, global_receipts_data),
+                'summary': summary, 'previous_summary': previous_summary,
                 'period_key': selected_key, 'fiscal_year': fiscal_year, 'period': current_period,
                 'as_of_date': period_end_date, 'run_signature': run_signature,
                 'all_results': all_results, 'staged_layers': staged_layers,
@@ -422,6 +457,7 @@ with tab_processing:
             }
 
         staged = st.session_state.get('staged_fifo_run')
+        preview_state = None
         if staged and staged.get('period_key') == selected_key:
             current_signature = _build_run_signature(
                 fiscal_year, current_period, period_end_date, edited_master_grid, global_receipts_data
@@ -440,19 +476,33 @@ with tab_processing:
             for col, label in zip(metric_cols, ("PASS", "REVIEW", "FAIL")):
                 col.markdown(status_tile(label, counts[label]), unsafe_allow_html=True)
 
+            needs_decision = counts['FAIL'] + counts['REVIEW']
             if counts['FAIL']:
-                st.error(f"{counts['FAIL']} product(s) FAIL their controls. Closing the period is blocked until they are fixed.")
+                st.html(workflow.headline_html(
+                    str(needs_decision), "product(s) need a decision",
+                    f"{counts['FAIL']} fail their controls, so closing is blocked until they are fixed; "
+                    f"{counts['REVIEW']} need review.", "bad"))
             elif counts['REVIEW']:
-                st.warning(f"{counts['REVIEW']} product(s) need review. Check them, then acknowledge them to close the period.")
+                st.html(workflow.headline_html(
+                    str(needs_decision), "product(s) need review",
+                    "Check them, then acknowledge them below to close the period.", "warn"))
             else:
-                st.success("All products PASS their controls. The period is ready to close.")
-            if stale_preview:
-                st.error("Inputs or settings changed after this preview was calculated. Recalculate before closing the period.")
+                st.html(workflow.headline_html(
+                    str(counts['PASS']), "products pass every control", "The period is ready to close.", "good"))
+
+            attention = []
+            for res in staged['all_results']:
+                verdict = _compute_summary_control_status(
+                    res, alias_found=res.get('alias_found', True), alias_ambiguous=res.get('alias_ambiguous', False))
+                if not verdict['overall_status'].startswith('PASS'):
+                    attention.append({'Alias': res['alias'], 'Product': res['prod_name'],
+                                      'Status': verdict['overall_status'], 'Why': verdict['exception_message']})
+            if attention:
+                with st.expander(f"Products needing a decision ({len(attention)})", expanded=True):
+                    st.dataframe(status_styler(pd.DataFrame(attention), ['Status']), width="stretch", hide_index=True)
             if staged['processing_errors']:
                 st.error(f"{len(staged['processing_errors'])} product(s) couldn't be calculated, so they are not in this preview. See the table below for the reason.")
                 st.dataframe(pd.DataFrame(staged['processing_errors']), width="stretch", hide_index=True)
-            if staged['input_errors']:
-                st.error("The preview excludes rejected receipt rows. Correct them before closing the period.")
 
             variance_rows = [{
                 'Alias': res['alias'], 'Product': res['prod_name'],
@@ -487,6 +537,21 @@ with tab_processing:
                 staged['processing_errors'] or counts['FAIL'] > 0 or not review_ack or
                 master_is_sample or receipts_is_sample
             )
+            preview_state = {
+                'stale': stale_preview,
+                'changed': workflow.changed_inputs(staged.get('input_labels', {}), _input_labels(
+                    fiscal_year, current_period, period_end_date, edited_master_grid, global_receipts_data))
+                if stale_preview else [],
+                'fail': counts['FAIL'], 'review': counts['REVIEW'], 'warnings': len(staged['input_warnings']),
+                'processing_errors': len(staged['processing_errors']), 'receipt_errors': len(staged['input_errors']),
+                'review_ack': review_ack, 'demo': bool(master_is_sample or receipts_is_sample),
+            }
+            if commit_blocked:
+                why = period_status(
+                    period_key=selected_key, has_grid_data=True, input_errors=fatal_preview_errors,
+                    sequence_error=sequence_error if not already_closed else None, already_closed=already_closed,
+                    preview=preview_state)['blockers']
+                st.caption("Closing is blocked: " + " ".join(why))
             commit_col, discard_col = st.columns(2)
             with commit_col:
                 if st.button(f"🔒 Close {selected_key} & Commit Ending Layers", disabled=commit_blocked, type="primary"):
@@ -542,6 +607,27 @@ with tab_processing:
                 file_name=f"FIFO_Master_{selected_key}_COMMITTED.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
+
+_end_col = f"{current_period:02d}"
+_has_grid_data = master_upload is not None or (
+    _end_col in edited_master_grid.columns
+    and pd.to_numeric(edited_master_grid[_end_col], errors='coerce').fillna(0).abs().sum() > 0
+)
+_flow = period_status(
+    period_key=selected_key, has_grid_data=bool(_has_grid_data), input_errors=fatal_preview_errors,
+    sequence_error=sequence_error if not already_closed else None, already_closed=already_closed,
+    preview=preview_state,
+)
+_changes = []
+if staged and staged.get('period_key') == selected_key and staged.get('previous_summary'):
+    _changes = workflow.changes_since(
+        staged['previous_summary'], staged['summary'], _SUMMARY_LABELS,
+        {k: (lambda v: f"${v:,.2f}") for k in _MONEY_KEYS})
+flow_slot.html(workflow.workflow_html(
+    [(title, detail) for title, detail in zip(STEPS, _flow['details'])], _flow['step'],
+    _flow['blockers'], _flow['ready'], tone=_flow['tone'], next_step=_flow['next_step'],
+    changes=_changes, changes_title="Since the previous preview of this period", label="Period progress",
+))
 
 with tab_analysis:
     render_insights(layer_store)

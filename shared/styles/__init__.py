@@ -4,6 +4,7 @@
         tokens.css           design tokens (--pp-*): colors, shadows, the status palette
         chrome.css           suite chrome: account strip, sidebar logo, captions, "View Plans" pill, top-bar logo
         status.css           PASS / REVIEW / FAIL / matched / unresolved badges and tiles (shared/status.py)
+        workflow.css         step strip, "what's blocking me", "what changed", headline (shared/workflow.py)
     shared/styles/pages/   one file per page, loaded by that page after the base (so a page can override it):
         landing.css, dashboard.css, sales-page.css, fifo.css, recon.css, sales-tax.css
 
@@ -18,7 +19,7 @@ from pathlib import Path
 import streamlit as st
 
 _DIR = Path(__file__).resolve().parent
-BASE_FILES = ("tokens", "chrome", "status")
+BASE_FILES = ("tokens", "chrome", "status", "workflow")
 PAGES = ("landing", "dashboard", "sales-page", "fifo", "recon", "sales-tax")
 
 # Non-breaking spaces pasted into a stylesheet silently break the rule they sit in.
@@ -30,7 +31,7 @@ def _read(relative: str) -> str:
 
 
 def base_css() -> str:
-    """The CSS every page gets: tokens, then chrome, then status."""
+    """The CSS every page gets: tokens, chrome, status, then the workflow components."""
     return "\n".join(_read(f"base/{name}.css") for name in BASE_FILES)
 
 

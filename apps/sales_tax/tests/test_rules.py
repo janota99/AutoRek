@@ -387,3 +387,39 @@ def test_restoring_with_no_backup_is_refused_and_clearing_removes_both_files(cac
     ingestion.save_trial_balance_cache(_workbook(("", "Bank", "B-2")))
     assert ingestion.clear_trial_balance_cache() == 2
     assert not ingestion.get_trial_balance_cache_status().exists
+
+
+# --- workflow state: what is blocking, and which input changed -----------------------------------
+
+def test_status_names_every_missing_input_before_a_run():
+    from apps.sales_tax.cleanup import run_status
+    status = run_status(["Source Transactions", "Vendor Mapping"], False, False, 0.0, [], 0)
+    assert status["step"] == 0
+    assert status["blockers"] == ["Add Source Transactions.", "Add Vendor Mapping."]
+
+
+def test_status_walks_ready_then_stale_then_failed_then_done():
+    from apps.sales_tax.cleanup import run_status
+    assert run_status([], False, False, 0.0, [], 0)["ready"] == "Ready to run."
+    stale = run_status([], True, False, 0.0, ["Excluded vendor IDs", "GL account padding"], 0)
+    assert stale["step"] == 1 and "Excluded vendor IDs, GL account padding" in stale["blockers"][0]
+    failed = run_status([], True, True, 12.34, [], 0)
+    assert failed["step"] == 2 and failed["tone"] == "fail" and "$12.34" in failed["blockers"][0]
+    done = run_status([], True, True, 0.0, [], 3)
+    assert done["step"] == 3 and done["blockers"] == [] and "3 transaction row(s)" in done["next_step"]
+
+
+def test_a_control_difference_that_rounds_to_zero_is_not_a_blocker():
+    from apps.sales_tax.cleanup import run_status
+    assert run_status([], True, True, 0.004, [], 0)["blockers"] == []
+
+
+def test_input_digests_name_each_input_and_change_with_it():
+    from apps.sales_tax.cleanup import input_digests
+    base = input_digests(b"s", b"m", "tb", ["2", "1"], "right")
+    assert list(base) == ["Source Transactions file", "Vendor Mapping file", "Trial Balance cache",
+                          "Excluded vendor IDs", "GL account padding"]
+    assert input_digests(b"s", b"m", "tb", ["1", "2"], "right") == base
+    changed = input_digests(b"s2", b"m", "tb", ["1", "2"], "left")
+    assert [k for k in base if base[k] != changed[k]] == ["Source Transactions file", "GL account padding"]
+    assert input_digests(None, None, None, [], "right")["Source Transactions file"] == ""

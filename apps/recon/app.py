@@ -48,6 +48,14 @@ from apps.recon.ingestion import (
     secondary_mapping_panel,
 )
 from apps.recon.matching import APP_VERSION, MATCHING_RULE_VERSION, build_reconciliation
+from apps.recon.run_status import (
+    MONEY_KEYS,
+    SUMMARY_LABELS,
+    cleared_note,
+    result_status,
+    summarize_run,
+    upload_blockers,
+)
 from apps.recon.vendor_aliases import load_vendor_aliases
 from apps.recon.ui_components import (
     load_app_css,
@@ -65,9 +73,11 @@ from apps.recon.utils import (
     clear_prepared_workbooks,
     clear_results_if_signature_changed,
     format_central_timestamp,
+    primary_workbook_prepared,
     run_id_for_inputs,
 )
 from apps.recon.assets.ui_assets import INFOR_LOGO_URI, QUICKBOOKS_LOGO_URI
+from shared import workflow
 from shared.sample_data import sample_downloads, sample_uploader
 from shared.status import status_styler
 from apps.recon.uploads import (
@@ -86,6 +96,15 @@ from apps.recon.uploads import (
 
 STANDARD_MODE = "QuickBooks and Infinium"
 CUSTOM_MODE = "Custom mapping"
+
+
+def _show_status(container, blockers, ready, *, tone="blocked", next_step="", changes=()) -> None:
+    """Draw what is blocking the next step, and what changed since the previous run, under the progress strip."""
+    with container:
+        st.html(
+            workflow.status_html(blockers, ready, tone=tone, next_step=next_step)
+            + workflow.changes_html(changes, "Since the previous run")
+        )
 
 
 def main() -> None:
@@ -114,6 +133,7 @@ def main() -> None:
     # Keep the single progress indicator above every upload control even though
     # its final state is determined later in the application run.
     progress_container = st.container()
+    status_container = st.container()  # what is blocking the next step; filled in wherever the run stops
 
     render_section_heading(
         "Upload data sources",
@@ -268,6 +288,8 @@ def main() -> None:
         st.session_state["recon_fiscal_period_index"] = 0 if pre_period is None else pre_period
         st.sidebar.caption("Column mapping and worksheet choices appear here once both files are uploaded.")
 
+        if "reconciliation_result" in st.session_state:
+            st.session_state["recon_cleared_by"] = ["an uploaded file was removed"]
         st.session_state.pop("reconciliation_result", None)
         clear_prepared_workbooks()
 
@@ -278,6 +300,8 @@ def main() -> None:
                 mappings_ready=False,
                 reconciliation_complete=False,
             )
+        _show_status(status_container, upload_blockers(qb_file is not None, inf_file is not None), "",
+                     next_step=cleared_note(st.session_state.get("recon_cleared_by")))
 
         st.markdown(
             '<p class="matching-summary">Amounts must agree exactly to the signed cent. '
@@ -539,13 +563,34 @@ def main() -> None:
         tuple((inf_secondary_mapping or {}).items()),
         APP_VERSION, MATCHING_RULE_VERSION,
     )
+    input_labels = {
+        "QuickBooks file": qb_hash[:12], "Infinium file": inf_hash[:12],
+        "Historical QuickBooks file": qb_secondary_hash[:12], "Historical Infinium file": inf_secondary_hash[:12],
+        "Worksheet choice": f"{qb_sheet_name}|{inf_sheet_name}|{qb_secondary_sheet_name}|{inf_secondary_sheet_name}",
+        "Header row": f"{qb_header_number}|{inf_header_number}|{qb_secondary_header_number}|{inf_secondary_header_number}",
+        "Column mapping": repr((sorted(qb_mapping.items()), sorted(inf_mapping.items()),
+                                sorted((qb_secondary_mapping or {}).items()),
+                                sorted((inf_secondary_mapping or {}).items()))),
+        "Fiscal year": str(fiscal_year), "Fiscal period": str(fiscal_period),
+        "Matching rules version": f"{APP_VERSION}/{MATCHING_RULE_VERSION}",
+    }
+    had_result = "reconciliation_result" in st.session_state
     clear_results_if_signature_changed(signature)
+    if had_result and "reconciliation_result" not in st.session_state:
+        st.session_state["recon_cleared_by"] = [
+            f"{label} changed" for label in
+            workflow.changed_inputs(st.session_state.get("recon_input_labels", {}), input_labels)
+        ] or ["an input changed"]
+    st.session_state["recon_input_labels"] = input_labels
     reconciliation_complete = "reconciliation_result" in st.session_state
 
     if not mappings_ready:
         with progress_container:
             render_ingestion_flow(True, True, False, reconciliation_complete)
 
+        _show_status(status_container, [
+            "Match the PO, invoice, and amount columns for every uploaded file in the sidebar. "
+            "The primary Infinium file also needs its fiscal-period column."], "")
         render_friendly_error(
             "Some columns still need to be matched",
             "Pick the PO, invoice, and amount columns for every uploaded file in the sidebar. "
@@ -569,6 +614,8 @@ def main() -> None:
                 True, True, True, reconciliation_complete, source_validation_failed=True
             )
 
+        _show_status(status_container, [
+            "No usable QuickBooks transaction rows. Check the header row and the column mapping."], "")
         render_friendly_error(
             "No usable QuickBooks transaction rows",
             "Every transaction row must be filled in apart from Quantity and Amount; subtotal and blank rows are "
@@ -661,6 +708,9 @@ def main() -> None:
     hide_index=True,
 )
     if validation_failed:
+        _show_status(status_container, [
+            "Source validation failed. Correct the header row, required mappings, or malformed source data "
+            "(see Source validation details)."], "", tone="fail")
         return
 
     def _coverage(file_obj: Any, source: str, sheet_prefix: str, sheet: Optional[str]) -> Optional[dict]:
@@ -741,6 +791,9 @@ def main() -> None:
                     inf_secondary_mapping,
                     vendor_aliases=load_vendor_aliases(),
                 )
+            st.session_state["recon_prev_summary"] = st.session_state.get("recon_last_summary")
+            st.session_state["recon_last_summary"] = summarize_run(result.metrics)
+            st.session_state.pop("recon_cleared_by", None)
             st.session_state.reconciliation_result = result
             # Workbook bytes are generated only from the Downloads tab. This
             # keeps the reconciliation action focused on matching and controls.
@@ -750,8 +803,22 @@ def main() -> None:
             render_friendly_error("Reconciliation stopped safely", "Nothing was changed or posted. Check the column mappings and header rows, then run it again. If it keeps failing, share the technical details below.", exc)
             return
 
-    if "reconciliation_result" in st.session_state:
-        render_result(st.session_state.reconciliation_result, run_started=run_started)
+    current_result = st.session_state.get("reconciliation_result")
+    if current_result is not None:
+        render_result(current_result, run_started=run_started)
+        status = result_status(
+            current_result.metrics, int(current_result.controls["Status"].ne("PASS").sum()),
+            primary_workbook_prepared(),
+        )
+        lines = workflow.changes_since(
+            st.session_state.get("recon_prev_summary") or {}, st.session_state.get("recon_last_summary") or {},
+            SUMMARY_LABELS, {k: (lambda v: f"${v:,.2f}") for k in MONEY_KEYS})
+        _show_status(status_container, status["blockers"], status["ready"], tone=status["tone"],
+                     next_step=status["next_step"], changes=lines)
+    else:
+        note = cleared_note(st.session_state.get("recon_cleared_by"))
+        _show_status(status_container, [], "Ready to run.",
+                     next_step=(note + " " if note else "") + "Click Run Reconciliation to match the two files.")
 
 
 if __name__ == "__main__":

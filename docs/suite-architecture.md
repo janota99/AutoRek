@@ -11,6 +11,7 @@ streamlit run app.py
   shared/layout.py          APPS registry, st.navigation(position="top") (the apps plus Reviews & Feedback),
                             st.logo, theme injection, and the account strip (st.html + shared/suite_banner.js)
   shared/styles/            every stylesheet, in one place (see "Stylesheets" below); base/ is injected before each page's own CSS
+  shared/workflow.py        the one wording for "where am I, what blocks me, what changed" (see "Workflow state" below)
   apps/landing.py           Home (/): front landing page, see "Landing page" below
   apps/dashboard.py         Workspace (/workspace): one card per APPS entry (one st.html block)
   apps/sales_page.py        Sales page (3 purchase tiers); NOT a registered page, drawn by the Dashboard only
@@ -131,13 +132,31 @@ The site is not connected to MongoDB.
 4. Put its CSS in `shared/styles/pages/<name>.css`, add the name to `PAGES` in `shared/styles/__init__.py`, and call
    `inject_page("<name>")` once from the page script.
 
+## Workflow state
+
+Each tool answers three questions the same way, using `shared/workflow.py` (display only; it decides no status
+and computes no accounting figure):
+
+| Question | Component | Where the facts come from |
+|---|---|---|
+| Where am I? | step strip (`step_strip_html`; Sales Tax and Recon keep their own strips) | each page's own state |
+| What is blocking me? | `status_html(blockers, ready)`: amber to fix, red when a control failed, green when ready | Sales Tax `cleanup.run_status`; FIFO `period_status.py`; Recon `run_status.py` |
+| What changed? | `changes_html` over `changes_since(previous, current)` / `changed_inputs` | the previous run's figures and per-input digests, kept in session state |
+
+- A result is never dropped silently: when an input change hides or clears a result, the panel names the input
+  (Sales Tax and FIFO stale results; Recon's cleared results).
+- Results open on one headline figure and one sentence (`headline_html`); detail sits behind an expander that
+  opens by itself when something failed.
+- A blocker list restates a gate the page already has (FIFO's `blocks_close` mirrors `commit_blocked`; a test
+  checks them against every combination). Change the gate and its restatement together.
+
 ## Stylesheets
 
 All CSS lives in `shared/styles/`; `shared/styles/__init__.py` is the only code that reads it.
 
 | Folder | Files | Loaded |
 |---|---|---|
-| `base/` | `tokens.css` (design tokens, `--pp-*`), `chrome.css` (account strip, sidebar logo, captions, "View Plans" pill, top-bar logo), `status.css` (PASS/REVIEW/FAIL badges and tiles) | on every page by `apply_template()`, in that order |
+| `base/` | `tokens.css` (design tokens, `--pp-*`), `chrome.css` (account strip, sidebar logo, captions, "View Plans" pill, top-bar logo), `status.css` (PASS/REVIEW/FAIL badges and tiles), `workflow.css` (step strip, blocker panel, change panel, headline) | on every page by `apply_template()`, in that order |
 | `pages/` | `dashboard.css`, `sales-page.css`, `fifo.css`, `recon.css`, `sales-tax.css` | by that page, after the base, so a page can override it |
 
 - Pages call `inject_page("<name>")`; pages drawn with `st.html` (Dashboard, Sales page) embed `style_tag("<name>")`.

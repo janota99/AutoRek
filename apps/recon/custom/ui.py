@@ -27,6 +27,7 @@ from ..assets.ui_assets import INFOR_LOGO_URI, QUICKBOOKS_LOGO_URI
 from ..ingestion import list_source_sheets, read_raw_source, read_source_file
 from ..matching.core import parse_amount_cents
 from ..ui_components import render_section_heading
+from shared import workflow
 from shared.sample_data import sample_uploader
 from shared.status import status_badge, status_styler
 from db.connection import DatabaseConfigError, load_config, tenant_connection
@@ -724,6 +725,13 @@ def render() -> None:
     if draft is not None and have_data:
         blocking = validate_spec(draft, list(frame_a.columns), list(frame_b.columns))
     _stepper(step, [spec0 is not None, have_data, draft is not None and not blocking, RESULT_KEY in st.session_state])
+
+    # What is blocking the next step. Step 2 lists its own problems live beside the form, so it is not repeated.
+    waiting = (["Choose a template to continue."] if step == 0 and spec0 is None
+               else ["Upload both datasets to continue."] if step == 1 and not have_data
+               else blocking if step == 3 else [])
+    if waiting:
+        st.html(workflow.status_html(waiting, ""))
 
     if step == 0:
         _step_template()
