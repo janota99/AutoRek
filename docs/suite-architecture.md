@@ -96,7 +96,9 @@ inputs, outputs, limitations, and plan availability, from `AppEntry` in `shared/
 ## Sales page (Dashboard-only)
 
 `apps/sales_page.py` holds the three tiers (Starter, Professional, Enterprise) and their placeholder
-prices (`TIERS`, edit there). It is deliberately **not** passed to `st.navigation`, so it has no URL
+prices (`TIERS`, edit there). Tax in the order summary is an **estimate**: Texas SaaS, 8.25% combined rate on
+the 80% taxable share = 6.60% (`TAX_RATE`, derived from `apps/sales_tax/tax_calculator.py`), always labeled
+"Estimated". It is deliberately **not** passed to `st.navigation`, so it has no URL
 and no navigation-bar entry. The Dashboard's "View Plans" button in the top-right corner sets
 `st.session_state["pp_view"]`; `apps/dashboard.py` then draws the sales page instead of the cards.
 `app.py` clears the flag whenever another page is selected, so a fresh visit, a direct URL, or
@@ -114,12 +116,13 @@ from the layers in the session (`apps/fifo_inventory/sample_data.py`) so they re
 is disabled while one is loaded, so demo numbers can never become the official layers. The Sales Tax trial balance is download-only, because the real one is
 a shared on-disk cache. Recon reads QuickBooks column A as the fiscal period, so its sample keeps one there.
 
-## Hover previews and the MongoDB samples
+## Card details and the MongoDB samples
 
-The Dashboard cards and the Plans page cards each fill a preview bar on `mouseenter` and clear it on `mouseleave`
-(`apps/dashboard.js`; the script in `apps/sales_page.py`). Their data is not hard-coded in the script: a card's inputs
-and outputs come from `AppEntry` in `shared/layout.py`, and a plan's tools from `Tier.tool_ids`, both passed as JSON
-data attributes. `mongodb/` holds the matching collections (`reviews`, `plans`, `tools`) with `$jsonSchema`
+The Dashboard cards print what each tool takes in and produces on the card itself (`apps/dashboard.py`), so nothing
+depends on hover and touch screens see the same information. The card's primary action is stretched over the whole
+card in `dashboard.css`, so a tap anywhere opens the tool. The Plans page cards still fill a preview bar on hover
+(the script in `apps/sales_page.py`). A card's inputs and outputs come from `AppEntry` in `shared/layout.py`, and a
+plan's tools from `Tier.tool_ids`. `mongodb/` holds the matching collections (`reviews`, `plans`, `tools`) with `$jsonSchema`
 validators and sample documents, and `mongodb/test_samples.py` fails if they drift from `TIERS` or `APPS`.
 The site is not connected to MongoDB.
 

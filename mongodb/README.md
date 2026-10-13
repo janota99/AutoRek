@@ -68,7 +68,7 @@ When the site is connected, two conversions are needed: `recommend === 'yes'` to
 | `badge` | string or **null** | "Prototype", or `null` when there is none |
 | `isPrototype` | bool | true when there is a badge |
 | `minimumPlanId` | string, one of the plan ids | the lowest plan that includes the tool |
-| `inputs`, `outputs` | array of string | shown when the Dashboard card is hovered |
+| `inputs`, `outputs` | array of string | printed on the Dashboard card ("Takes in" / "Produces") |
 | `sortOrder` | number | card order, from 1 |
 | `active` | bool | |
 
@@ -76,8 +76,7 @@ When the site is connected, two conversions are needed: `recommend === 'yes'` to
 
 ## Hover interactions that use this data
 
-- **Dashboard:** hovering a tool card (`mouseenter` / `mouseleave`, plus `focus` / `blur` for the keyboard) fills a preview
-  bar with that tool's `inputs` and `outputs`. The card carries them as a JSON `data-facts` attribute.
+- **Dashboard:** each tool card prints that tool's `inputs` and `outputs` (no hover needed, so touch screens see them too).
 - **Plans & Pricing:** hovering a plan card does the same with its price (monthly, yearly, and the saving), the tools it
   adds, and what it includes. The plans travel as JSON in the same shape as `plans.json`.
 
