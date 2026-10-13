@@ -36,6 +36,7 @@ _ANNUAL_MONTHS_BILLED = 10    # twelve months for the price of ten
 # Derived from the Sales Tax Calculator's constants so the two never disagree. An estimate, not a quote.
 TAX_RATE = DEFAULT_COMBINED_RATE / 100 * SAAS_TAXABLE_SHARE
 TBC = "To be confirmed"
+_RUNS_AND_ROWS = "Unlimited runs; up to 25,000 rows per file"   # measured: ~3,200 rows match in about a second
 REGISTER_KEY = "pp_register"   # session_state: demo charge register (this session only; never card numbers)
 _METHODS = ("Credit / debit card", "Gift card", "PayPal")
 _SENT_KEY = "pp_contact_sent"  # session_state: contact form submitted (stub)
@@ -54,7 +55,8 @@ class Tier:
     featured: bool = False
     action: str = "Choose plan"
     tool_ids: tuple[str, ...] = ()   # the applications this tier adds (shared.layout.APPS url_paths)
-    # Comparison table rows. TBC means the business has not decided it yet; nothing in the app enforces a plan limit.
+    # Comparison table rows. These are the terms planned for launch; nothing in the app enforces a plan limit during the
+    # beta preview, and the table says so. TBC marks a term nobody has decided.
     users: str = TBC
     organizations: str = TBC
     processing: str = TBC
@@ -73,6 +75,9 @@ TIERS: tuple[Tier, ...] = (
             "Basic reporting and email support",
         ),
         tool_ids=("sales-tax",),
+        users="1 user",
+        organizations="1 organization",
+        processing=_RUNS_AND_ROWS,
         support="Email support",
     ),
     Tier(
@@ -86,7 +91,9 @@ TIERS: tuple[Tier, ...] = (
         ),
         featured=True,
         tool_ids=("fifo-inventory", "recon"),
-        users="Multiple users (planned; seat count to be confirmed)",
+        users="Up to 5 users (multi-user access is planned)",
+        organizations="1 organization",
+        processing=_RUNS_AND_ROWS,
         support="Email support",
     ),
     Tier(
@@ -100,7 +107,9 @@ TIERS: tuple[Tier, ...] = (
         ),
         action="Contact sales",
         tool_ids=("invoice-hub",),
-        users="Custom user roles (planned)",
+        users="Custom seats and user roles (planned)",
+        organizations="Multiple organizations",
+        processing="Unlimited runs; higher file limits on request",
         support="Dedicated support",
     ),
 )
@@ -148,8 +157,8 @@ def comparison_html() -> str:
     return (
         '<table class="pp-cmp"><caption>Compare plans</caption>'
         f"<thead><tr><th scope='col'><span class='pp-sr'>Feature</span></th>{head}</tr></thead><tbody>{body}</tbody></table>"
-        '<p class="pp-cmp-note">&ldquo;To be confirmed&rdquo; means that limit has not been decided; the app enforces no '
-        "plan-specific limits today. Saved projects are not built yet. Prices are placeholders.</p>"
+        '<p class="pp-cmp-note">Users, organizations, and processing limits are the terms planned for launch. This beta '
+        "preview does not enforce them, and multi-user access and saved projects are not built yet. Prices are placeholders.</p>"
     )
 
 

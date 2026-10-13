@@ -90,8 +90,10 @@ inputs, outputs, limitations, and plan availability, from `AppEntry` in `shared/
   only brand and last four digits; the form clears on submit. A passing order adds a row to the session-only charge register
   marked "Demo: not charged". No processor is connected. A real checkout must use a processor's hosted card fields so card
   numbers never reach this app; replace `_payment_section` then.
-- The Plans page adds a comparison table (`_comparison_html` in `apps/sales_page.py`). Rows marked "To be confirmed" are
-  undecided business terms; the app enforces no plan limits.
+- The Plans page adds a comparison table (`comparison_html` in `apps/sales_page.py`). Users, organizations, and processing
+  limits are the terms planned for launch (1 user / up to 5 / custom; 1 organization / 1 / multiple; unlimited runs, up
+  to 25,000 rows per file). The beta preview enforces none of them, and the table says so. A term nobody has decided
+  would show "To be confirmed" (`TBC`).
 
 ## Sales page (Dashboard-only)
 

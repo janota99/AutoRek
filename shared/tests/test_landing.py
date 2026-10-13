@@ -276,3 +276,12 @@ def test_the_landing_page_shows_the_value_sections():
     assert "Why teams switch" in html and "Why not what you use today?" in html
     assert "10 days to under an hour" in html and "manufacturers and distributors" in html
     assert any(n.label == "Hours a month on matching and cleanup today" for n in at.number_input)
+
+
+def test_the_plan_table_states_every_limit_and_says_none_is_enforced_yet():
+    from apps import sales_page
+    table = sales_page.comparison_html()
+    assert "To be confirmed" not in table
+    for term in ("1 user", "Up to 5 users", "1 organization", "Multiple organizations", "up to 25,000 rows per file"):
+        assert term in table
+    assert "does not enforce them" in table
