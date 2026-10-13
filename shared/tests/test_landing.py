@@ -159,7 +159,7 @@ def test_onboarding_needs_every_field_mapped_and_offers_the_workspace():
     _button(at, "Set Up Your First Workflow").click().run()
     assert at.session_state["pp_l_step"] == 6
     assert not _button(at, "Enter the workspace").disabled
-    at.selectbox[0].select("(not mapped)").run()
+    next(s for s in at.selectbox if s.key != "pp-l-roi-plan").select("(not mapped)").run()   # the first mapping field
     assert _button(at, "Enter the workspace").disabled
 
 
@@ -260,3 +260,19 @@ def test_estimated_tax_is_the_texas_saas_rate_from_the_tax_calculator():
     assert (base, tax, total) == (10000, 660, 10660)
     summary = sales_page.order_summary(professional, annual=False)
     assert "Estimated Texas sales tax on SaaS (6.60%)" in summary and "Estimated total" in summary
+
+
+def test_roi_is_integer_cents_and_never_negative_hours():
+    from apps import landing_data as data
+    r = data.roi(80, 4, 40, 100)           # 76 saved hours at $40 against a $100 plan
+    assert r == {"saved_hours": 76.0, "value_cents": 304000, "plan_cents": 10000, "net_cents": 294000,
+                 "break_even_hours": 2.5}
+    assert data.roi(2, 10, 40, 20)["saved_hours"] == 0.0 and data.roi(2, 10, 40, 20)["net_cents"] == -2000
+
+
+def test_the_landing_page_shows_the_value_sections():
+    at = _run()
+    html = " ".join(e.proto.body for e in at.get("html"))
+    assert "Why teams switch" in html and "Why not what you use today?" in html
+    assert "10 days to under an hour" in html and "manufacturers and distributors" in html
+    assert any(n.label == "Hours a month on matching and cleanup today" for n in at.number_input)

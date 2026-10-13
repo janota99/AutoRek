@@ -183,10 +183,11 @@ def _hero() -> str:
         for q, i, c, po, a, why in exc)
     return (
         '<header class="pp-l-hero pp-l-band pp-l-dark"><div class="pp-l-hero-copy">'
-        '<p class="pp-l-eyebrow">Flexible accounting automation</p>'
+        '<p class="pp-l-eyebrow">Month-end automation for manufacturers and distributors</p>'
         '<h1>Automate the <em>matching</em>. Review the exceptions.</h1>'
-        '<p class="pp-l-lede">Janota FIN sets up repeatable workflows for reconciliation, inventory costing, and '
-        'transaction review. Routine records match automatically; the few that need a person arrive with the reason attached.</p>'
+        '<p class="pp-l-lede">For controllers who close the books on QuickBooks and an ERP. Janota FIN runs the '
+        'repeatable month-end work: reconciliation, inventory costing, and transaction review. Routine records match '
+        'automatically; the few that need a person arrive with the reason attached.</p>'
         '<div class="pp-l-actions">'
         '<button type="button" class="pp-l-btn pp-l-btn-light" data-demo>Try Interactive Demo</button>'
         '<button type="button" class="pp-l-btn pp-l-btn-outline" data-scroll="pp-l-pricing">Explore Plans</button></div>'
@@ -287,6 +288,37 @@ def _impact() -> str:
     )
 
 
+def _value() -> str:
+    """The case for buying: reported outcomes, the scale it handles, and what it replaces. Honest about sources."""
+    cards = "".join(f'<div class="pp-l-value-card" data-reveal style="--d:{n * 90}ms"><b>{_E(t)}</b><p>{_E(d)}</p></div>'
+                    for n, (t, d) in enumerate(data.OUTCOMES))
+    starter = next(t for t in TIERS if t.monthly_price is not None)
+    rows = (
+        ("Manual ticking and tying in Excel", "None to set up", "Depends on the person", "Cell notes, if any",
+         "Staff time, every month"),
+        ("Excel macros and spreadsheets", "Weeks to build; one author", "As good as the macro", "Usually none",
+         "Breaks when its author leaves"),
+        ("Enterprise reconciliation suites", "An implementation project", "Configurable; often fuzzy matching",
+         "Strong", "Priced for large finance teams"),
+        {"cells": ("Janota FIN", "Upload your exports, map columns, run", "Exact to the cent; near misses stay open",
+                   "Every figure traces to a source row", f"From ${starter.monthly_price} per month"), "tone": "pass"},
+    )
+    table = _table(("What you use today", "Setup", "Matching control", "Audit trail", "Cost"), rows, cls="pp-l-compare",
+                   caption="How the approaches compare (typical characteristics, not claims about a named product)")
+    return (
+        '<section class="pp-l-section" id="pp-l-value" aria-labelledby="pp-l-value-h">'
+        '<p class="pp-l-eyebrow">Why teams switch</p><h2 id="pp-l-value-h">The month-end close, without the ticking and tying</h2>'
+        f'<div class="pp-l-value-grid">{cards}</div>'
+        '<p class="pp-l-note">Reported by the operation this was built for, which stays anonymous. One operation\'s '
+        'experience, not an audit or a guarantee.</p>'
+        '<div class="pp-l-scale" data-reveal><b>About a second</b> to match a typical month: roughly '
+        f'{data.SCALE_QB_ROWS:,} QuickBooks lines against {data.SCALE_INF_ROWS:,} Infinium lines. Measured on a '
+        'laptop with synthetic rows of that size (matching only, before the Excel workpaper).</div>'
+        '<h3 class="pp-l-sub">Why not what you use today?</h3>'
+        f'<div class="pp-l-tablewrap">{table}</div></section>'
+    )
+
+
 def _formats() -> str:
     tiles = "".join(
         f'<li data-reveal style="--d:{n * 50}ms" data-kind="{k}"><span class="pp-l-box">{_icon("check" if k == "now" else "schedule" if k == "planned" else "science")}</span>'
@@ -313,6 +345,7 @@ def _nav() -> str:
     return (
         '<nav class="pp-l-nav" aria-label="Janota FIN"><div class="pp-l-links">'
         '<button type="button" data-scroll="pp-l-solutions">Solutions</button>'
+        '<button type="button" data-scroll="pp-l-value">Why It Pays</button>'
         '<button type="button" data-scroll="pp-l-how">How It Works</button>'
         '<button type="button" data-scroll="pp-l-pricing">Pricing</button>'
         '<a href="/workspace" target="_self" data-route>Workspace</a></div>'
@@ -374,6 +407,37 @@ def _script() -> str:
 
 
 # --- Streamlit sections --------------------------------------------------------------------------------------------------
+
+def _roi() -> None:
+    """What it is worth to this visitor: their hours and rates in, the monthly value against a plan price out."""
+    st.html('<div class="pp-land"><section class="pp-l-section pp-l-sec-head" id="pp-l-roi"><p class="pp-l-eyebrow">What it is '
+            'worth</p><h2>Put your own numbers in</h2><p class="pp-l-lede">Your hours, your rate, our arithmetic. The '
+            'starting values come from what the originating operation reported (ten working days, about 80 hours, down '
+            'to under an hour); the 4 hours with the tool is a cautious allowance for review. Replace all three.</p>'
+            '</section></div>')
+    paid = [t for t in TIERS if t.monthly_price is not None]
+    with st.container(key="pp-l-roi-box", border=True):
+        a, b, c, d = st.columns(4, gap="medium")
+        before = a.number_input("Hours a month on matching and cleanup today", min_value=0.0, max_value=2000.0,
+                                value=data.ROI_DEFAULT_HOURS_BEFORE, step=1.0, key="pp-l-roi-before")
+        after = b.number_input("Hours a month with the tool, review included", min_value=0.0, max_value=2000.0,
+                               value=data.ROI_DEFAULT_HOURS_AFTER, step=0.5, key="pp-l-roi-after")
+        rate = c.number_input("Loaded cost of an hour ($)", min_value=1.0, max_value=1000.0,
+                              value=data.ROI_DEFAULT_HOURLY_DOLLARS, step=1.0, key="pp-l-roi-rate")
+        name = d.selectbox("Plan", [t.name for t in paid], index=min(1, len(paid) - 1), key="pp-l-roi-plan")
+        plan = next(t for t in paid if t.name == name)
+        r = data.roi(before, after, rate, plan.monthly_price)
+        net = r["net_cents"]
+        st.html(_kpis((
+            ("Hours saved a month", f"{r['saved_hours']:,.1f}", "neutral"),
+            ("Value of that time", data.money(r["value_cents"]), "pass"),
+            (f"{plan.name} plan, per month", data.money(r["plan_cents"]), "neutral"),
+            ("Net benefit a month", data.money(net), "pass" if net >= 0 else "review"),
+        )))
+        if r["break_even_hours"] is not None:
+            st.caption(f"The {plan.name} plan pays for itself once it saves about {r['break_even_hours']:,.1f} hours "
+                       "of work in a month. An illustration from the numbers above, not a guarantee.")
+
 
 def _deliverables() -> None:
     st.html('<div class="pp-land"><section class="pp-l-section pp-l-sec-head" id="pp-l-reports"><p class="pp-l-eyebrow">Deliverables</p>'
@@ -665,9 +729,10 @@ def _purchase() -> None:
 # --- page ---------------------------------------------------------------------------------------------------------------------
 
 st.html(f"{style_tag('landing')}{style_tag('sales-page')}{_wordmark_style()}"
-        f'<div class="pp-land" id="pp-l-top">{_nav()}{_hero()}{_marquee()}{_explorer()}{_walkthrough()}{_impact()}{_formats()}</div>{_script()}',
+        f'<div class="pp-land" id="pp-l-top">{_nav()}{_hero()}{_marquee()}{_explorer()}{_walkthrough()}{_impact()}{_value()}{_formats()}</div>{_script()}',
         unsafe_allow_javascript=True)
 _scroll_to_requested_section()
+_roi()
 _deliverables()
 _purchase()
 st.html(f'<div class="pp-land">{_faq_and_story()}{_closing()}{_footer()}</div>')

@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import io
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 
 # --- Data Reconciliation Studio: QuickBooks sales vs Infinium sales -------------------------------------------
 
@@ -256,6 +257,39 @@ SOLUTION_BY_APP = {s.app_path: s for s in SOLUTIONS}  # url_path of the register
 
 # --- FAQ and product background -------------------------------------------------------------------------------------
 
+# --- Value: what a buyer gets and what it replaces ----------------------------------------------------------------------
+# OUTCOMES are reported by the operation this was built for (kept anonymous at the owner's request). They are one
+# operation's experience, not an audit and not a guarantee, and the page says so.
+OUTCOMES = (
+    ("10 days to under an hour",
+     "Month-end reconciliation, inventory costing, and transaction cleanup used to take about ten working days. "
+     "The same close now takes less than an hour."),
+    ("Only the exceptions get attention",
+     "The manual ticking and tying of numbers is gone. Routine matches are automatic, so time goes to the "
+     "issues instead of the routine."),
+    ("Errors that would have been missed",
+     "The tools have brought errors to the reviewer's attention that would otherwise have gone unnoticed."),
+)
+# Measured with tests/test_scale.py on synthetic rows of the size of a typical month (matching engine only,
+# not the Excel workpaper): about 700 QuickBooks lines against about 2,500 Infinium lines.
+SCALE_QB_ROWS, SCALE_INF_ROWS = 700, 2500
+# What the originating operation reported, as the calculator's starting point (10 working days at 8 hours).
+ROI_DEFAULT_HOURS_BEFORE = 80.0
+ROI_DEFAULT_HOURS_AFTER = 4.0     # a cautious allowance for review, above the reported "under an hour"
+ROI_DEFAULT_HOURLY_DOLLARS = 40.0
+
+
+def roi(hours_before: float, hours_after: float, hourly_dollars: float, plan_monthly_dollars: int) -> dict:
+    """Monthly value of the time saved against the plan price. Integer cents; the inputs are the visitor's own."""
+    saved = max(Decimal(str(hours_before)) - Decimal(str(hours_after)), Decimal(0))
+    value = int((saved * Decimal(str(hourly_dollars)) * 100).quantize(Decimal(1), rounding=ROUND_HALF_UP))
+    plan = plan_monthly_dollars * 100
+    hourly = Decimal(str(hourly_dollars)) * 100
+    break_even = float((Decimal(plan) / hourly).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)) if hourly else None
+    return {"saved_hours": float(saved), "value_cents": value, "plan_cents": plan,
+            "net_cents": value - plan, "break_even_hours": break_even}
+
+
 FAQS = (
     ("Which systems does it work with?",
      "Today it reads Excel (.xlsx) and CSV exports. The reconciliation example is built for QuickBooks and Infinium "
@@ -268,6 +302,10 @@ FAQS = (
      "Uploads are held in memory for your browser session and cleared when you leave the tool. Excel outputs are "
      "built on request for you to download and are not kept. A few small files are saved on the server: closed "
      "inventory periods, a shared sales-tax trial balance cache, and confirmed vendor aliases."),
+    ("How much time does it save?",
+     "The operation this was built for reported a month-end close that took about ten working days now taking "
+     "less than an hour. That is one operation's experience, not a guarantee. The calculator on this page lets you "
+     "test your own hours and rates."),
     ("Is the checkout real?",
      "No. The purchase flow is a clearly labeled simulation: no payment processor is connected, nothing is charged, "
      "and card details are checked and discarded. Prices are placeholders."),
