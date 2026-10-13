@@ -171,7 +171,8 @@
 
   function addCardToTop(review) {
     var card = buildReviewCard(review);
-    panelHeading.after(card); // newest first, directly under the panel heading
+    var anchor = reviewsPanel.querySelector('.sample-notice') || panelHeading;
+    anchor.after(card); // newest first, directly under the panel heading and its sample-content notice
     return card;
   }
 
@@ -183,6 +184,18 @@
     countLabel.textContent = n + (n === 1 ? ' review' : ' reviews') +
       (n ? ' · ' + (total / n).toFixed(1) + ' avg' : '');
     clearButton.hidden = !reviewsPanel.querySelector('[data-user-review]');
+
+    var yes = 0;
+    reviewsPanel.querySelectorAll('.recommendation strong').forEach(function (s) {
+      if (s.textContent.trim() === 'Yes') yes += 1;
+    });
+    var summary = document.getElementById('reviewSummary');
+    if (summary) {
+      summary.textContent = n
+        ? 'Across these ' + n + ' reviews (samples included): ' + (total / n).toFixed(1) + ' out of 5 on average, ' +
+          Math.round(100 * yes / n) + '% would recommend.'
+        : '';
+    }
   }
 
   function showStatus(message, kind) {

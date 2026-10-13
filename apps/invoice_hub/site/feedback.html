@@ -38,9 +38,10 @@
           <div><span class="eyebrow">Sample reviews</span><h2 id="reviews-heading">What stakeholders are saying</h2></div>
           <span class="review-count" id="reviewCount" aria-live="polite">2 reviews</span>
         </div>
+        <p class="notice-note sample-notice" role="note"><strong>Fictional sample content.</strong> The reviews tagged Sample are made-up examples written for this prototype. They are not from real customers.</p>
         <article class="review-card" data-rating="5">
           <div class="review-topline">
-            <div class="reviewer"><span class="reviewer-initials" aria-hidden="true">JD</span><div><strong>Jane Doe</strong><span>Accounts Payable Clerk</span></div></div>
+            <div class="reviewer"><span class="reviewer-initials" aria-hidden="true">JD</span><div><strong>Jane Doe <em class="sample-tag">Sample</em></strong><span>Accounts Payable Clerk</span></div></div>
             <div class="rating" aria-label="5 out of 5 stars">★★★★★</div>
           </div>
           <blockquote>“The separate AP and AR queues make it much easier to identify which invoices still require action. The stage-aging information would be especially useful during month-end.”</blockquote>
@@ -48,18 +49,19 @@
         </article>
         <article class="review-card" data-rating="4">
           <div class="review-topline">
-            <div class="reviewer"><span class="reviewer-initials dark" aria-hidden="true">MT</span><div><strong>Michael Torres</strong><span>Operations Manager</span></div></div>
+            <div class="reviewer"><span class="reviewer-initials dark" aria-hidden="true">MT</span><div><strong>Michael Torres <em class="sample-tag">Sample</em></strong><span>Operations Manager</span></div></div>
             <div class="rating" aria-label="4 out of 5 stars">★★★★<span>★</span></div>
           </div>
           <blockquote>“The invoice detail view clearly shows what my department needs to approve. A notification for invoices held more than five days would make the workflow even stronger.”</blockquote>
           <p class="recommendation">Would recommend: <strong>Yes</strong></p>
         </article>
+        <p class="review-summary" id="reviewSummary" aria-live="polite"></p>
       </section>
 
       <section class="feedback-form-panel" aria-labelledby="form-heading">
         <span class="eyebrow">Your feedback</span>
         <h2 id="form-heading">Help improve the prototype</h2>
-        <p>Add a review to the list. Entries are saved in this browser only and are never sent anywhere.</p>
+        <p class="notice-note storage-note" role="note"><strong>Saved in this browser only.</strong> Reviews you add are kept in local storage and are never sent anywhere.</p>
         <form id="feedbackForm" action="#" novalidate>
           <label for="customerName">Name</label>
           <input id="customerName" name="customerName" type="text" maxlength="80" autocomplete="name" placeholder="Your full name" aria-describedby="customerName-error">
@@ -84,7 +86,7 @@
           </fieldset>
           <p class="field-error" id="recommendation-error" hidden></p>
           <label for="feedback">Feedback</label>
-          <textarea id="feedback" name="feedback" rows="6" maxlength="1000" placeholder="What works well, and what should be improved?" aria-describedby="feedback-error feedback-count"></textarea>
+          <textarea id="feedback" name="feedback" rows="4" maxlength="1000" placeholder="What works well, and what should be improved?" aria-describedby="feedback-error feedback-count"></textarea>
           <p class="field-error" id="feedback-error" hidden></p>
           <p class="char-count" id="feedback-count" aria-live="off">0 / 1000</p>
           <button class="button button-primary button-full" type="submit">Submit Feedback</button>
