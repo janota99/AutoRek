@@ -13,9 +13,14 @@ unmodified will pass validation immediately.
 Two workbooks are produced:
   - build_master_grid_template(): the Ending Inventory Master Grid, one row
     per known product alias, with a "01".."13" quantity column and a
-    matching "01V".."13V" value column for every fiscal period.
+    matching "01V".."13V" value column for every fiscal period. Given the
+    selected fiscal period and the layer store, it is prepared for that
+    period: the prior period's quantity and value come from the stored FIFO
+    layers, and the current period's quantity is left blank for the count.
+    The current period's value is never entered (the app derives it).
   - build_receipts_template(): the Current Period Receipts layout, with one
-    illustrative example row plus a block of blank, pre-formatted rows.
+    illustrative example row plus a block of blank, pre-formatted rows. The
+    example row carries the selected period when one is given.
 
 build_upload_templates_zip() bundles both into a single .zip for a one-click
 download; each is also available standalone for a two-button layout.
@@ -26,14 +31,30 @@ import zipfile
 from datetime import date
 
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
 
+from .fifo_layer_store import _canonicalize_layer
 from .user_inputs import PRODUCTS, QTY_TOLERANCE
 from .excel_export import (
     FONT_TITLE, FONT_COLHDR, FONT_NORMAL, FILL_NAVY, FILL_HEADER, FILL_ALT_ROW,
     BORDER_THIN, ALIGN_LEFT, ALIGN_RIGHT, FMT_QTY, FMT_USD, HEADER_ROW_HEIGHT,
 )
+
+_ENTER_FILL = PatternFill("solid", fgColor="FFF2CC")   # the one column the user types into
+
+
+def _prior_period(period):
+    """The period whose ending balance is this period's beginning (P1 reads the prior year's P13)."""
+    return 13 if period == 1 else period - 1
+
+
+def _stored_balance(layer_store, alias):
+    """(quantity, value) of the layers the app currently carries for one product."""
+    layers = [_canonicalize_layer(l) for l in layer_store.get(alias)]
+    return sum(l['qty'] for l in layers), round(sum(l['total_value'] for l in layers), 2)
+
 
 _INSTRUCTIONS_TITLE_FILL = FILL_NAVY
 _INSTRUCTIONS_TITLE_FONT = FONT_TITLE
@@ -59,16 +80,25 @@ def _write_instructions_sheet(wb, title, paragraphs):
     return ws
 
 
-def build_master_grid_template():
-    """Return the .xlsx bytes for a blank, correctly-shaped Master Grid."""
+def build_master_grid_template(layer_store=None, fiscal_year=None, period=None):
+    """Return the .xlsx bytes for a correctly-shaped Master Grid.
+
+    With ``layer_store`` and ``period`` the workbook is prepared for that period: the prior period's
+    quantity and value are filled from the stored layers (the beginning balance the app will check
+    against), and the current period's quantity is left blank and highlighted for the count. The
+    current period's value cell is left blank because the app derives it. Without them it is the
+    generic blank grid.
+    """
+    prepared = layer_store is not None and period is not None
+    begin_period = _prior_period(period) if prepared else None
     wb = Workbook()
     ws = wb.active
-    ws.title = "Master Grid Template"
+    ws.title = f"Master Grid P{period:02d}" if prepared else "Master Grid Template"
 
     headers = ['PRODUCT ALIAS', 'DESCRIPTION']
-    for period in range(1, 14):
-        headers.append(f"{period:02d}")
-        headers.append(f"{period:02d}V")
+    for p in range(1, 14):
+        headers.append(f"{p:02d}")
+        headers.append(f"{p:02d}V")
 
     widths = [12, 32] + [10, 12] * 13
     for i, w in enumerate(widths, 1):
@@ -91,15 +121,21 @@ def build_master_grid_template():
         c.font, c.border, c.alignment = FONT_NORMAL, BORDER_THIN, ALIGN_LEFT
         if fill: c.fill = fill
         col = 3
-        for period in range(1, 14):
-            qty_cell = ws.cell(row=row_idx, column=col, value=0.0)
+        for p in range(1, 14):
+            qty_value, val_value, enter = 0.0, 0.0, False
+            if prepared and p == begin_period:
+                qty_value, val_value = _stored_balance(layer_store, alias)
+            elif prepared and p == period:
+                qty_value, val_value, enter = None, None, True    # the count is typed in; the value is derived
+            qty_cell = ws.cell(row=row_idx, column=col, value=qty_value)
             qty_cell.number_format = FMT_QTY
             qty_cell.font, qty_cell.border, qty_cell.alignment = FONT_NORMAL, BORDER_THIN, ALIGN_RIGHT
-            if fill: qty_cell.fill = fill
+            if enter: qty_cell.fill = _ENTER_FILL
+            elif fill: qty_cell.fill = fill
             if row_idx == 2:
                 qty_col_letters.append(get_column_letter(col))
             col += 1
-            val_cell = ws.cell(row=row_idx, column=col, value=0.0)
+            val_cell = ws.cell(row=row_idx, column=col, value=val_value)
             val_cell.number_format = FMT_USD
             val_cell.font, val_cell.border, val_cell.alignment = FONT_NORMAL, BORDER_THIN, ALIGN_RIGHT
             if fill: val_cell.fill = fill
@@ -122,7 +158,22 @@ def build_master_grid_template():
     ws.add_data_validation(dv_alias)
     dv_alias.add(f"A2:A{last_row}")
 
-    _write_instructions_sheet(wb, "Master Grid Upload — Instructions", [
+    if prepared:
+        year = f"FY{fiscal_year} " if fiscal_year else ""
+        lead = [
+            f"Prepared for {year}P{period:02d}. Column \"{begin_period:02d}\" / \"{begin_period:02d}V\" already "
+            "hold each product's quantity and value from the FIFO layers the app is carrying: that is the "
+            f"beginning balance, and the app checks it against the quantities you upload. Column \"{period:02d}\" "
+            "(highlighted) is blank: type each product's ending quantity from your physical count. Column "
+            f"\"{period:02d}V\" is left blank on purpose: the app calculates the ending value and unit cost from "
+            "the layers, so no current-period value is ever entered.",
+        ]
+    else:
+        lead = [
+            "Not prepared for a period. Fill the quantity columns for the period you are closing and the one "
+            "before it. Value columns are optional: the app calculates values from its stored FIFO layers.",
+        ]
+    _write_instructions_sheet(wb, "Master Grid Upload — Instructions", lead + [
         "This workbook has one row per product, pre-filled with every PRODUCT ALIAS and DESCRIPTION the app "
         "currently knows about. Do not add, remove, renumber, or reorder rows or columns, and do not rename "
         "the header row in row 1 — the app matches everything by exact column header text and by PRODUCT "
@@ -131,17 +182,15 @@ def build_master_grid_template():
         "DESCRIPTION is for your own reference only and is never read by the app.",
         "Columns \"01\" through \"13\" are the ENDING INVENTORY QUANTITY for that fiscal period. Quantities "
         "must be zero or positive -- never negative.",
-        "Columns \"01V\" through \"13V\" are the matching ENDING INVENTORY VALUE ($) for that same fiscal "
-        "period, taken straight from your own spreadsheet's Ending Inventory / TOTAL calculation. Unlike "
-        "quantities, a value CAN be negative -- a small known dollar variance between your book value and the "
-        "app's FIFO layers is expected and is allowed to run in either direction.",
-        "Period 1's BEGINNING balance is read from column \"13\" / \"13V\" -- that column must represent the "
-        "prior fiscal year's ending quantity and value, not period 1 itself.",
-        "Before the app will accept this upload for a given fiscal period, every product needs both the "
-        "quantity AND value columns filled in for the period you are closing AND the period immediately before "
-        "it (the app reads the earlier one as that product's beginning balance). Every other period column can "
-        "be left at 0 until you reach it.",
-        "Type plain numbers into every quantity and value cell (Excel's own currency/number formatting is fine "
+        "Columns \"01V\" through \"13V\" are OPTIONAL and are never used in the calculation. They are for your "
+        "reference only: the beginning value comes from the FIFO layers stored at the last close, and the ending "
+        "value and unit cost for the period are calculated by the app and shown in the Excel report.",
+        "Period 1's BEGINNING balance is read from column \"13\" -- that column must represent the "
+        "prior fiscal year's ending quantity, not period 1 itself.",
+        "Before the app will accept this upload for a given fiscal period, every product needs a quantity in "
+        "the period you are closing AND in the period immediately before it (the app reads the earlier one as "
+        "that product's beginning balance). Every other period column can be left at 0 until you reach it.",
+        "Type plain numbers into every quantity cell (Excel's own currency/number formatting is fine "
         "-- the app understands $ signs, thousands commas, and parentheses for negatives -- but plain numbers "
         "are the safest if you are typing by hand).",
     ])
@@ -151,8 +200,10 @@ def build_master_grid_template():
     return output.getvalue()
 
 
-def build_receipts_template():
-    """Return the .xlsx bytes for a blank, correctly-shaped Receipts upload."""
+def build_receipts_template(period=None):
+    """Return the .xlsx bytes for a blank, correctly-shaped Receipts upload.
+
+    ``period`` is the selected fiscal period; the example row's PERIOD uses it (12 when not given)."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Receipts Template"
@@ -173,7 +224,7 @@ def build_receipts_template():
     example_alias = min(PRODUCTS)
     example_row = [
         example_alias, PRODUCTS[example_alias], 'Example item description', 'Example Supplier Co.',
-        date.today(), 'L6-000000', 'BOL-00000', 'SEAL-000', 'PO-00000', 10000, 250.00, 12, 'INV-00000',
+        date.today(), 'L6-000000', 'BOL-00000', 'SEAL-000', 'PO-00000', 10000, 250.00, period or 12, 'INV-00000',
     ]
     for col, val in enumerate(example_row, 1):
         c = ws.cell(row=2, column=col, value=val)
@@ -234,10 +285,10 @@ def build_receipts_template():
     return output.getvalue()
 
 
-def build_upload_templates_zip():
+def build_upload_templates_zip(layer_store=None, fiscal_year=None, period=None):
     """Bundle both templates into a single .zip for a one-click download."""
-    master_bytes = build_master_grid_template()
-    receipts_bytes = build_receipts_template()
+    master_bytes = build_master_grid_template(layer_store, fiscal_year, period)
+    receipts_bytes = build_receipts_template(period)
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("Master_Grid_Upload_Template.xlsx", master_bytes)

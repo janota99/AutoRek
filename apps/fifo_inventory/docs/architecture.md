@@ -13,7 +13,7 @@
 | `excel_export.py` | PASS/REVIEW/FAIL control rules **and** the Excel workbook builder. Also hosts `_parse_layer_date` / `_check_chronology`. |
 | `app_settings.py` | User-editable tolerances persisted to `app_settings.json` (next to the module). |
 | `period_status.py` | Pure wording for the top-of-tab strip: which step the period is on and what blocks the next one. `blocks_close` restates the close gate in `app.py`; keep them in step. |
-| `upload_templates.py` | Downloadable blank Master Grid / Receipts templates. |
+| `upload_templates.py` | Downloadable Master Grid / Receipts templates, prepared for the selected period (prior-period balance from the layers). |
 | `user_inputs.py` | Constants: `PRODUCTS`, the `PERIOD_12_OPENING_LAYERS` seed, versions, default tolerances. |
 
 Dependencies: everything imports `user_inputs`; `fifo_layer_store` uses `ingestion`;

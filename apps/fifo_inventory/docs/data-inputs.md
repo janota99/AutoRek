@@ -3,7 +3,9 @@
 Both uploads accept `.csv`, `.xlsx`, or `.xlsm`. If a workbook has several sheets,
 the UI asks which one to use (`_excel_sheet_names` / `_read_uploaded_table` in
 `ingestion.py`). Templates that pass validation as-is come from
-`upload_templates.py` (the "Need a starting template?" expander).
+`upload_templates.py` (the "Need a starting template?" expander). The Master Grid template is prepared for the
+selected period: the prior period's quantity and value come from the stored layers, the current period's quantity is
+blank for the count, and its value is blank because the app derives it.
 
 ## Master Grid (UI label: "Ending Inventory Workbook")
 

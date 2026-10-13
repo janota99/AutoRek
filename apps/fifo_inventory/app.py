@@ -156,26 +156,28 @@ with tab_processing:
 
         with st.expander("📄 Need a starting template?", expanded=False):
             st.caption(
-                "Blank, correctly-shaped workbooks with the exact column headers and data types this app expects — "
-                "every product alias pre-filled for the Master Grid, plus a filled-in example row for Receipts. Each "
-                "includes an Instructions sheet."
+                "Correctly-shaped workbooks with the exact column headers and data types this app expects, prepared "
+                "for the period selected above. The Master Grid carries every product alias, the prior period's "
+                "quantity and value from the stored layers, and a blank highlighted quantity column for this "
+                "period's count (the ending value is calculated, never entered). Each includes an Instructions sheet."
             )
             tmpl_col1, tmpl_col2, tmpl_col3 = st.columns(3)
             with tmpl_col1:
                 st.download_button(
-                    "📋 Master Grid Template", data=build_master_grid_template(),
-                    file_name="Master_Grid_Upload_Template.xlsx",
+                    "📋 Master Grid Template",
+                    data=build_master_grid_template(layer_store, fiscal_year, current_period),
+                    file_name=f"Master_Grid_Upload_Template_P{current_period:02d}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 )
             with tmpl_col2:
                 st.download_button(
-                    "🧾 Receipts Template", data=build_receipts_template(),
-                    file_name="Receipts_Upload_Template.xlsx",
+                    "🧾 Receipts Template", data=build_receipts_template(current_period),
+                    file_name=f"Receipts_Upload_Template_P{current_period:02d}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 )
             with tmpl_col3:
                 st.download_button(
-                    "📦 Both (.zip)", data=build_upload_templates_zip(),
+                    "📦 Both (.zip)", data=build_upload_templates_zip(layer_store, fiscal_year, current_period),
                     file_name="FIFO_Upload_Templates.zip", mime="application/zip",
                 )
 
@@ -308,7 +310,7 @@ with tab_processing:
                 except Exception as exc:
                     debug['errors'].append(
                         f"We couldn't read the Master Grid file ({exc}). Check that it is the Ending Inventory "
-                        "workbook with a PRODUCT ALIAS column and a quantity and value column for each period."
+                        "workbook with a PRODUCT ALIAS column and a quantity column for each period (value columns are optional)."
                     )
                     debug.update({'alias_col': None, 'period_cols': {}, 'value_period_cols': {}, 'applied_count': 0,
                                   'unmatched': [], 'duplicates': [], 'invalid_cells': [], 'preview': pd.DataFrame()})
