@@ -124,7 +124,8 @@ card in `dashboard.css`, so a tap anywhere opens the tool. The Plans page cards 
 (the script in `apps/sales_page.py`). A card's inputs and outputs come from `AppEntry` in `shared/layout.py`, and a
 plan's tools from `Tier.tool_ids`. `mongodb/` holds the matching collections (`reviews`, `plans`, `tools`) with `$jsonSchema`
 validators and sample documents, and `mongodb/test_samples.py` fails if they drift from `TIERS` or `APPS`.
-The site is not connected to MongoDB.
+The site is not connected to MongoDB; `mongodb/connection.py` and `py -m mongodb.check_connection` make it
+ready to connect (see `mongodb/README.md`).
 
 ## Adding an application
 

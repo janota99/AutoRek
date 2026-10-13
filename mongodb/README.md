@@ -12,6 +12,25 @@ document with a wrong type, an out-of-range value, a missing field, or an extra 
 | `plans` | `plans.json` (3) | The three purchase tiers on the Plans & Pricing page | `TIERS` in `apps/sales_page.py` |
 | `tools` | `tools.json` (4) | The four accounting utilities, one per Dashboard card | `APPS` in `shared/layout.py` |
 
+## Connect to Atlas (ready to connect)
+
+The site is not wired to MongoDB, but the connection layer is in place and testable:
+
+1. In Atlas: a cluster, a database user with only `readWrite` on `janota_fin`, and your IP in the IP Access List.
+2. Add a `[mongodb]` block to `.streamlit/secrets.toml` (copy it from `secrets.toml.example`), or set
+   `AUTOREK_MONGODB_URI`. Never commit it.
+3. Load the sample documents into Atlas with `seed.mongodb.js` (below), using the `mongodb+srv://` string.
+4. Run the check:
+
+```bash
+py -m mongodb.check_connection
+```
+
+It pings the cluster, confirms the three collections and their counts, validates every stored document against
+`schemas/`, and warns if the connecting user is over-privileged. It only reads. `connection.py` holds the
+settings loader (`load_config`, `connect`) and plain-language failure reasons (`describe_error`);
+`test_connection.py` covers them without a server.
+
 ## Load it
 
 ```bash
