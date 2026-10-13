@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-COLLECTIONS = ("reviews", "plans", "tools")
+COLLECTIONS = ("reviews", "plans", "tools", "taxRules")
 
 
 class ObjectId(str):

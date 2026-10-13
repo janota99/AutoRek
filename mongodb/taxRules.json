@@ -1,0 +1,2111 @@
+[
+  {
+    "_id": "food-products",
+    "title": "Grocery food is generally nontaxable",
+    "category": "Food classification",
+    "usualTreatment": "Generally nontaxable",
+    "summary": "Food products for human consumption are generally nontaxable. Freezing or refrigerating food to preserve it does not change that: the result turns on the product and how it is sold, not on how it is stored.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.314",
+      "34 TAC §3.293"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S05",
+        "label": "34 TAC §3.293",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=293"
+      },
+      {
+        "key": "S08",
+        "label": "Comptroller Publication 96-280",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-280.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 1,
+        "title": "Basic grocery staples",
+        "taxableWhen": "Tax applies only if the item falls outside the statutory food-product definition or is sold in a taxable prepared-food form.",
+        "nontaxableWhen": "Qualifying food products for human consumption are nontaxable, including ordinary flour, bread, milk, eggs, meat, produce and similar groceries.",
+        "inPractice": "Classify tax at the point of sale by item and sale condition, not by the category of the inventory.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 2,
+        "title": "Fresh produce sold whole",
+        "taxableWhen": "A produce item can become taxable when prepared and sold in a taxable immediate-consumption context, or when another statutory exclusion applies.",
+        "nontaxableWhen": "Whole fruits and vegetables sold as grocery food products are generally nontaxable.",
+        "inPractice": "Whole produce sold as grocery is the ordinary case; confirm the sale condition (prepared, cut, or served) before treating it otherwise.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 3,
+        "title": "Frozen food held in natural state",
+        "taxableWhen": "A sale may be taxable if the seller heats the food or sells it as taxable prepared food; freezing alone does not create that result.",
+        "nontaxableWhen": "Food merely frozen or kept frozen to preserve its natural state remains a food product if it otherwise meets §151.314.",
+        "inPractice": "Freezing for storage is not preparation; classify by what the item is and how it is sold.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 4,
+        "title": "Refrigerated food held in natural state",
+        "taxableWhen": "Tax depends on the product and how it is sold, not on refrigeration itself.",
+        "nontaxableWhen": "Cold storage to preserve food does not by itself convert grocery food into taxable prepared food.",
+        "inPractice": "Classify the product by its retail form and how it is prepared at the point of sale, not by warehouse temperature.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 15,
+        "title": "Bottled water",
+        "taxableWhen": "Flavored water meeting the soft-drink definition is taxable.",
+        "nontaxableWhen": "Unflavored, mineral, spring and sparkling water are generally nontaxable food products.",
+        "inPractice": "Classify plain water separately from flavored or sweetened beverages.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 16,
+        "title": "Coffee beans and ground coffee",
+        "taxableWhen": "Coffee sold heated, in a cup/glass, or with a straw is taxable under the grocery guidance; sweetened bottled/canned coffee can also be taxable.",
+        "nontaxableWhen": "Coffee beans, grounds, pods and unsweetened packaged coffee/tea are generally nontaxable grocery food products.",
+        "inPractice": "Coffee bought for internal use is not resale inventory; distinguish dry coffee goods from brewed or hot service.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 18,
+        "title": "Dietary supplements",
+        "taxableWhen": "Products failing statutory dietary-supplement or food-product requirements may be taxable.",
+        "nontaxableWhen": "Qualifying dietary supplements, commonly identified by a required Supplement Facts panel or statutory alternative criteria, are nontaxable.",
+        "inPractice": "Use the item's actual label and ingredients; do not classify by marketing name.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 1
+  },
+  {
+    "_id": "prepared-food",
+    "title": "Prepared food is taxable",
+    "category": "Food classification",
+    "usualTreatment": "Generally taxable",
+    "summary": "Food becomes taxable when it is sold as prepared food: heated by the seller, sold with eating utensils, combined at the store, or sold for immediate consumption. A small sales volume does not create an exception.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.314(b)",
+      "34 TAC §3.293",
+      "Tax Code §151.314",
+      "Tax Code §151.051",
+      "Tax Code §§151.101, 151.314"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S05",
+        "label": "34 TAC §3.293",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=293"
+      },
+      {
+        "key": "S08",
+        "label": "Comptroller Publication 96-280",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-280.php"
+      },
+      {
+        "key": "S11",
+        "label": "Comptroller Publication 94-117",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-117.php"
+      },
+      {
+        "key": "S14",
+        "label": "Comptroller Publication 96-259",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-259.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 5,
+        "title": "Food heated by the seller",
+        "taxableWhen": "Hot food sold after the seller heats it is generally taxable, subject to statutory details and listed exceptions.",
+        "nontaxableWhen": "Food sold cold or not heated by the seller may remain a nontaxable food product.",
+        "inPractice": "Applies where the seller heats food, typically a cafe or store counter; plain distribution of unheated product is outside it.",
+        "authority": "Tax Code §151.314(b); 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 6,
+        "title": "Prepared food sold in an on-site cafe",
+        "taxableWhen": "Prepared meals and hot food sold by the cafe are taxable even if cafe sales are a very small share of total business.",
+        "nontaxableWhen": "A product that remains a qualifying grocery food product and is not sold as prepared food may be nontaxable.",
+        "inPractice": "Small cafe volume does not waive tax on taxable sales. Track cafe sales separately from wholesale or distribution activity.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293; Tax Code §151.051",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 7,
+        "title": "Cold meals and utensils",
+        "taxableWhen": "Cold food sold with eating utensils, or in the taxable prepared-food setting described in the Comptroller rule, can be taxable.",
+        "nontaxableWhen": "Cold grocery food sold without eating utensils and not in a taxable restaurant/prepared-food transaction may be nontaxable.",
+        "inPractice": "Use a separate point-of-sale tax code for utensils, meal bundles and cold grab-and-go items.",
+        "authority": "Tax Code §151.314(b); 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 8,
+        "title": "Deli or counter food for immediate consumption",
+        "taxableWhen": "Food sold through a deli, lunch counter, restaurant or similar location for immediate consumption is generally taxable.",
+        "nontaxableWhen": "Packaged grocery food for later consumption may be nontaxable when the statutory food-product definition is met.",
+        "inPractice": "Applies to counter and deli sales for immediate consumption, not to ordinary product movement between businesses.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08",
+          "S11"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 9,
+        "title": "Sandwiches",
+        "taxableWhen": "Sandwiches are generally taxable prepared food when sold ready to eat.",
+        "nontaxableWhen": "Frozen or partially frozen sandwiches requiring customer thawing or heating before eating may remain nontaxable.",
+        "inPractice": "Keep the product's state and any customer preparation step visible in the item master.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 10,
+        "title": "Food combined at the store",
+        "taxableWhen": "Food made at a store by combining two or more food ingredients and sold as one item (such as salad, salsa, hummus or pesto) is generally taxable prepared food.",
+        "nontaxableWhen": "Uncombined grocery ingredients sold separately generally retain their food-product treatment.",
+        "inPractice": "Relevant to stores and counters that assemble items; a distributor that does not prepare product is generally outside it.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 11,
+        "title": "Bakery goods",
+        "taxableWhen": "Bakery items sold by a nonqualifying grocery operation are taxable if heated by the seller or sold with eating utensils.",
+        "nontaxableWhen": "Bakery items are generally nontaxable when sold cold without utensils; qualifying bakery locations have a separate rule if over 50% of sales are bakery items for off-premises consumption.",
+        "inPractice": "A store-level classification; do not apply it to goods handled at a distribution facility.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 17,
+        "title": "Coffee brewed for office use",
+        "taxableWhen": "A hot beverage sold or provided in a taxable food-service transaction can be taxable; taxable supplies used to brew it remain taxable purchases.",
+        "nontaxableWhen": "Dry beans/grounds are generally nontaxable food products; brewing coffee for internal office use does not make the business a food manufacturer.",
+        "inPractice": "Code office coffee separately from resale inventory and from cafe sales; confirm whether purchases are dry coffee, prepared cups, or a service bundle.",
+        "authority": "Tax Code §§151.101, 151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08",
+          "S14"
+        ],
+        "industry": "Food distribution"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 2
+  },
+  {
+    "_id": "candy-drinks-snacks",
+    "title": "Candy, soft drinks, snacks and vending are carved out",
+    "category": "Food classification",
+    "usualTreatment": "Generally taxable",
+    "summary": "Some items are taxable even though they are food: candy and gum, soft drinks and other sweetened beverages, individual-size snacks, and items sold through vending machines. Definitions and thresholds decide each case.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.314(b)",
+      "34 TAC §3.293",
+      "Tax Code §151.314"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S05",
+        "label": "34 TAC §3.293",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=293"
+      },
+      {
+        "key": "S08",
+        "label": "Comptroller Publication 96-280",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-280.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 12,
+        "title": "Candy and gum",
+        "taxableWhen": "Candy and gum are taxable even when sold in a grocery store.",
+        "nontaxableWhen": "Items not meeting the statutory candy definition may qualify as food products.",
+        "inPractice": "Maintain product-level tax categories for candy, sweetened nuts and similar items.",
+        "authority": "Tax Code §151.314(b); 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 13,
+        "title": "Soft drinks and sports drinks",
+        "taxableWhen": "Sweetened or flavored beverages that meet the statutory soft-drink definition are taxable.",
+        "nontaxableWhen": "Qualifying milk or milk-substitute drinks and qualifying beverages with more than 50% fruit or vegetable juice may be nontaxable.",
+        "inPractice": "Use ingredient and label data; the word \"beverage\" alone is not enough to classify.",
+        "authority": "Tax Code §151.314(b); 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 14,
+        "title": "Juice drinks",
+        "taxableWhen": "A beverage containing 50% or less fruit/vegetable juice can be a taxable soft drink, depending on ingredients and form.",
+        "nontaxableWhen": "Beverages containing more than 50% fruit or vegetable juice may qualify as food products.",
+        "inPractice": "Maintain an ingredient-based rule for blends, punches and juice drinks.",
+        "authority": "Tax Code §151.314(b); 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 19,
+        "title": "Individual-size snack foods",
+        "taxableWhen": "Snack items sold in an individual-size portion (under 2.5 ounces or labeled no more than one serving) are generally taxable.",
+        "nontaxableWhen": "Larger non-individual-size packages and multipacks of separate individual packages may be nontaxable, subject to meal/vending exceptions.",
+        "inPractice": "Relevant at checkout; map package size and serving data to the point-of-sale tax code.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 20,
+        "title": "Food sold through vending machines",
+        "taxableWhen": "Food and beverages sold through vending machines are generally taxable under the Comptroller's grocery guidance.",
+        "nontaxableWhen": "A different nontaxable retail sale may apply outside the vending-machine context if the food-product definition is met.",
+        "inPractice": "If vending is operated, keep those sales distinct from grocery shelf sales.",
+        "authority": "Tax Code §151.314; 34 TAC §3.293",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 3
+  },
+  {
+    "_id": "what-counts-as-manufacturing",
+    "title": "What counts as manufacturing or processing",
+    "category": "Manufacturing and processing",
+    "usualTreatment": "Depends on the facts",
+    "summary": "Whether an operation is manufacturing or processing is a fact test. Handling steps such as washing, trimming, sorting or waxing qualify only when they are part of a process that meets the legal test; the name of the activity does not decide it.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.318(a)(2)",
+      "34 TAC §3.300",
+      "§151.314",
+      "Tax Code §151.318",
+      "Tax Code §§151.314, 151.318",
+      "34 TAC §§3.293, 3.300"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S05",
+        "label": "34 TAC §3.293",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=293"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S08",
+        "label": "Comptroller Publication 96-280",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-280.php"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 21,
+        "title": "Produce ripening operation",
+        "taxableWhen": "The manufacturing exemption is not automatic; a qualifying process must meet §151.318 and Rule 3.300. Ripening may be fact-sensitive because it changes product characteristics.",
+        "nontaxableWhen": "Ordinary storage, staging or holding without qualifying processing does not establish manufacturing status.",
+        "inPractice": "Treat ripening as fact-sensitive: document the steps, equipment, physical change, operator, product ownership, and the point at which the product is sale-ready.",
+        "authority": "Tax Code §151.318(a)(2); 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 22,
+        "title": "Ethylene or controlled-atmosphere ripening",
+        "taxableWhen": "Tax may apply to equipment/supplies unless directly used in qualifying actual processing and the statutory conditions are met.",
+        "nontaxableWhen": "Qualifying equipment directly used in manufacturing/processing for ultimate sale may be exempt; the label “ripening room” alone does not establish it.",
+        "inPractice": "Tie controlled-atmosphere equipment and controls to the documented ripening process, separate from ordinary cold storage.",
+        "authority": "Tax Code §151.318(a)(2); 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 25,
+        "title": "Washing produce",
+        "taxableWhen": "Taxable if washing is incidental handling/storage and the purchased item does not meet an exemption.",
+        "nontaxableWhen": "Washing may be part of a qualifying processing operation only when the full activity meets the legal test; washing alone does not establish it.",
+        "inPractice": "Classify routine washing and cleaning as handling unless a documented processing analysis supports otherwise.",
+        "authority": "Tax Code §151.318(a)(2); 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 26,
+        "title": "Trimming or removing inedible parts",
+        "taxableWhen": "Taxable where trimming is incidental preparation/handling after manufacture is complete.",
+        "nontaxableWhen": "A qualifying processing operation may support exemption for direct-use property when the statutory manufacturing test is met.",
+        "inPractice": "Document whether trimming materially changes the product or only makes it suitable for display.",
+        "authority": "Tax Code §151.318(a)(2); 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 27,
+        "title": "Cutting or dicing produce",
+        "taxableWhen": "Taxable if the activity is retail meal preparation or only incidental handling outside a qualifying manufacturing operation.",
+        "nontaxableWhen": "Equipment/materials directly used in qualifying food processing for ultimate sale may qualify under the manufacturing exemption.",
+        "inPractice": "Analyze any cutting operation separately from ripening, cold storage, and meal preparation.",
+        "authority": "Tax Code §151.318(a)(2); 34 TAC §3.300; §151.314",
+        "sourceKeys": [
+          "S01",
+          "S03",
+          "S05",
+          "S06"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 28,
+        "title": "Sorting and grading",
+        "taxableWhen": "Taxable when equipment is used for routine inventory selection, storage or distribution.",
+        "nontaxableWhen": "A process may qualify only if it satisfies Rule 3.300's manufacturing/processing requirements.",
+        "inPractice": "Sorting and grading to fill orders is not assumed to be manufacturing; keep an activity description and process map.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 29,
+        "title": "Waxing produce",
+        "taxableWhen": "Taxable when waxing is post-production handling or used for storage/display without qualifying process treatment.",
+        "nontaxableWhen": "A specific material may qualify if used directly in qualifying processing and within the manufacturing statute/rule.",
+        "inPractice": "Track waxing materials separately and document purpose, product stage, and whether the activity changes marketability or physical characteristics.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 30,
+        "title": "Cutting and repackaging only",
+        "taxableWhen": "Taxable when the business only cuts/repackages food without satisfying the manufacturing test; the retail food-product result may still be nontaxable.",
+        "nontaxableWhen": "Comptroller guidance says food cut up/repackaged or pasteurized, such as produce trays, may remain nontaxable food products at retail.",
+        "inPractice": "Retail food taxability and eligibility for the manufacturing-purchase exemption are separate questions.",
+        "authority": "Tax Code §§151.314, 151.318; 34 TAC §§3.293, 3.300",
+        "sourceKeys": [
+          "S01",
+          "S05",
+          "S06",
+          "S08"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 31,
+        "title": "Pasteurization",
+        "taxableWhen": "Taxable if purchased items are used outside a qualifying process.",
+        "nontaxableWhen": "Food may remain a nontaxable food product after pasteurization; equipment can qualify only under §151.318's manufacturing test.",
+        "inPractice": "Do not use a downstream retail exemption as proof that equipment or inputs are exempt.",
+        "authority": "Tax Code §§151.314, 151.318; 34 TAC §§3.293, 3.300",
+        "sourceKeys": [
+          "S01",
+          "S03",
+          "S05",
+          "S06"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 40,
+        "title": "Product made more marketable",
+        "taxableWhen": "Taxable when a purchase supports sales or distribution but is not itself part of a qualifying manufacturing activity.",
+        "nontaxableWhen": "Qualifying manufacturers may obtain certain chemicals/materials used to make product more marketable under Comptroller guidance.",
+        "inPractice": "Marketing improvement alone does not make a distributor a manufacturer; assess the actual process and material separately.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 4
+  },
+  {
+    "_id": "who-and-when",
+    "title": "Who qualifies, and where the process starts and ends",
+    "category": "Manufacturing and processing",
+    "usualTreatment": "Depends on the facts",
+    "summary": "The exemption follows the entity and the stage. It covers a qualifying operation producing property for ultimate sale, begins with the first activity that changes the materials, and ends when the product has its final physical properties. An affiliate's or a customer's status does not extend it.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.318",
+      "34 TAC §§3.300, 3.314",
+      "34 TAC §3.300",
+      "Tax Code §151.318(a)(1)-(2)",
+      "Tax Code §§151.005, 151.318"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S07",
+        "label": "34 TAC §3.314",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=314"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 32,
+        "title": "Packaging stage and product completion",
+        "taxableWhen": "Taxable for property used after the manufacturing process ends in storage, maintenance or distribution.",
+        "nontaxableWhen": "Qualifying manufacturer packaging may be within the process; Comptroller says manufacturing ends when the product has the physical properties (including packaging) in which transferred.",
+        "inPractice": "Document when the product is sale-ready and whether packaging is part of completion or of later distribution.",
+        "authority": "Tax Code §151.318; 34 TAC §§3.300, 3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 33,
+        "title": "First production activity",
+        "taxableWhen": "Taxable for general pre-production/storage activity before qualifying manufacturing begins.",
+        "nontaxableWhen": "Direct-use items may qualify beginning with the first activity that changes raw materials/ingredients in a qualifying manufacturing process.",
+        "inPractice": "Identify when the physical process starts; receiving and staging alone are not enough.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 34,
+        "title": "Intermediate products",
+        "taxableWhen": "Taxable for property not used in actual qualifying production.",
+        "nontaxableWhen": "Direct-use property may qualify if it changes an intermediate/preliminary product that becomes an ingredient or component of the product for sale.",
+        "inPractice": "Use only if an intermediate product is actually created; ordinary custody of produce does not qualify by itself.",
+        "authority": "Tax Code §151.318(a)(1)-(2); 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 35,
+        "title": "Food for ultimate sale",
+        "taxableWhen": "Taxable if the operation is not actually producing tangible personal property for sale or property is used for business purposes.",
+        "nontaxableWhen": "Manufacturing exemptions apply to qualifying manufacture/fabrication/processing for ultimate sale.",
+        "inPractice": "Goods held for sale are the required destination, but the processing activity must still meet the test.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 36,
+        "title": "Separate legal affiliate owns the equipment",
+        "taxableWhen": "Tax follows the taxpayer that purchases/uses the property and the activity it conducts; group membership alone does not extend another affiliate's status.",
+        "nontaxableWhen": "An entity can qualify based on its own actual manufacturing/processing activity for sale.",
+        "inPractice": "Identify the equipment owner, operator, inventory owner and purchaser on each invoice; align the exemption claim to the entity performing the process.",
+        "authority": "Tax Code §§151.005, 151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S01",
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 37,
+        "title": "Contract processing for another entity",
+        "taxableWhen": "A service provider that only stores or handles goods does not qualify solely because its customer is a manufacturer.",
+        "nontaxableWhen": "A submanufacturer actually performing qualifying operations may qualify for the exemption in its own right.",
+        "inPractice": "Determine whether the business performs the physical process or only provides logistics or custody for an affiliate or customer.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 38,
+        "title": "Quality-control testing",
+        "taxableWhen": "Taxable for general inspection or post-production inventory checks not used in qualifying manufacturing.",
+        "nontaxableWhen": "Testing products for ultimate sale during the manufacturing operation may qualify under Comptroller guidance.",
+        "inPractice": "Separate production-line food-safety testing from receiving and order-accuracy checks.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 5
+  },
+  {
+    "_id": "storage-is-not-processing",
+    "title": "Storage and refrigeration are not processing",
+    "category": "Manufacturing and processing",
+    "usualTreatment": "Generally taxable",
+    "summary": "Refrigeration and freezing used only to preserve or store finished goods are not manufacturing. Equipment qualifies only to the extent it is directly used in actual qualifying processing.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.318",
+      "34 TAC §3.300"
+    ],
+    "sources": [
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 23,
+        "title": "Refrigeration used only to preserve inventory",
+        "taxableWhen": "Taxable when refrigeration equipment or service is used to store completed products or general warehouse inventory.",
+        "nontaxableWhen": "A specific item may qualify if directly used in actual processing; refrigeration by itself does not establish manufacturing.",
+        "inPractice": "Treat refrigeration for preservation as storage unless evidence shows direct use in processing.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Food distribution"
+      },
+      {
+        "no": 24,
+        "title": "Freezing to preserve natural state",
+        "taxableWhen": "Freezing solely for preservation/storage is not enough to claim manufacturing treatment.",
+        "nontaxableWhen": "A process that actually changes product form for sale may require separate analysis under the manufacturing rule.",
+        "inPractice": "Do not conflate holding product frozen with processing it into a new product.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 43,
+        "title": "Refrigeration equipment",
+        "taxableWhen": "Taxable when used to maintain/store completed products or provide general warehouse refrigeration.",
+        "nontaxableWhen": "Equipment directly used in qualifying actual processing may qualify if the statutory test is met.",
+        "inPractice": "Distinguish equipment used in processing from coolers and freezers used only to preserve natural state.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 6
+  },
+  {
+    "_id": "utilities-and-water",
+    "title": "Utilities and water",
+    "category": "Manufacturing and processing",
+    "usualTreatment": "Depends on the facts",
+    "summary": "Gas, electricity and water are exempt only to the extent they power or serve qualifying processing, supported by a use study or allocation. Storage and general warehouse use remain taxable.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §§151.317, 151.318",
+      "34 TAC §3.295",
+      "Tax Code §151.318",
+      "34 TAC §3.300"
+    ],
+    "sources": [
+      {
+        "key": "S02",
+        "label": "Texas Tax Code §151.317 and 34 TAC §3.295",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      },
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 41,
+        "title": "Gas and electricity for qualifying manufacturing",
+        "taxableWhen": "Taxable if used by a nonqualifying entity or for nonmanufacturing uses without a valid allocation method.",
+        "nontaxableWhen": "Gas/electricity used to power exempt manufacturing equipment may qualify subject to a predominant-use study; prepared-food equipment/storage is excluded from the listed treatment.",
+        "inPractice": "Separate processing loads from general warehouse refrigeration, offices and any cafe; document the study.",
+        "authority": "Tax Code §§151.317, 151.318; 34 TAC §3.295",
+        "sourceKeys": [
+          "S02",
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 42,
+        "title": "Electricity for cold storage",
+        "taxableWhen": "Taxable when used for ordinary preservation/storage of completed goods or general warehouse space.",
+        "nontaxableWhen": "Only the portion supported as directly related to qualifying manufacturing equipment/process may qualify under the applicable utility rule.",
+        "inPractice": "Do not treat all cold-storage electricity as manufacturing electricity where the purpose is preservation.",
+        "authority": "Tax Code §§151.317, 151.318; 34 TAC §3.295",
+        "sourceKeys": [
+          "S02",
+          "S03",
+          "S06"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 45,
+        "title": "Water and wastewater in processing",
+        "taxableWhen": "Taxable unless a specific statutory manufacturing/pollution-control exemption applies.",
+        "nontaxableWhen": "Certain equipment/property specifically installed to reduce water use, recycle/reuse wastewater or treat wastewater may qualify.",
+        "inPractice": "Apply only to identified process equipment; ordinary facility water and sanitation are not presumed exempt.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 7
+  },
+  {
+    "_id": "general-property-taxable",
+    "title": "Ordinary business property stays taxable",
+    "category": "Equipment and supplies",
+    "usualTreatment": "Generally taxable",
+    "summary": "Ordinary business property stays taxable even inside a manufacturing facility: office items, janitorial supplies, racking, scales, forklifts, conveyors that only move or store inventory, and hand tools.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.318",
+      "34 TAC §3.300",
+      "Tax Code §§151.009, 151.318",
+      "Pub. 94-124"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 47,
+        "title": "Janitorial equipment and supplies",
+        "taxableWhen": "Taxable even when used inside a manufacturing facility if used for janitorial cleaning.",
+        "nontaxableWhen": "A different exemption may apply only where the item itself meets a specific manufacturing rule, not merely because the facility makes/handles food.",
+        "inPractice": "Treat general mops, floor machines and cleaning materials as taxable purchases.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 50,
+        "title": "Office equipment and supplies",
+        "taxableWhen": "Taxable when purchased for office operations.",
+        "nontaxableWhen": "A specific resale or statutory exemption may apply, but ordinary office use is not covered by the manufacturing exemption.",
+        "inPractice": "Treat the office as a taxable-use location.",
+        "authority": "Tax Code §§151.009, 151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S01",
+          "S03",
+          "S06"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 51,
+        "title": "Forklifts and pallet jacks",
+        "taxableWhen": "Taxable when used for intraplant movement, warehouse storage or distribution.",
+        "nontaxableWhen": "Only a distinct statutory exemption or direct qualifying use would change the result; ordinary food distribution is not enough.",
+        "inPractice": "Assume warehouse forklifts and pallet jacks are taxable business equipment.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300; Pub. 94-124",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 52,
+        "title": "Warehouse conveyors",
+        "taxableWhen": "Taxable when used to move, stage or store inventory rather than as part of actual qualifying manufacturing equipment.",
+        "nontaxableWhen": "A conveyor that is an integral component of a qualifying production unit may require separate analysis under the statute and rule.",
+        "inPractice": "Do not claim exemption for ordinary warehouse conveyance without showing a production role.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 54,
+        "title": "Warehouse racking and bins",
+        "taxableWhen": "Taxable when used to store inventory, including goods held for sale.",
+        "nontaxableWhen": "A separate specific exemption must apply; storage alone does not meet manufacturing criteria.",
+        "inPractice": "Treat storage racks, shelving and bins as taxable purchases.",
+        "authority": "Tax Code §§151.009, 151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S01",
+          "S03",
+          "S06"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 55,
+        "title": "Inventory scales",
+        "taxableWhen": "Taxable for receiving, shipping, inventory counts or warehouse order fulfillment.",
+        "nontaxableWhen": "A scale directly used for qualifying production control during the manufacturing operation may require specific review.",
+        "inPractice": "Separate receiving and shipping scales from process-measurement equipment.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 59,
+        "title": "Hand tools",
+        "taxableWhen": "Taxable even if used by employees in a manufacturing process.",
+        "nontaxableWhen": "No broad exemption arises just from use at a manufacturing facility.",
+        "inPractice": "Treat routine hand tools as taxable.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300; Pub. 94-124",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 8
+  },
+  {
+    "_id": "process-supplies",
+    "title": "Supplies and equipment that may qualify",
+    "category": "Equipment and supplies",
+    "usualTreatment": "Depends on the facts",
+    "summary": "Certain items consumed in or integral to actual processing may qualify: required protective clothing and gloves, disinfectants used in processing areas, supplies needed for public-health compliance, and integrated conveyors. Using exempt equipment for nonmanufacturing purposes can trigger tax.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.318",
+      "34 TAC §3.300",
+      "Pub. 94-117",
+      "Pub. 94-124",
+      "Tax Code §§151.318, 151.3181"
+    ],
+    "sources": [
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      },
+      {
+        "key": "S11",
+        "label": "Comptroller Publication 94-117",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-117.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 39,
+        "title": "Public-health-required supplies",
+        "taxableWhen": "Taxable if supplies are general janitorial/facility items or not used in actual qualifying production.",
+        "nontaxableWhen": "Certain property consumed in actual manufacturing/processing and necessary to comply with public-health laws may qualify.",
+        "inPractice": "Retain the specific legal or regulatory requirement and show the items are used in the processing area.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 46,
+        "title": "Disinfectants in food-processing area",
+        "taxableWhen": "Taxable when used for general janitorial cleaning or facility sanitation.",
+        "nontaxableWhen": "Certain disinfectants and supplies applied in actual food processing areas may qualify under manufacturing/public-health rules when conditions are met.",
+        "inPractice": "Tag the area, use and regulatory purpose; uses in warehouse and cafe areas may differ.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300; Pub. 94-117",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09",
+          "S11"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 48,
+        "title": "Protective clothing and hairnets",
+        "taxableWhen": "Taxable for ordinary uniforms and general employee apparel.",
+        "nontaxableWhen": "Certain safety apparel/work clothing required for the manufacturing process, such as regulated hairnets or gloves, may qualify.",
+        "inPractice": "The exemption depends on required process use; separate warehouse, office and cafe clothing.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300; Pub. 94-124",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 49,
+        "title": "Gloves and food-contact PPE",
+        "taxableWhen": "Taxable when ordinary gloves are used for general work or cleaning.",
+        "nontaxableWhen": "Required protective gloves directly used in qualifying manufacturing may qualify under the manufacturing rule.",
+        "inPractice": "Document whether gloves are legally required for the processing area versus general handling or cafe service.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 53,
+        "title": "Production-line conveyors",
+        "taxableWhen": "Taxable if the conveyor is merely transport between separate machines and is not an exempt component.",
+        "nontaxableWhen": "A conveyor integrated into one qualifying item of manufacturing equipment may qualify under narrow rule conditions.",
+        "inPractice": "Obtain equipment diagrams and vendor specifications before treating conveyors as exempt.",
+        "authority": "Tax Code §151.318; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 60,
+        "title": "Divergent use of manufacturing equipment",
+        "taxableWhen": "Tax due when equipment purchased under manufacturing exemption is used for nonmanufacturing purposes under divergent-use rules.",
+        "nontaxableWhen": "Equipment used only in qualifying manufacturing remains exempt; the rule includes a monthly use calculation and limited thresholds.",
+        "inPractice": "Track equipment use for processing versus storage and general use; get tax review before applying a divergent-use calculation.",
+        "authority": "Tax Code §§151.318, 151.3181; 34 TAC §3.300",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 9
+  },
+  {
+    "_id": "packaging-supplies",
+    "title": "Packaging supplies and containers",
+    "category": "Packaging and charges",
+    "usualTreatment": "Depends on the facts",
+    "summary": "Packaging supplies and containers are exempt only when a qualifying manufacturer uses them to package its own manufactured product for sale. A distributor or warehouse using the same items for storage or shipping pays tax.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.318",
+      "34 TAC §§3.300, 3.314",
+      "34 TAC §3.314"
+    ],
+    "sources": [
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S07",
+        "label": "34 TAC §3.314",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=314"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 61,
+        "title": "Nonreturnable packaging at manufacturer stage",
+        "taxableWhen": "Taxable if used by a distributor/warehouse after manufacturing ends or for general storage/shipping.",
+        "nontaxableWhen": "Wrapping/packaging supplies may qualify when used by a qualifying manufacturer to package its manufactured product for sale.",
+        "inPractice": "The production-stage boundary is critical; ordinary distribution wrap is not assumed exempt.",
+        "authority": "Tax Code §151.318; 34 TAC §§3.300, 3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07",
+          "S09"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 62,
+        "title": "Stretch wrap on finished pallets",
+        "taxableWhen": "Taxable when used to secure finished inventory for storage or shipment by a distributor.",
+        "nontaxableWhen": "May qualify as packaging when used by a qualifying manufacturer before the product is complete and to package that product for sale.",
+        "inPractice": "Stretch wrap applied after processing ends is distribution use unless the facts support a packaging exemption.",
+        "authority": "Tax Code §151.318; 34 TAC §3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 63,
+        "title": "Corrugated cases and cartons",
+        "taxableWhen": "Taxable for warehouse storage, internal movement or post-production distribution use.",
+        "nontaxableWhen": "Qualifying manufacturer packaging may be exempt when used as nonreturnable packaging for the manufacturer's product.",
+        "inPractice": "Document when cartons are applied and who applies them.",
+        "authority": "Tax Code §151.318; 34 TAC §§3.300, 3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 64,
+        "title": "Produce bags and liners",
+        "taxableWhen": "Taxable when used by warehouse/store staff for handling or routine distribution.",
+        "nontaxableWhen": "May qualify as direct processing/packaging supplies when used by a qualifying manufacturer under the applicable rule.",
+        "inPractice": "Keep bags used in processing distinct from bags used to pick, ship or store inventory.",
+        "authority": "Tax Code §151.318; 34 TAC §3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 65,
+        "title": "Pallets and crates",
+        "taxableWhen": "Taxable for reusable warehouse assets and internal logistics equipment.",
+        "nontaxableWhen": "Certain nonreturnable packaging materials used by qualifying manufacturers may be exempt; returnable containers require separate analysis.",
+        "inPractice": "Separate durable pallet-pool assets from packaging consumed with the manufacturer's product.",
+        "authority": "Tax Code §151.318; 34 TAC §3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 66,
+        "title": "Reusable containers",
+        "taxableWhen": "Taxable when the container is retained and reused as business equipment or warehouse property.",
+        "nontaxableWhen": "A container's sale with product or qualifying manufacturer packaging use may change the result under specific facts.",
+        "inPractice": "Track returnable containers separately from consumable packaging.",
+        "authority": "Tax Code §151.318; 34 TAC §3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 67,
+        "title": "Labels applied after processing",
+        "taxableWhen": "Taxable when used for price marking, store identification or distribution after the product is complete.",
+        "nontaxableWhen": "Labels/tags used as qualifying manufacturer packaging may be exempt when applied before transfer as part of the manufacturing stage.",
+        "inPractice": "Separate identity and traceability labels applied during processing from shelf price labels.",
+        "authority": "Tax Code §151.318; 34 TAC §§3.300, 3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 68,
+        "title": "Tape, bands and strapping",
+        "taxableWhen": "Taxable when used for warehouse load stabilization and ordinary shipping.",
+        "nontaxableWhen": "May qualify as wrapping/packaging supplies for a qualifying manufacturer packaging its product for sale.",
+        "inPractice": "Assess point of use and process stage, not the item name alone.",
+        "authority": "Tax Code §151.318; 34 TAC §3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 69,
+        "title": "Ice and dry ice",
+        "taxableWhen": "Taxable when used by a distributor for storage or transport after manufacturing.",
+        "nontaxableWhen": "May qualify as manufacturer packaging under Rule 3.314 in the appropriate product-packaging use.",
+        "inPractice": "Where ice is for cold-chain preservation, do not claim a packaging exemption without proof that it packages the product for sale.",
+        "authority": "Tax Code §151.318; 34 TAC §3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 70,
+        "title": "Food-contact film",
+        "taxableWhen": "Taxable when used for routine warehouse handling or storage by a nonqualifying processor.",
+        "nontaxableWhen": "May qualify when directly consumed in qualifying processing or as qualifying manufacturer packaging.",
+        "inPractice": "Identify the food-contact function, the stage applied, and whether it leaves with the product.",
+        "authority": "Tax Code §151.318; 34 TAC §§3.300, 3.314",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S07"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 10
+  },
+  {
+    "_id": "delivery-and-handling",
+    "title": "Delivery, shipping and handling charges",
+    "category": "Packaging and charges",
+    "usualTreatment": "Depends on the facts",
+    "summary": "Delivery, shipping and handling charges follow the items they relate to. Charges tied to taxable goods are part of the taxable sales price even if separately stated; charges tied only to exempt food follow the exempt sale; mixed orders are allocated.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.007",
+      "34 TAC §3.303",
+      "Tax Code §§151.007, 151.314",
+      "34 TAC §§3.293, 3.303"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S04",
+        "label": "Texas Tax Code §151.007; 34 TAC §3.303",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.007"
+      },
+      {
+        "key": "S05",
+        "label": "34 TAC §3.293",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=293"
+      },
+      {
+        "key": "S08",
+        "label": "Comptroller Publication 96-280",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-280.php"
+      },
+      {
+        "key": "S15",
+        "label": "34 TAC §3.303",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=303"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 71,
+        "title": "Shipping charges on taxable merchandise",
+        "taxableWhen": "Delivery/shipping charges connected with taxable items are generally part of taxable sales price, even if separately stated.",
+        "nontaxableWhen": "Charges attributable only to exempt items may be outside the taxable base subject to Comptroller allocation rules.",
+        "inPractice": "Allocate shared delivery charges reasonably between taxable and nontaxable products.",
+        "authority": "Tax Code §151.007; 34 TAC §3.303",
+        "sourceKeys": [
+          "S01",
+          "S04",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 72,
+        "title": "Delivery charges on exempt food",
+        "taxableWhen": "Taxable if the same charge relates to taxable goods/services in the transaction.",
+        "nontaxableWhen": "Delivery charges related only to nontaxable grocery food generally follow the exempt food sale.",
+        "inPractice": "Use a documented, reasonable allocation for mixed grocery orders.",
+        "authority": "Tax Code §§151.007, 151.314; 34 TAC §§3.293, 3.303",
+        "sourceKeys": [
+          "S01",
+          "S04",
+          "S05",
+          "S08",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 73,
+        "title": "Mixed taxable and exempt orders",
+        "taxableWhen": "Tax due on taxable items and the reasonably allocable taxable portion of connected delivery/handling charges.",
+        "nontaxableWhen": "Food-product lines and charges attributable to those lines may be excluded from taxable sales price.",
+        "inPractice": "Order data should retain line-level product taxability and a consistent shipping-allocation method.",
+        "authority": "Tax Code §§151.007, 151.314; 34 TAC §§3.293, 3.303",
+        "sourceKeys": [
+          "S01",
+          "S04",
+          "S05",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 74,
+        "title": "Handling fee on taxable sale",
+        "taxableWhen": "A seller's handling fee tied to taxable merchandise is generally included in sales price even if separately stated.",
+        "nontaxableWhen": "Charges solely tied to an exempt sale may be nontaxable under the applicable rules.",
+        "inPractice": "Check vendor invoices and customer receipts for handling charges on taxable sales.",
+        "authority": "Tax Code §151.007; 34 TAC §3.303",
+        "sourceKeys": [
+          "S01",
+          "S04",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 75,
+        "title": "Fuel or environmental surcharge",
+        "taxableWhen": "Taxable when it is part of the seller's charge for taxable goods or delivery.",
+        "nontaxableWhen": "A true tax collected for government or distinct nontaxable service may have different treatment if separately supported.",
+        "inPractice": "Review the invoice basis; the label \"environmental fee\" does not decide taxability.",
+        "authority": "Tax Code §151.007; 34 TAC §3.303",
+        "sourceKeys": [
+          "S01",
+          "S04",
+          "S15"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 11
+  },
+  {
+    "_id": "discounts-rebates-bad-debts",
+    "title": "Discounts, rebates, gift cards and bad debts",
+    "category": "Packaging and charges",
+    "usualTreatment": "Depends on the facts",
+    "summary": "Discounts, rebates, gift cards and bad debts change the taxable base only in specific ways: a seller-funded discount reduces the price, a mail-in manufacturer rebate does not, and bad-debt relief follows the statutory rules.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.007",
+      "34 TAC §3.302",
+      "Pub. 96-280",
+      "Tax Code §§151.007, 151.314",
+      "Tax Code §151.425"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S04",
+        "label": "Texas Tax Code §151.007; 34 TAC §3.303",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.007"
+      },
+      {
+        "key": "S08",
+        "label": "Comptroller Publication 96-280",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-280.php"
+      },
+      {
+        "key": "S15",
+        "label": "34 TAC §3.303",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=303"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 76,
+        "title": "Cash discounts",
+        "taxableWhen": "Tax is calculated on the discounted price of a taxable item when the seller funds the discount.",
+        "nontaxableWhen": "Food products remain nontaxable; a seller-funded discount reduces taxable sales price for taxable items.",
+        "inPractice": "Configure point-of-sale discounts on taxable items at the net price.",
+        "authority": "Tax Code §151.007; 34 TAC §3.302; Pub. 96-280",
+        "sourceKeys": [
+          "S01",
+          "S08",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 77,
+        "title": "Manufacturer instant rebate",
+        "taxableWhen": "Tax base depends on whether the retailer is reimbursed by manufacturer; invoice consideration may include manufacturer-paid amount.",
+        "nontaxableWhen": "A retailer-funded instant checkout rebate is treated as cash discount and reduces taxable sales price.",
+        "inPractice": "Keep funding-source data to distinguish a manufacturer discount from a store discount.",
+        "authority": "Tax Code §151.007; 34 TAC §3.302; Pub. 96-280",
+        "sourceKeys": [
+          "S01",
+          "S08",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 78,
+        "title": "Mail-in manufacturer rebate",
+        "taxableWhen": "Tax is generally based on full retailer price because manufacturer pays rebate after the sale.",
+        "nontaxableWhen": "A later rebate does not reduce the original taxable sales price merely because customer receives money afterward.",
+        "inPractice": "Use different point-of-sale treatment for instant and mail-in rebates.",
+        "authority": "Tax Code §151.007; 34 TAC §3.302; Pub. 96-280",
+        "sourceKeys": [
+          "S01",
+          "S08",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 79,
+        "title": "Gift cards used for taxable food-service purchases",
+        "taxableWhen": "Tax is due when a gift card is redeemed for taxable goods/food service; the gift card does not exempt the sale.",
+        "nontaxableWhen": "Gift card issuance itself is generally not taxable; qualifying food products remain nontaxable at redemption.",
+        "inPractice": "Track meal tax by item at redemption, not at gift-card sale.",
+        "authority": "Tax Code §§151.007, 151.314; Pub. 96-280",
+        "sourceKeys": [
+          "S01",
+          "S08"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 80,
+        "title": "Bad debts on taxable store sales",
+        "taxableWhen": "Tax previously reported on taxable sales may require adjustment only under the statutory bad-debt rules and documentation.",
+        "nontaxableWhen": "A qualifying retailer may claim a bad-debt credit/deduction for the eligible unpaid taxable sales tax amount.",
+        "inPractice": "Keep customer, sale, tax reported, payments, write-off and income-tax deduction records; do not net ordinary collection losses.",
+        "authority": "Tax Code §151.425; 34 TAC §3.302",
+        "sourceKeys": [
+          "S01",
+          "S04"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 12
+  },
+  {
+    "_id": "commercial-repair-and-maintenance",
+    "title": "Repair, remodeling and maintenance of commercial buildings",
+    "category": "Real property and services",
+    "usualTreatment": "Generally taxable",
+    "summary": "Repair, remodeling and restoration of nonresidential real property is a taxable service on the contractor's total charge, labor and materials included. Scheduled periodic maintenance labor on unbroken property is treated differently, but parts and materials remain taxable.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §§151.004, 151.318",
+      "34 TAC §§3.291, 3.300, 3.357",
+      "Tax Code §151.0101",
+      "34 TAC §3.357",
+      "Pub. 94-116",
+      "Tax Code §§151.0101(13), 151.0047",
+      "Tax Code §151.0101(13)",
+      "Tax Code §151.007"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S10",
+        "label": "Comptroller Publication 94-116",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-116.php"
+      },
+      {
+        "key": "S12",
+        "label": "34 TAC §3.357",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=357"
+      },
+      {
+        "key": "S13",
+        "label": "Texas Tax Code §151.0101; 34 TAC §3.356",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.0101"
+      },
+      {
+        "key": "S15",
+        "label": "34 TAC §3.303",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=303"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 44,
+        "title": "Cold-room construction",
+        "taxableWhen": "Taxable construction materials/services under applicable real-property contractor rules; manufacturing status does not automatically exempt the building.",
+        "nontaxableWhen": "Specific qualifying equipment installed in a production environment may have a separate exemption; building structure and general refrigeration are not automatically included.",
+        "inPractice": "Do not treat a whole cold room as exempt merely because food inventory is stored there.",
+        "authority": "Tax Code §§151.004, 151.318; 34 TAC §§3.291, 3.300, 3.357",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 57,
+        "title": "General warehouse maintenance",
+        "taxableWhen": "Taxable supplies and parts remain taxable; maintenance labor may be nontaxable only under the real-property maintenance rule's periodic-work definition.",
+        "nontaxableWhen": "Scheduled, periodic real-property maintenance on property that is not broken is generally not taxable as a service; incorporated replacement parts/materials remain taxable.",
+        "inPractice": "Keep maintenance schedules and contracts, and split maintenance from repair calls.",
+        "authority": "Tax Code §151.0101; 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12",
+          "S13"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 81,
+        "title": "Commercial warehouse or plant property",
+        "taxableWhen": "Real property used as a warehouse, retail store or manufacturing facility is nonresidential real property for these rules.",
+        "nontaxableWhen": "Residential real-property contractor rules do not apply to ordinary commercial warehouses/plants.",
+        "inPractice": "When you are the customer rather than the contractor, identify the property and scope before reviewing invoice tax.",
+        "authority": "Tax Code §§151.0101(13), 151.0047; 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12",
+          "S13"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 82,
+        "title": "Repair of commercial real property",
+        "taxableWhen": "Repair/remodeling of nonresidential real property is taxable on the contractor's total charge to the customer, including labor and materials.",
+        "nontaxableWhen": "New construction is excluded from taxable real-property repair/remodeling service; scheduled periodic maintenance labor may also be nontaxable under separate rule.",
+        "inPractice": "A customer generally pays tax on a commercial repair invoice even when the contractor lists labor and materials separately.",
+        "authority": "Tax Code §§151.0101(13), 151.0047; 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12",
+          "S13"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 83,
+        "title": "Commercial remodeling or restoration",
+        "taxableWhen": "Rebuilding, upgrading or replacing structure components and repairing damaged/defective parts are taxable commercial repair/remodeling services.",
+        "nontaxableWhen": "New improvements/new square footage may be new construction; scheduled periodic maintenance has a separate rule.",
+        "inPractice": "Review the scope of work, not the invoice label; repainting, roofing and similar work can be taxable remodeling.",
+        "authority": "Tax Code §§151.0101(13), 151.0047; 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12",
+          "S13"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 84,
+        "title": "Tax applies to full repair charge",
+        "taxableWhen": "For nonresidential real-property repair/remodeling, contractor collects tax on the total amount charged, not only materials.",
+        "nontaxableWhen": "Separately stating labor does not make commercial repair labor nontaxable.",
+        "inPractice": "Do not approve a commercial repair invoice as tax-free solely because labor is shown separately.",
+        "authority": "Tax Code §151.0101(13); 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12",
+          "S13"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 85,
+        "title": "Repair contract called maintenance",
+        "taxableWhen": "A repair to broken, damaged or defective real property is taxable even if invoice calls it “maintenance.”",
+        "nontaxableWhen": "Scheduled, periodic work on property that is not broken, performed to prevent deterioration, is nontaxable as a real-property maintenance service; parts/materials remain taxable.",
+        "inPractice": "Require service tickets and a maintenance schedule to support nontaxable maintenance labor.",
+        "authority": "34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 86,
+        "title": "Scheduled preventive maintenance",
+        "taxableWhen": "Parts and materials incorporated/replaced are taxable; service treatment depends on whether work is scheduled periodic maintenance on unbroken property.",
+        "nontaxableWhen": "Qualifying periodic real-property maintenance labor is generally nontaxable.",
+        "inPractice": "Keep the standing contract or schedule and the work order; one-off repair calls are not automatically maintenance.",
+        "authority": "34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 93,
+        "title": "Building permit fees",
+        "taxableWhen": "A separately stated building permit fee paid by contractor on customer's behalf is excluded from the contractor's taxable repair/remodeling charge under Comptroller guidance.",
+        "nontaxableWhen": "A fee not actually paid on behalf of the customer or not separately stated may be included in the taxable charge.",
+        "inPractice": "Match the invoice fee to the permit or receipt and require that it be separately stated.",
+        "authority": "Tax Code §151.007; 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S01",
+          "S10",
+          "S12",
+          "S15"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 96,
+        "title": "Commercial real-property maintenance parts",
+        "taxableWhen": "Parts and materials incorporated into real property are taxable even when maintenance labor is nontaxable.",
+        "nontaxableWhen": "Only the qualifying scheduled periodic maintenance labor is nontaxable under the rule.",
+        "inPractice": "Check invoices for belts, filters, replacement parts and materials separately from the maintenance service.",
+        "authority": "34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 13
+  },
+  {
+    "_id": "new-construction",
+    "title": "New construction",
+    "category": "Real property and services",
+    "usualTreatment": "Depends on the facts",
+    "summary": "New construction labor is not taxable. Materials and certain inputs are taxed according to whether the contract is lump-sum or separated, and a mixed job carries a presumption that depends on the share of remodeling.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §§151.0101(13), 151.0047",
+      "34 TAC §3.357",
+      "Pub. 94-116",
+      "34 TAC §3.291",
+      "34 TAC §§3.291, 3.357"
+    ],
+    "sources": [
+      {
+        "key": "S10",
+        "label": "Comptroller Publication 94-116",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-116.php"
+      },
+      {
+        "key": "S12",
+        "label": "34 TAC §3.357",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=357"
+      },
+      {
+        "key": "S13",
+        "label": "Texas Tax Code §151.0101; 34 TAC §3.356",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.0101"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 87,
+        "title": "Commercial new construction labor",
+        "taxableWhen": "Contractor construction labor for new structures, completion of unfinished structures or initial finish-out is not taxable.",
+        "nontaxableWhen": "Materials and taxable inputs still bear tax according to contract method.",
+        "inPractice": "Review new-build invoices separately from repair and remodeling; finish-out must be initial work, not later renovation.",
+        "authority": "Tax Code §§151.0101(13), 151.0047; 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12",
+          "S13"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 88,
+        "title": "Lump-sum new-construction contract",
+        "taxableWhen": "Contractor pays sales/use tax on supplies, materials, equipment and taxable services when purchased; contractor generally does not collect tax from customer on lump-sum new construction charge.",
+        "nontaxableWhen": "Construction labor is not taxable; contractor's tax on consumed/incorporated materials is embedded in its cost rather than separately collected from customer.",
+        "inPractice": "As customer, expect no separate sales tax on a proper lump-sum new-construction charge; the contract and scope should confirm new construction.",
+        "authority": "34 TAC §3.291; 34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 89,
+        "title": "Separated new-construction contract",
+        "taxableWhen": "Contractor may charge tax on materials and certain separately identified services incorporated into the realty; construction labor is not taxable.",
+        "nontaxableWhen": "New-construction labor remains nontaxable when separately stated; tax treatment of material/service lines follows the separated contract rules.",
+        "inPractice": "Review material lines and selected job services separately from construction labor.",
+        "authority": "34 TAC §§3.291, 3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 90,
+        "title": "Mixed new construction and commercial remodeling",
+        "taxableWhen": "If one charge includes new construction and nonresidential remodeling and remodeling exceeds 5% of total, the total charge is presumed taxable unless the taxable portion is separately stated at transaction time.",
+        "nontaxableWhen": "A reasonable separately stated new-construction portion and contemporaneous supporting documents can support the nontaxable new-construction treatment.",
+        "inPractice": "Require written scope, bid sheets, a schedule of values and invoice separation before payment.",
+        "authority": "34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 91,
+        "title": "New footage added to existing building",
+        "taxableWhen": "New footage is generally new construction; repair/remodeling of existing footage is taxable commercial real-property service.",
+        "nontaxableWhen": "Construction labor for the new footage is nontaxable as new construction.",
+        "inPractice": "Require the contractor to separate additions from renovation of existing space.",
+        "authority": "34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 92,
+        "title": "Initial finish-out versus later tenant renovation",
+        "taxableWhen": "Initial finish-out of an unfinished structure is new construction; upgrading an existing finished structure is generally taxable remodeling.",
+        "nontaxableWhen": "Initial new-construction labor is nontaxable.",
+        "inPractice": "Construction timing, prior occupancy and scope documents matter; do not rely only on the term \"tenant improvement\".",
+        "authority": "34 TAC §3.357; Pub. 94-116",
+        "sourceKeys": [
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 14
+  },
+  {
+    "_id": "equipment-repair",
+    "title": "Repair of equipment and personal property",
+    "category": "Real property and services",
+    "usualTreatment": "Depends on the facts",
+    "summary": "Repair of movable equipment is analyzed as tangible personal property, not as repair of the building. Qualifying manufacturing equipment may carry an exemption for eligible repair parts and services.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §151.318",
+      "34 TAC §§3.300, 3.357",
+      "Pub. 94-124",
+      "Tax Code §§151.009, 151.0101(13), 151.318",
+      "Tax Code §§151.009, 151.318"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S03",
+        "label": "Texas Tax Code §151.318",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.318"
+      },
+      {
+        "key": "S06",
+        "label": "34 TAC §3.300",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=300"
+      },
+      {
+        "key": "S09",
+        "label": "Comptroller Publication 94-124",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-124.php"
+      },
+      {
+        "key": "S10",
+        "label": "Comptroller Publication 94-116",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-116.php"
+      },
+      {
+        "key": "S12",
+        "label": "34 TAC §3.357",
+        "url": "https://texreg.sos.state.tx.us/public/readtac$ext.ViewTAC?tac_view=5&ti=34&pt=1&ch=3&sch=O&rl=357"
+      },
+      {
+        "key": "S13",
+        "label": "Texas Tax Code §151.0101; 34 TAC §3.356",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.0101"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 58,
+        "title": "Repair of exempt manufacturing equipment",
+        "taxableWhen": "Taxable if the repaired equipment/parts do not qualify or work is ordinary maintenance/storage property.",
+        "nontaxableWhen": "Repair parts/services may receive manufacturing treatment when the underlying equipment qualifies and rule conditions are met.",
+        "inPractice": "Tie repair scope to the documented qualifying process; do not assume every facility repair inherits that status.",
+        "authority": "Tax Code §151.318; 34 TAC §§3.300, 3.357; Pub. 94-124",
+        "sourceKeys": [
+          "S03",
+          "S06",
+          "S09",
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 94,
+        "title": "Real-property repair versus equipment repair",
+        "taxableWhen": "Repair to building/structure is taxable commercial real-property repair service; repair to movable equipment is analyzed under tangible-personal-property rules.",
+        "nontaxableWhen": "A service is not commercial real-property repair just because equipment is located in a plant.",
+        "inPractice": "Identify whether the contractor repaired the building shell, fixed realty, or movable production equipment.",
+        "authority": "Tax Code §§151.009, 151.0101(13), 151.318; 34 TAC §§3.300, 3.357",
+        "sourceKeys": [
+          "S01",
+          "S03",
+          "S10",
+          "S12",
+          "S13"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 95,
+        "title": "Repair of tangible personal property",
+        "taxableWhen": "Repair labor/parts may be taxable when the repaired item is taxable tangible personal property.",
+        "nontaxableWhen": "Qualifying manufacturing equipment may have a manufacturing exemption for eligible repair parts/services, subject to proof and rule conditions.",
+        "inPractice": "Obtain invoice detail separating real-property work, equipment work and manufacturing-exempt scope; the buyer must support its own specific claim.",
+        "authority": "Tax Code §§151.009, 151.318; 34 TAC §§3.300, 3.357; Pub. 94-124",
+        "sourceKeys": [
+          "S01",
+          "S03",
+          "S06",
+          "S10",
+          "S12"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 15
+  },
+  {
+    "_id": "taxable-services",
+    "title": "Taxable services to a business",
+    "category": "Real property and services",
+    "usualTreatment": "Generally taxable",
+    "summary": "Certain services to a business are taxable: data processing and software, janitorial, landscaping, pest control and security. Separately stated nontaxable components must be supported by the statute and the records.",
+    "jurisdiction": "Texas",
+    "authorities": [
+      "Tax Code §§151.0101(3), 151.351",
+      "34 TAC §3.330",
+      "Tax Code §151.0101(5)",
+      "34 TAC §3.356",
+      "Tax Code §151.0101(6)",
+      "Tax Code §151.0101(4)",
+      "Tax Code §151.0101(10)",
+      "Pub. 94-119"
+    ],
+    "sources": [
+      {
+        "key": "S01",
+        "label": "Texas Tax Code Chapter 151",
+        "url": "https://statutes.capitol.texas.gov/Docs/TX/htm/TX.151.htm"
+      },
+      {
+        "key": "S13",
+        "label": "Texas Tax Code §151.0101; 34 TAC §3.356",
+        "url": "https://statutes.capitol.texas.gov/GetStatute.aspx?Code=TX&Value=151.0101"
+      },
+      {
+        "key": "S14",
+        "label": "Comptroller Publication 96-259",
+        "url": "https://comptroller.texas.gov/taxes/publications/96-259.php"
+      },
+      {
+        "key": "S16",
+        "label": "Comptroller Publication 94-119",
+        "url": "https://comptroller.texas.gov/taxes/publications/94-119.php"
+      }
+    ],
+    "scenarios": [
+      {
+        "no": 56,
+        "title": "Inventory software and data processing",
+        "taxableWhen": "Taxable if purchased as taxable data-processing service or taxable software; service classification depends on billing and use.",
+        "nontaxableWhen": "Nontaxable service components or statutory exclusions may apply when separately stated and documented.",
+        "inPractice": "Review software and SaaS invoices by component; inventory tracking does not become manufacturing solely because it supports operations.",
+        "authority": "Tax Code §§151.0101(3), 151.351; 34 TAC §3.330",
+        "sourceKeys": [
+          "S01",
+          "S13",
+          "S14"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 97,
+        "title": "Janitorial service at commercial facility",
+        "taxableWhen": "Janitorial service to nonresidential real property is a taxable service; vendor charges for taxable supplies may also be taxable.",
+        "nontaxableWhen": "A separately identified non-taxable component may be excluded only where statute/rules allow and records support it.",
+        "inPractice": "Tax should generally appear on commercial janitorial invoices.",
+        "authority": "Tax Code §151.0101(5); 34 TAC §3.356",
+        "sourceKeys": [
+          "S13",
+          "S14"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 98,
+        "title": "Landscaping and lawn care at facility",
+        "taxableWhen": "Landscaping/lawn-care service to nonresidential property is taxable.",
+        "nontaxableWhen": "A specific statutory exception or exempt-customer status may change the result, but the buyer is an ordinary commercial buyer.",
+        "inPractice": "Review grounds-maintenance invoices for Texas tax.",
+        "authority": "Tax Code §151.0101(6); 34 TAC §3.356",
+        "sourceKeys": [
+          "S13",
+          "S14"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 99,
+        "title": "Pest-control service at warehouse",
+        "taxableWhen": "Exterminating/pest-control service is taxable when within the listed service category.",
+        "nontaxableWhen": "A non-taxable service component must be separately supported; location at a food business does not itself exempt it.",
+        "inPractice": "Expect tax on taxable commercial pest-control invoices and review tangible supplies separately.",
+        "authority": "Tax Code §151.0101(4); 34 TAC §3.356",
+        "sourceKeys": [
+          "S13",
+          "S14"
+        ],
+        "industry": "Any business"
+      },
+      {
+        "no": 100,
+        "title": "Security/alarm service at facility",
+        "taxableWhen": "Security services are generally taxable; bundled invoices may include different components.",
+        "nontaxableWhen": "A separately stated, documented nontaxable component may be treated separately under the rule.",
+        "inPractice": "Review monitoring, installation and equipment line items based on the contract and invoicing.",
+        "authority": "Tax Code §151.0101(10); 34 TAC §3.356; Pub. 94-119",
+        "sourceKeys": [
+          "S13",
+          "S14",
+          "S16"
+        ],
+        "industry": "Any business"
+      }
+    ],
+    "status": "drafted",
+    "lastVerified": null,
+    "sortOrder": 16
+  }
+]

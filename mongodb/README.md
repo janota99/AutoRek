@@ -1,6 +1,6 @@
 # MongoDB collections
 
-Three collections that describe the data the website already uses. The site is **not connected to
+Four collections that describe the data the website already uses. The site is **not connected to
 MongoDB yet**; this folder establishes the structure so connecting it later is a straight mapping.
 
 Database: `janota_fin`. Each collection has a `$jsonSchema` validator in `schemas/`, so the server rejects a
@@ -11,6 +11,7 @@ document with a wrong type, an out-of-range value, a missing field, or an extra 
 | `reviews` | `reviews.json` (5 documents) | Reviews on the Reviews & Feedback page | `apps/invoice_hub/site/feedback.js` and `feedback.html` |
 | `plans` | `plans.json` (3) | The three purchase tiers on the Plans & Pricing page | `TIERS` in `apps/sales_page.py` |
 | `tools` | `tools.json` (4) | The four accounting utilities, one per Dashboard card | `APPS` in `shared/layout.py` |
+| `taxRules` | `taxRules.json` (16) | Texas sales-tax principles with 100 worked scenarios, on the Sales Tax page's Texas Tax Rules tab | `apps/sales_tax/tax_rules.py` |
 
 ## Connect to Atlas (ready to connect)
 
@@ -92,6 +93,27 @@ When the site is connected, two conversions are needed: `recommend === 'yes'` to
 | `active` | bool | |
 
 `tools.minimumPlanId` and `plans.toolIds` describe the same relationship from both sides; the tests check they agree.
+
+### `taxRules`
+
+One document per principle, with its scenarios embedded (so a search reads one collection and one index).
+
+| Field | MongoDB type | Notes |
+|---|---|---|
+| `_id` | string | stable slug, for example `food-products` |
+| `title`, `summary` | string | the principle and its plain-language statement |
+| `category` | string, one of five | the category filter |
+| `usualTreatment` | string, one of three | Generally taxable / Generally nontaxable / Depends on the facts |
+| `jurisdiction` | string | `Texas` |
+| `authorities` | array of string | every citation used by the scenarios |
+| `sources` | array of object | `key`, `label`, and an https `url` to the official text |
+| `scenarios` | array of object | `no` (1-100), `title`, `taxableWhen`, `nontaxableWhen`, `inPractice`, `authority`, `sourceKeys`, `industry` |
+| `status` | string | `drafted` until a person verifies the citations, then `verified` |
+| `lastVerified` | date or **null** | null while drafted |
+| `sortOrder` | number | display order, from 1 |
+
+The tab reads the live collection when a database is configured and falls back to the bundled `taxRules.json`.
+`status` is the honest part: every entry starts `drafted`, and the page says so until it is changed.
 
 ## Hover interactions that use this data
 

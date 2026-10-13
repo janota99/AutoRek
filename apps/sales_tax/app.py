@@ -15,11 +15,12 @@ import streamlit as st
 from shared.styles import inject_page
 from apps.sales_tax import ui
 from apps.sales_tax.tax_calculator_ui import render_tax_calculator
+from apps.sales_tax.tax_rules_ui import render_tax_rules
 from apps.sales_tax.transaction_cleanup import render_transaction_cleanup
 from apps.sales_tax.vendor_reconciliation import render_vendor_reconciliation
 
 
-TOOLS = ["Transaction Cleanup", "Vendor Reconciliation", "Sales Tax Calculator"]
+TOOLS = ["Transaction Cleanup", "Vendor Reconciliation", "Sales Tax Calculator", "Texas Tax Rules"]
 
 
 # =====================================================================
@@ -63,6 +64,8 @@ def main():
         render_transaction_cleanup()
     elif tool == TOOLS[2]:
         render_tax_calculator()
+    elif tool == TOOLS[3]:
+        render_tax_rules()
     else:
         st.sidebar.caption("Vendor Reconciliation compares two vendor listings by Vendor ID. It does not use the trial balance.")
         render_vendor_reconciliation()

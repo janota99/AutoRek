@@ -1,7 +1,7 @@
 # Sales Tax Review: overview, rules, known issues
 
 A Streamlit port of a VBA macro with three tools, picked with the segmented control under the page
-title: **Transaction Cleanup**, **Vendor Reconciliation**, and **Sales Tax Calculator**.
+title: **Transaction Cleanup**, **Vendor Reconciliation**, **Sales Tax Calculator**, and **Texas Tax Rules** (a searchable reference).
 
 ## Module map
 
@@ -15,6 +15,9 @@ title: **Transaction Cleanup**, **Vendor Reconciliation**, and **Sales Tax Calcu
 | `vendor_reconciliation.py` | Compares two vendor listings by Vendor ID (Added/Removed/Renamed/Unchanged) and builds an updated 6-column mapping file. |
 | `tax_calculator.py` | Sales Tax Calculator logic, no Streamlit: Texas 6.25% State rate, 2.00% local cap (8.25% combined), SaaS 80% taxable base, preset and custom `Location`s, `calculate`, `compare`. `Decimal`; each tax line rounded half-up to the cent. Standalone: reads no upload and feeds no workbook. Tests: `tests/test_tax_calculator.py`. |
 | `tax_calculator_ui.py` | The calculator screen: price, location, and sale-type inputs, the summary card, the scenario comparison table, and the custom-location form (kept in session state only). Styles: `stc-*` in `sales-tax.css`. |
+| `tax_rules.py` | Texas Tax Rules logic, no Streamlit: loads the `taxRules` documents (Atlas when configured, else `mongodb/taxRules.json`), `search` (every query word must match, case-insensitive) and the category / treatment / provision / industry filters, `provision_labels`. Reads no upload and changes no number. Tests: `tests/test_tax_rules.py`. |
+| `tax_rules_ui.py` | The Texas Tax Rules screen: search box, filters, one expander per principle with its scenarios, authorities, source links, and a drafted/verified status. Styles: `tr-*` in `sales-tax.css`. |
+| `contractor_guide.py` / `contractor_guide.js` | The click-through "Should we pay Texas sales tax on this contractor bill?" guide on the Texas Tax Rules tab. The Python module holds the decision tree as data (5 outcomes, each pointing at scenario numbers in the rules), validates it, and emits it as JSON plus a no-script outline; the script draws it as buttons with a trail, back/start-over, a ripple and slide animation (off under reduced motion), and remembers the path in `sessionStorage`. Computes nothing. Tests: `tests/test_contractor_guide.py`. |
 | `tax_tape.py` | Draws the compact PNG/PDF "tape" of one calculator result (Pillow) for attaching to invoices as backup. Draws a `TaxResult` that was already computed; recomputes nothing. |
 | `ingestion.py` | File reading with size limits, the on-disk trial balance cache, excluded vendor IDs. No Streamlit. |
 | `data/` | `trial_balance_cache.xlsx` (the live cache) plus sample input files. Real company data, gitignored. |

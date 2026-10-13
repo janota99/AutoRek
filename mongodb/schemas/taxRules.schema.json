@@ -1,0 +1,64 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "title": "Tax rule principle",
+    "description": "One sales-tax principle with the worked scenarios beneath it, shown on the Sales Tax page's Texas Tax Rules tab. Drafted from Texas Comptroller and statute sources; status says whether a person has verified it.",
+    "required": ["title", "category", "usualTreatment", "summary", "jurisdiction", "authorities", "sources", "scenarios", "status", "lastVerified", "sortOrder"],
+    "additionalProperties": false,
+    "properties": {
+      "_id": { "bsonType": "string", "description": "Stable slug, for example food-products." },
+      "title": { "bsonType": "string", "minLength": 3, "maxLength": 120, "description": "The principle in a sentence." },
+      "category": {
+        "bsonType": "string",
+        "enum": ["Food classification", "Manufacturing and processing", "Equipment and supplies", "Packaging and charges", "Real property and services"],
+        "description": "The grouping used by the category filter."
+      },
+      "usualTreatment": {
+        "bsonType": "string",
+        "enum": ["Generally taxable", "Generally nontaxable", "Depends on the facts"],
+        "description": "The usual result for the principle as a whole; each scenario states its own taxable and nontaxable conditions."
+      },
+      "summary": { "bsonType": "string", "minLength": 20, "maxLength": 800, "description": "Plain-language statement of the principle." },
+      "jurisdiction": { "bsonType": "string", "description": "The taxing jurisdiction, for example Texas." },
+      "authorities": {
+        "bsonType": "array", "minItems": 1,
+        "items": { "bsonType": "string", "description": "A statute, rule or publication cited, for example Tax Code section 151.318." },
+        "description": "Every citation used by the scenarios, de-duplicated."
+      },
+      "sources": {
+        "bsonType": "array", "minItems": 1,
+        "items": {
+          "bsonType": "object",
+          "required": ["key", "label", "url"],
+          "additionalProperties": false,
+          "properties": {
+            "key": { "bsonType": "string", "description": "Source key such as S03." },
+            "label": { "bsonType": "string", "description": "Name of the statute, rule or publication." },
+            "url": { "bsonType": "string", "description": "Official link, https only." }
+          }
+        }
+      },
+      "scenarios": {
+        "bsonType": "array", "minItems": 1,
+        "items": {
+          "bsonType": "object",
+          "required": ["no", "title", "taxableWhen", "nontaxableWhen", "inPractice", "authority", "sourceKeys", "industry"],
+          "additionalProperties": false,
+          "properties": {
+            "no": { "bsonType": "number", "minimum": 1, "multipleOf": 1, "description": "Scenario number, unique across the collection." },
+            "title": { "bsonType": "string", "minLength": 3, "maxLength": 120 },
+            "taxableWhen": { "bsonType": "string", "minLength": 10 },
+            "nontaxableWhen": { "bsonType": "string", "minLength": 10 },
+            "inPractice": { "bsonType": "string", "minLength": 10, "description": "Practice guidance, written for any business." },
+            "authority": { "bsonType": "string", "description": "The exact citation string for this scenario." },
+            "sourceKeys": { "bsonType": "array", "items": { "bsonType": "string" } },
+            "industry": { "bsonType": "string", "enum": ["Any business", "Food distribution"], "description": "Food distribution marks scenarios specific to food handling." }
+          }
+        }
+      },
+      "status": { "bsonType": "string", "enum": ["drafted", "verified"], "description": "drafted until a person has checked the citations against the source." },
+      "lastVerified": { "bsonType": ["date", "null"], "description": "When a person last verified the entry; null while drafted." },
+      "sortOrder": { "bsonType": "number", "minimum": 1, "multipleOf": 1, "description": "Display order, from 1." }
+    }
+  }
+}

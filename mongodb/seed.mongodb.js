@@ -15,7 +15,7 @@ function readJson(file) {
   return EJSON.parse(fs.readFileSync(file, "utf8"));  // understands {"$oid": ...} and {"$date": ...}
 }
 
-for (const name of ["reviews", "plans", "tools"]) {
+for (const name of ["reviews", "plans", "tools", "taxRules"]) {
   database.getCollection(name).drop();
   database.createCollection(name, {
     validator: readJson(`mongodb/schemas/${name}.schema.json`),  // { $jsonSchema: {...} }
