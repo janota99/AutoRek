@@ -20,6 +20,13 @@
     --pp-primary: #1e3a8a;
     --pp-primary-hover: #19365d;
     --pp-btn-radius: 0.5rem;
+    /* Heading scale: one page title, one section heading, one sub-heading, on every page. A page that draws its
+       own headings (Recon, Sales Tax, Dashboard) uses these instead of its own sizes. */
+    --pp-heading-font: "Segoe UI", Inter, system-ui, -apple-system, sans-serif;
+    --pp-heading-color: var(--pp-navy);
+    --pp-h1-size: clamp(2rem, 3.2vw, 2.5rem);
+    --pp-h2-size: 1.45rem;
+    --pp-h3-size: 1.15rem;
     --pp-btn-height: 2.75rem;
     --pp-accent: #2563eb;
     --pp-accent-strong: #1d4ed8;

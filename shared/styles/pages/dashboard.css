@@ -48,11 +48,12 @@
 .pp-hero h1 {
     margin: 0 0 0.6rem;
     padding: 0;
-    color: var(--navy);
-    font-size: 2.5rem;
+    color: var(--pp-heading-color);
+    font-family: var(--pp-heading-font);
+    font-size: var(--pp-h1-size);
     font-weight: 800;
     letter-spacing: -0.02em;
-    line-height: 1.15;
+    line-height: 1.12;
 }
 
 .pp-hero p {

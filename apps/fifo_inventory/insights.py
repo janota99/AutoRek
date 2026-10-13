@@ -83,7 +83,8 @@ def _aging_tab(layer_store):
             })
 
     if not aging_rows:
-        st.info("No on-hand FIFO layers are currently recorded — nothing to age yet.")
+        st.info("No on-hand FIFO layers are recorded yet, so there is nothing to age. Close a period in "
+                "Period Processing, or restore a snapshot in History & Snapshots, and the layers appear here.")
     else:
         aging_df = pd.DataFrame(aging_rows)
         bucket_order = ["0–30 days", "31–60 days", "61–90 days", "90+ days", "Unknown / unparsed date"]
@@ -130,7 +131,8 @@ def _aging_tab(layer_store):
 def _trends_tab(layer_store):
     _trend_history = layer_store.period_history()
     if not _trend_history:
-        st.info("No period has been closed yet — trends will appear here once at least one period is closed.")
+        st.info("No period has been closed yet, so there is no trend to draw. Run a preview in Period Processing and "
+                "close the period; ending value, usage and turnover build up here one period at a time.")
     else:
         trend_rows = []
         for record in _trend_history:
@@ -257,9 +259,8 @@ def _product_lookup_tab(layer_store):
 
 
 def _settings_tab():
-    st.caption("These tolerances drive every REVIEW/FAIL judgment call in the reconciliation report — how close "
-               "a quantity or dollar comparison must be to count as tied out, and how much period-over-period "
-               "movement in the accepted Known Value Variance is treated as normal rounding rather than flagged. "
+    st.caption("These tolerances drive every REVIEW/FAIL judgment call in the reconciliation report: how close "
+               "a quantity or dollar comparison must be to count as tied out. "
                "Changing a value here takes effect on the very next preview or export; it does NOT retroactively "
                "change the PASS/REVIEW/FAIL outcome recorded on any period that's already closed — those are "
                "frozen historical fact as of when they were closed.")

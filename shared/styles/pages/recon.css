@@ -83,10 +83,11 @@ p {
 .rec-title h1 {
     margin: 0 !important;
     color: var(--rec-navy) !important;
-    font-size: clamp(2.35rem, 4vw, 3.55rem) !important;
+    font-family: var(--pp-heading-font);
+    font-size: var(--pp-h1-size) !important;
     font-weight: 800 !important;
-    line-height: 1.04 !important;
-    letter-spacing: -0.045em !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.02em !important;
 }
 
 .rec-title p {
@@ -104,8 +105,9 @@ p {
 .rec-section-heading h2 {
     margin: 0 !important;
     color: var(--rec-navy) !important;
-    font-size: 1.42rem !important;
-    font-weight: 750 !important;
+    font-family: var(--pp-heading-font);
+    font-size: var(--pp-h2-size) !important;
+    font-weight: 700 !important;
     line-height: 1.2 !important;
 }
 
@@ -898,10 +900,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 
     .stepper-item:not(:last-child)::after {
         display: none;
-    }
-
-    .rec-title h1 {
-        font-size: 2.15rem !important;
     }
 
     .rec-section-heading {

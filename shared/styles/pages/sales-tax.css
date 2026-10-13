@@ -326,7 +326,7 @@ button[kind="secondary"],
    ============================================================ */
 .stApp:has(.st-title) .block-container { max-width: 1500px; }
 .st-title { margin: 0 0 1.1rem; max-width: 60rem; }
-.stApp .st-title h1 { margin: .15rem 0 0; padding: 0; color: var(--pp-navy); font-size: clamp(2rem, 3.4vw, 2.9rem); font-weight: 800; line-height: 1.08; letter-spacing: -.03em; }
+.stApp .st-title h1 { margin: .15rem 0 0; padding: 0; color: var(--pp-navy); font-family: var(--pp-heading-font); font-size: var(--pp-h1-size); font-weight: 800; line-height: 1.12; letter-spacing: -.02em; }
 .st-title p { margin: .6rem 0 0; color: #4a5a6e; font-size: 1.05rem; line-height: 1.5; }
 .st-eyebrow { display: inline-block; padding: .15rem .7rem; border-radius: 999px; background: var(--pp-accent-soft); border: 1px solid var(--pp-accent-soft-hover); color: var(--pp-accent-strong); font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 
@@ -347,7 +347,7 @@ button[kind="secondary"],
 .st-step-detail { color: #65758a; font-size: .85rem; line-height: 1.35; }
 
 .st-section { margin: .4rem 0 1rem; }
-.stApp .st-section h2 { margin: 0; padding: 0; color: var(--pp-navy); font-size: 1.45rem; font-weight: 800; }
+.stApp .st-section h2 { margin: 0; padding: 0; color: var(--pp-navy); font-family: var(--pp-heading-font); font-size: var(--pp-h2-size); font-weight: 700; }
 .st-section p { margin: .3rem 0 0; color: #4a5a6e; font-size: 1rem; }
 
 /* Upload cards: a numbered, labeled heading above each drop zone */

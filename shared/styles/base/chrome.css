@@ -353,3 +353,15 @@
     font-weight: 600;
     background-color: #eff6ff;
 }
+
+/* Heading scale (tokens.css): Streamlit's own headings, so st.title / st.header / st.subheader match the pages that
+   draw their own. */
+.stApp .stMain [data-testid="stHeading"] h1,
+.stApp .stMain [data-testid="stHeading"] h2,
+.stApp .stMain [data-testid="stHeading"] h3 {
+    color: var(--pp-heading-color);
+    font-family: var(--pp-heading-font);
+}
+.stApp .stMain [data-testid="stHeading"] h1 { font-size: var(--pp-h1-size); font-weight: 800; line-height: 1.12; letter-spacing: -0.02em; }
+.stApp .stMain [data-testid="stHeading"] h2 { font-size: var(--pp-h2-size); font-weight: 700; line-height: 1.2; letter-spacing: -0.015em; }
+.stApp .stMain [data-testid="stHeading"] h3 { font-size: var(--pp-h3-size); font-weight: 700; line-height: 1.3; }
