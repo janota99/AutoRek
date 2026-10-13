@@ -118,6 +118,14 @@ from the layers in the session (`apps/fifo_inventory/sample_data.py`) so they re
 is disabled while one is loaded, so demo numbers can never become the official layers. The Sales Tax trial balance is download-only, because the real one is
 a shared on-disk cache. Recon reads QuickBooks column A as the fiscal period, so its sample keeps one there.
 
+## Browser-tab titles and the favicon
+
+`app.py` calls `st.set_page_config` once, before `st.navigation`, with a title for the requested page
+(`shared.layout.title_for_path`, read from `st.context.url`) and `shared/assets/favicon.png`. A call made after
+`st.navigation` is silently ignored, so the page cannot come from the navigation result. A new page needs an
+entry in `title_for_path` (it reads `APPS` plus the Workspace and Feedback paths); an unknown path gets the plain
+brand title.
+
 ## Card details and the MongoDB samples
 
 The Dashboard cards print what each tool takes in and produces on the card itself (`apps/dashboard.py`), so nothing

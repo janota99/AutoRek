@@ -17,6 +17,9 @@ SUITE_NAME = "Janota Fin Automations Accounting Apps"
 
 _SHARED_DIR = Path(__file__).resolve().parent
 _LOGO_PATH = _SHARED_DIR / "assets" / "janota_fin_logo.png"
+FAVICON_PATH = _SHARED_DIR / "assets" / "favicon.png"   # the logo's "J" and cyan accent on its navy, square
+BRAND = "Janota FIN"
+HOME_TAGLINE = "Month-end automation for manufacturers and distributors"
 _BANNER_JS_PATH = _SHARED_DIR / "suite_banner.js"
 
 # The account strip: filled in by suite_banner.js. Signed in it shows a greeting, the role, and an
@@ -140,6 +143,26 @@ def build_navigation():
     feedback = st.Page(FEEDBACK_SCRIPT, title="Reviews & Feedback", icon=":material/rate_review:",
                        url_path="feedback")
     return st.navigation({"": [home, dashboard], WIDGETS_MENU: widgets, FEEDBACK_MENU: [feedback]}, position="top")
+
+
+def browser_title(page_title: str, *, is_home: bool = False) -> str:
+    """The browser-tab title: the page first (so several tabs stay tellable apart), then the brand."""
+    if is_home:
+        return f"{BRAND} | {HOME_TAGLINE}"
+    return f"{page_title} | {BRAND}"
+
+
+def title_for_path(path: str) -> str:
+    """The browser-tab title for a URL path ("", "recon", "workspace", ...).
+
+    Streamlit needs ``st.set_page_config`` before ``st.navigation``, and a call made after it is ignored, so the
+    page is resolved from the URL first. Anything unrecognized gets the plain brand title.
+    """
+    path = (path or "").strip("/")
+    if path == "":
+        return browser_title("", is_home=True)
+    titles = {DASHBOARD_URL: "Workspace", "feedback": "Reviews & Feedback", **{a.url_path: a.title for a in APPS}}
+    return browser_title(titles[path]) if path in titles else BRAND
 
 
 def apply_template() -> None:
