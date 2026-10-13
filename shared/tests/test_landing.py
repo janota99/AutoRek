@@ -126,7 +126,7 @@ def test_purchase_sequence_runs_from_plan_to_onboarding():
     fill("4242 4242 4242 4242", billing.totp_now(secret))
     assert at.session_state["pp_l_step"] == 5                                 # confirmation
     entry = at.session_state["pp_register"][-1]
-    assert entry["status"] == "Demo: not charged" and entry["total"] == 10825
+    assert entry["status"] == "Demo: not charged" and entry["total"] == 10660
     assert entry["method"] == "Visa ending 4242"                              # brand and last four only
     assert "4242 4242" not in str(at.session_state["pp_register"])
 
@@ -248,3 +248,15 @@ def test_demo_banner_names_the_solution_and_offers_a_way_back():
 def test_demo_banner_stays_away_without_demo_mode_or_for_other_pages():
     assert not _banner("recon", demo=False).get("html")
     assert not _banner("invoice-hub", demo=True).get("html")
+
+
+def test_estimated_tax_is_the_texas_saas_rate_from_the_tax_calculator():
+    """$100 of SaaS at 8.25% combined on the 80% taxable share is $6.60 (6.60%), not 8.25%, and says "estimate"."""
+    from decimal import Decimal
+    from apps import sales_page
+    assert sales_page.TAX_RATE == Decimal("0.066")
+    professional = next(t for t in sales_page.TIERS if t.id == "professional")
+    base, tax, total = sales_page.totals(professional, annual=False)
+    assert (base, tax, total) == (10000, 660, 10660)
+    summary = sales_page.order_summary(professional, annual=False)
+    assert "Estimated Texas sales tax on SaaS (6.60%)" in summary and "Estimated total" in summary

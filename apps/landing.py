@@ -417,7 +417,7 @@ def _restart() -> None:
 
 
 def _step_plan() -> None:
-    """Step 1: choose a plan and a billing interval. Amounts are explicit, with and without the placeholder sales tax."""
+    """Step 1: choose a plan and a billing interval. Amounts are explicit, with and without the estimated sales tax."""
     cycle = st.segmented_control("Billing interval", [_MONTHLY, _ANNUAL], default=_MONTHLY, key=_CYCLE_KEY)
     annual = cycle == _ANNUAL
     st.session_state[ANNUAL] = annual  # the billing widget is gone once a plan is chosen; keep its answer
@@ -426,8 +426,8 @@ def _step_plan() -> None:
             total_line = ""
             if tier.monthly_price is not None:
                 base, tax, total = sales_page.totals(tier, annual)
-                total_line = (f'<p class="pp-l-total">Total charge {sales_page.money(total)} <small>({sales_page.money(base)} + '
-                              f'{sales_page.money(tax)} placeholder tax)</small></p>')
+                total_line = (f'<p class="pp-l-total">Estimated total {sales_page.money(total)} <small>({sales_page.money(base)} + '
+                              f'{sales_page.money(tax)} estimated tax)</small></p>')
             st.html(sales_page.tier_html(tier, annual, total_line))
             label = "Contact Sales" if tier.monthly_price is None else f"Choose {tier.name}"
             if st.button(label, key=f"pp-l-choose-{tier.id}", width="stretch", type="primary" if tier.featured else "secondary"):
@@ -572,7 +572,7 @@ def _step_confirm(tier) -> None:
     order = (st.session_state.get(sales_page.REGISTER_KEY) or [{}])[-1]
     st.html(f'<div class="pp-l-confirm"><span class="pp-wordmark" role="img" aria-label="Janota FIN"></span><h3>Demo order recorded</h3>'
             f'<p>Thanks, {_E(account.get("first", "there"))}. Your {_E(tier.name)} plan ({_E(order.get("cycle", ""))}) is set up '
-            f'in this demo, billed {"once a year" if order.get("cycle") == "Annual" else "monthly"}. Total {sales_page.money(order.get("total", 0))}: '
+            f'in this demo, billed {"once a year" if order.get("cycle") == "Annual" else "monthly"}. Estimated total {sales_page.money(order.get("total", 0))}: '
             f'<strong>not charged</strong>.</p>'
             f'<p class="pp-l-note">A confirmation for {_E(account.get("email", ""))} would be sent here; email delivery is not connected.</p></div>')
     if st.button("Set Up Your First Workflow", key="pp-l-setup", type="primary"):

@@ -21,6 +21,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from apps.sales_tax.tax_calculator import DEFAULT_COMBINED_RATE, SAAS_TAXABLE_SHARE
 from shared.billing import digits, validate_address, validate_card, validate_gift_card, verify_totp
 from shared.layout import APPS
 from shared.styles import style_tag
@@ -31,7 +32,9 @@ PLAN_KEY = "pp_plan"         # session_state: id of the plan the visitor chose
 _CYCLE_KEY = "pp_cycle"       # session_state: billing selector
 _MONTHLY, _ANNUAL = "Monthly", "Annual (2 months free)"
 _ANNUAL_MONTHS_BILLED = 10    # twelve months for the price of ten
-TAX_RATE = Decimal("0.0825")  # placeholder sales tax rate shown in the order summary
+# Estimated Texas sales tax on SaaS: 8.25% combined (6.25% State + 2.00% local cap) on the 80% taxable share = 6.60%.
+# Derived from the Sales Tax Calculator's constants so the two never disagree. An estimate, not a quote.
+TAX_RATE = DEFAULT_COMBINED_RATE / 100 * SAAS_TAXABLE_SHARE
 TBC = "To be confirmed"
 REGISTER_KEY = "pp_register"   # session_state: demo charge register (this session only; never card numbers)
 _METHODS = ("Credit / debit card", "Gift card", "PayPal")
@@ -265,8 +268,9 @@ def totals(tier: Tier, annual: bool) -> tuple[int, int, int]:
 
 
 def order_summary(tier: Tier, annual: bool) -> str:
-    note = ("Online checkout is not connected yet, so nothing has been charged and no order "
-            "has been placed.")
+    note = ("Tax is an estimate for Texas SaaS (8.25% combined rate on 80% of the price); the final amount depends on "
+            "your service address and exemptions. Online checkout is not connected yet, so nothing has been charged "
+            "and no order has been placed.")
     if tier.monthly_price is None:
         return ('<div class="pp-order"><strong>Enterprise</strong> is quoted to your organization. Our '
                 "team will scope the integrations, user roles, and support before agreeing a price."
@@ -274,8 +278,8 @@ def order_summary(tier: Tier, annual: bool) -> str:
     base, tax, total = totals(tier, annual)
     cycle = "year" if annual else "month"
     rows = (f"<tr><td>{html.escape(tier.name)} base price (per {cycle})</td><td>{money(base)}</td></tr>"
-            f"<tr><td>Sales tax ({TAX_RATE * 100:.2f}%)</td><td>{money(tax)}</td></tr>"
-            f'<tr class="pp-total"><td>Total</td><td>{money(total)}</td></tr>')
+            f"<tr><td>Estimated Texas sales tax on SaaS ({TAX_RATE * 100:.2f}%)</td><td>{money(tax)}</td></tr>"
+            f'<tr class="pp-total"><td>Estimated total</td><td>{money(total)}</td></tr>')
     # Keyed by plan and cycle so the browser re-runs the fade-in each time the total changes.
     return (f'<div class="pp-order" data-k="{tier.id}-{cycle}"><table class="pp-lines">{rows}</table>'
             f"{note}</div>")
@@ -291,7 +295,7 @@ def _register_html() -> str:
     items = "".join(
         f'<li><div class="pp-reg-top"><strong>{money(e["total"])}</strong><span>{html.escape(e["date"])}</span></div>'
         f'<div>{html.escape(e["plan"])} ({html.escape(e["cycle"])})</div>'
-        f'<div class="pp-reg-sub">{money(e["base"])} + {money(e["tax"])} tax</div>'
+        f'<div class="pp-reg-sub">{money(e["base"])} + {money(e["tax"])} est. tax</div>'
         f'<div>{html.escape(e["method"])}</div>'
         f'<div class="pp-reg-status">{html.escape(e["status"])}</div></li>'
         for e in reversed(entries)
