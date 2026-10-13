@@ -40,7 +40,7 @@ _ICONS = {
         '</g></svg>'),
     # Two documents slide together, merge into one, and get a check mark. Animated in shared/styles/pages/dashboard.css.
     "recon": (
-        '<span class="pp-logo" title="Click to replay">'
+        '<span class="pp-logo">'
         + _SVG.format(_DOC).replace("<svg ", '<svg class="pp-doc-left" ')
         + _SVG.format(_DOC).replace("<svg ", '<svg class="pp-doc-right" ') +
         '<svg class="pp-doc-merged" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
@@ -89,13 +89,14 @@ def _details(app) -> str:
 def _card(app) -> str:
     badge = f'<span class="pp-badge">{html.escape(app.badge)}</span>' if app.badge else ""
     path = html.escape(app.url_path)
-    # The hover preview (dashboard.js) reads these as data, not as markup.
-    facts = json.dumps({"title": app.title, "inputs": list(app.inputs), "outputs": list(app.outputs)})
+    # What it takes in and produces is printed on the card, not hidden behind a hover: touch screens have no hover.
+    io = (f'<dl class="pp-io"><dt>Takes in</dt><dd>{html.escape(" · ".join(app.inputs))}</dd>'
+          f'<dt>Produces</dt><dd>{html.escape(" · ".join(app.outputs))}</dd></dl>')
     return (
-        f'<div class="pp-card" data-href="/{path}" data-facts="{html.escape(facts, quote=True)}">'
+        f'<div class="pp-card" data-href="/{path}">'
         f'<div class="pp-icon" data-icon="{path}"></div>'
         f'<h3 class="pp-title">{html.escape(app.title)}{badge}</h3>'
-        f'<p class="pp-summary">{html.escape(app.summary)}</p>'
+        f'<p class="pp-summary">{html.escape(app.summary)}</p>{io}'
         '<div class="pp-actions">'
         f'<a class="pp-action" href="/{path}" target="_self" data-route>{html.escape(app.action)} &rarr;</a>'
         f'<a class="pp-ghost" href="/{path}?demo=1" target="_self" title="Opens with sample data loaded; no company files needed">Try demo</a>'
@@ -110,18 +111,23 @@ def _icons_json() -> str:
     return json.dumps(icons).replace("<", "\\u003c")
 
 
-_GET_STARTED = (
-    '<section class="pp-panel pp-start" aria-labelledby="pp-start-h"><h2 id="pp-start-h">Get started</h2>'
-    '<ol class="pp-steps">'
-    "<li><strong>Try a demo.</strong> Choose <em>Try demo</em> on any application below. It opens with sample data "
-    "already loaded, so you can see the workflow without company files.</li>"
-    "<li><strong>Download a template.</strong> Each application has a <em>Download Sample Templates</em> drawer "
-    "showing the file layout it expects.</li>"
-    "<li><strong>Run it on your own files.</strong> Upload your exports, run the application, and download the "
-    "Excel workbook it produces.</li></ol>"
-    '<p class="pp-muted">Fiscal period is set inside each application, so a period is never applied to the wrong tool.</p>'
-    "</section>"
-)
+def _get_started() -> str:
+    """One compact panel: the three first steps and the workspace and plan status, side by side."""
+    return (
+        '<section class="pp-panel pp-start" aria-labelledby="pp-start-h">'
+        '<div class="pp-start-head"><h2 id="pp-start-h">Get started</h2>'
+        '<div class="pp-stats">'
+        '<span class="pp-stat"><span class="pp-dot"></span>Workspace <strong>Ready</strong></span>'
+        f'<span class="pp-stat">Applications <strong>{len(APPS)} available</strong></span>'
+        '<span class="pp-stat">Plan <strong>Free preview</strong>'
+        '<button type="button" class="pp-link" data-open-plans>Compare plans</button></span></div></div>'
+        '<ol class="pp-steps">'
+        "<li><strong>Try a demo.</strong> Choose <em>Try demo</em> on a card: sample data is already loaded.</li>"
+        "<li><strong>Get a template.</strong> Each card has a <em>Download Sample Templates</em> drawer.</li>"
+        "<li><strong>Run your files.</strong> Upload exports, run, and download the Excel workbook.</li></ol>"
+        "</section>"
+    )
+
 
 # What is stored where, from the code: uploads live in the browser session; Excel outputs are built in memory
 # for download; a few small files are written to the server's disk. Update this if that changes.
@@ -143,20 +149,13 @@ page = (
     '<div class="pp-dash"><div class="pp-main">'
     '<header class="pp-hero" id="pp-overview"><p class="pp-brand">Janota Fin Automations</p>'
     '<h1>Accounting Workspace</h1><p>Choose an application to get started.</p></header>'
-    '<div class="pp-stats">'
-    '<span class="pp-stat"><span class="pp-dot"></span>Workspace <strong>Ready</strong></span>'
-    f'<span class="pp-stat">Applications <strong>{len(APPS)} available</strong></span>'
-    '<span class="pp-stat">Plan <strong>Free preview</strong>'
-    '<button type="button" class="pp-link" data-open-plans>Compare plans</button></span></div>'
+    f"{_get_started()}"
     '<div class="pp-notice" role="note"><span class="pp-notice-icon" aria-hidden="true">i</span>'
-    '<p><strong>Tip:</strong> Each application keeps its own files while you work. '
-    "To keep two applications loaded at once, open the second in a new browser tab.</p>"
+    '<p><strong>Tip:</strong> Each application keeps its own files while you work; to keep two loaded at once, open '
+    "the second in a new browser tab. Fiscal period is set inside each application.</p>"
     '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
-    f"{_GET_STARTED}"
     '<h2 class="pp-section" id="pp-apps">Applications</h2>'
     f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
-    '<div class="pp-preview" role="status" aria-live="polite">'
-    '<span class="pp-preview-hint">Hover over an application to preview what it takes in and produces.</span></div>'
     f"{_DATA_HANDLING}"
     "</div></div>"
     f"<script>window.PP_ICONS = {_icons_json()};\n"

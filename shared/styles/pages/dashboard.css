@@ -64,8 +64,7 @@
 .pp-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-bottom: 1.25rem;
+    gap: 0.5rem;
 }
 
 .pp-stat {
@@ -155,10 +154,13 @@
 .pp-hero { scroll-margin-top: 4.5rem; }
 .pp-muted { margin: 0; color: #4b5b6e; font-size: 0.97rem; line-height: 1.5; }
 
-.pp-panel { margin-bottom: 1.5rem; }
-.pp-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0 0 0.75rem; padding: 0; list-style: none; counter-reset: step; }
-.pp-steps li { position: relative; padding: 0.15rem 0 0 2.4rem; color: #2f3e51; font-size: 0.98rem; line-height: 1.5; counter-increment: step; }
-.pp-steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 700; line-height: 1.8rem; text-align: center; }
+.pp-panel { margin-bottom: 1rem; }
+.pp-start { padding: 0.75rem 1rem; }
+.pp-start-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 0.6rem; }
+.pp-start-head h2 { margin: 0; }
+.pp-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.pp-steps li { position: relative; padding: 0.1rem 0 0 2.2rem; color: #2f3e51; font-size: 0.95rem; line-height: 1.4; counter-increment: step; }
+.pp-steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 700; line-height: 1.6rem; text-align: center; }
 .pp-steps strong { color: var(--navy); }
 
 .pp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin-top: auto; }
@@ -191,35 +193,6 @@
 @media (max-width: 720px) {
         .pp-hero h1 { font-size: 2rem; }
 }
-
-/* Hover preview bar, below the cards so it never crowds the choices: what the hovered application
-   takes in and produces (see dashboard.js). */
-.pp-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.35rem;
-    min-height: 3.4rem;
-    margin-top: 1.25rem;
-    padding: 0.7rem 1rem;
-    border: 1px dashed #b9cadb;
-    border-radius: 0.6rem;
-    background: rgba(255, 255, 255, 0.6);
-    color: #3b5266;
-    font-size: 0.97rem;
-    line-height: 1.45;
-    transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.pp-preview-active {
-    border-style: solid;
-    border-color: #2f70a8;
-    background: #ffffff;
-}
-
-.pp-preview-title { color: var(--navy); font-size: 1.05rem; font-weight: 700; }
-.pp-preview-group b { margin-right: 0.35rem; color: var(--blue); font-weight: 700; }
-.pp-card.pp-hover { border-color: #9cc0e0; }
 
 /* Card ------------------------------------------------------------------ */
 .pp-card {
@@ -328,6 +301,19 @@
 
 .pp-card:hover .pp-action { background: var(--blue-dark); padding-right: 1.6rem; }
 
+/* The primary action is stretched over the whole card: one tap or click anywhere opens the app, and keyboard
+   users tab to a single link. The secondary controls sit above the stretched link. */
+.pp-action::after { content: ""; position: absolute; inset: 0; }
+.pp-card .pp-ghost,
+.pp-card .pp-link,
+.pp-card .pp-details { position: relative; z-index: 1; }
+.pp-card:has(.pp-action:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* What the app takes in and produces, always visible (no hover needed). */
+.pp-io { margin: 0 0 0.9rem; font-size: 0.93rem; line-height: 1.4; color: #3b5266; }
+.pp-io dt { margin-top: 0.4rem; color: var(--blue-dark); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.pp-io dd { margin: 0; }
+
 /* Entrance: JS adds .pp-in as each card scrolls into view. Without JS the cards just show. */
 .pp-js .pp-card,
 .pp-js .pp-hero,
@@ -365,7 +351,7 @@
 .pp-doc-merged { animation: pp-merge var(--anim) cubic-bezier(0.4, 0, 0.2, 1) infinite; }
 .pp-check      { animation: pp-draw  var(--anim) ease-out infinite; stroke: #16a34a; }
 
-/* Hovering the card speeds the loop up; clicking the logo replays it (see dashboard.js). */
+/* Hovering the card speeds the loop up; the loop plays on its own. */
 .pp-card:hover .pp-logo { --anim: 2.2s; }
 
 @keyframes pp-left {

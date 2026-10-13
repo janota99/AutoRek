@@ -46,45 +46,6 @@
     });
   });
 
-  // Hover preview: pointing at (or tabbing to) a card fills the preview bar with what that tool takes in
-  // and produces, read from the card's data-facts JSON; leaving the card puts the hint back.
-  var preview = root.querySelector(".pp-preview");
-  var hint = preview ? preview.innerHTML : "";
-  function group(label, items) {
-    var box = document.createElement("span");
-    box.className = "pp-preview-group";
-    var strong = document.createElement("b");
-    strong.textContent = label;
-    box.appendChild(strong);
-    box.appendChild(document.createTextNode(" " + items.join("  ·  ")));
-    return box;
-  }
-  function showFacts(card) {
-    if (!preview) return;
-    var facts;
-    try { facts = JSON.parse(card.dataset.facts); } catch (e) { return; }
-    card.classList.add("pp-hover");
-    preview.textContent = "";
-    var title = group("Utility Name:", [facts.title]);
-    title.classList.add("pp-preview-title");
-    preview.appendChild(title);
-    if (facts.inputs.length) preview.appendChild(group("Takes In:", facts.inputs));
-    if (facts.outputs.length) preview.appendChild(group("Produces:", facts.outputs));
-    preview.classList.add("pp-preview-active");
-  }
-  function clearFacts(card) {
-    card.classList.remove("pp-hover");
-    if (!preview) return;
-    preview.innerHTML = hint;
-    preview.classList.remove("pp-preview-active");
-  }
-  cards.forEach(function (card) {
-    card.addEventListener("mouseenter", function () { showFacts(card); });
-    card.addEventListener("mouseleave", function () { clearFacts(card); });
-    card.addEventListener("focus", function () { showFacts(card); });
-    card.addEventListener("blur", function () { clearFacts(card); });
-  });
-
   // Open an app through Streamlit's own top navigation link so the session is kept and the page
   // does not reload. If that link cannot be found, the href navigates normally.
   function navTo(path) {
@@ -102,7 +63,8 @@
       if (navTo(new URL(a.href, location.href).pathname)) ev.preventDefault();
     });
   });
-  // Clicking empty space on a card opens it too; its links, buttons, and details keep their own behaviour.
+  // The card's primary action is stretched over the whole card in CSS, so a tap anywhere opens it; this keeps
+  // that working through Streamlit's own navigation when the click lands on the card itself.
   cards.forEach(function (card) {
     card.addEventListener("click", function (ev) {
       if (plain(ev) || ev.target.closest("a, button, .pp-details")) return;
@@ -128,17 +90,4 @@
       if (plans) plans.click();
     });
   });
-
-  // Clicking the animated logo restarts its loop from the first frame.
-  var logo = root.querySelector(".pp-logo");
-  if (logo) {
-    logo.addEventListener("click", function (ev) {
-      ev.preventDefault();                         // replay only; do not open the app
-      ev.stopPropagation();
-      var parts = logo.querySelectorAll("svg, svg *");
-      parts.forEach(function (p) { p.style.animation = "none"; });
-      void logo.offsetWidth;                       // force reflow so the animation restarts
-      parts.forEach(function (p) { p.style.animation = ""; });
-    });
-  }
 })();
