@@ -285,3 +285,11 @@ def test_the_plan_table_states_every_limit_and_says_none_is_enforced_yet():
     for term in ("1 user", "Up to 5 users", "1 organization", "Multiple organizations", "up to 25,000 rows per file"):
         assert term in table
     assert "does not enforce them" in table
+
+
+def test_the_business_case_uses_the_real_plan_prices_and_breaks_even_from_the_calculator():
+    at = _run()
+    html = " ".join(e.proto.body for e in at.get("html"))
+    assert "The business case" in html and "Who buys it" in html and "What has to be true." in html
+    assert "Starter pays for itself after 0.5 hours" in html and "Professional after 2.5" in html
+    assert "$200 or $1,000 a year" in html

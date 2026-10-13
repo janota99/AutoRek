@@ -319,6 +319,47 @@ def _value() -> str:
     )
 
 
+def _business() -> str:
+    """The business case, from facts in the product: the plans, the reported close, and what the apps keep."""
+    paid = [t for t in TIERS if t.monthly_price is not None]
+    low, high = paid[0], paid[-1]
+    hours = {t.id: data.roi(data.ROI_DEFAULT_HOURS_BEFORE, data.ROI_DEFAULT_HOURS_AFTER,
+                            data.ROI_DEFAULT_HOURLY_DOLLARS, t.monthly_price)["break_even_hours"] for t in paid}
+    rate = int(data.ROI_DEFAULT_HOURLY_DOLLARS)
+    annual = sales_page._ANNUAL_MONTHS_BILLED
+    cards = (
+        ("Who buys it",
+         "The controller or accounting manager at a manufacturer or distributor that closes the books on QuickBooks plus "
+         "an ERP, and is the person doing or approving the month-end ticking and tying. Two signals define the buyer: "
+         "two systems that have to agree, and a close that repeats every period."),
+        ("How it earns",
+         f"A subscription, billed monthly or once a year (two months free: ${low.monthly_price * annual:,} or "
+         f"${high.monthly_price * annual:,} a year). Land with {low.name} at ${low.monthly_price} a month, expand to "
+         f"{high.name} at ${high.monthly_price} for inventory costing and reconciliation, and quote Enterprise for "
+         "several organizations and integrations."),
+        ("Why that price",
+         f"It is set against the time it saves, not against other software. At ${rate} for an hour of a person's time, "
+         f"{low.name} pays for itself after {hours[low.id]:g} hours of saved work a month and {high.name} after "
+         f"{hours[high.id]:g}. The close it replaced was reported at about {int(data.ROI_DEFAULT_HOURS_BEFORE)} hours."),
+        ("Why they stay",
+         "Month-end comes back every period, and the periods build on each other: inventory closes in sequence, so each "
+         "closed period becomes the next one's opening balance, and confirmed vendor aliases are kept. Leaving means "
+         "rebuilding that history and re-teaching the matching."),
+    )
+    body = "".join(f'<div class="pp-l-value-card" data-reveal style="--d:{n * 90}ms"><b>{_E(t)}</b><p>{_E(d)}</p></div>'
+                   for n, (t, d) in enumerate(cards))
+    return (
+        '<section class="pp-l-section" id="pp-l-business" aria-labelledby="pp-l-business-h">'
+        '<p class="pp-l-eyebrow">The business case</p><h2 id="pp-l-business-h">Who it is for, how it earns, and why it lasts</h2>'
+        f'<div class="pp-l-value-grid pp-l-grid-2">{body}</div>'
+        '<div class="pp-l-scale" data-reveal><b>What has to be true.</b> Buyers trust exact-cent matching enough to '
+        'stop re-checking it by hand; a first workflow is running in a day, not a project; and the planned direct '
+        'QuickBooks connection arrives, so uploading exports stops being a step. Today it is uploads only. No market '
+        'size is claimed here: the buyer is defined by the two signals above, and the figures on this page come from '
+        'one operation.</div></section>'
+    )
+
+
 def _formats() -> str:
     tiles = "".join(
         f'<li data-reveal style="--d:{n * 50}ms" data-kind="{k}"><span class="pp-l-box">{_icon("check" if k == "now" else "schedule" if k == "planned" else "science")}</span>'
@@ -735,4 +776,4 @@ _scroll_to_requested_section()
 _roi()
 _deliverables()
 _purchase()
-st.html(f'<div class="pp-land">{_faq_and_story()}{_closing()}{_footer()}</div>')
+st.html(f'<div class="pp-land">{_business()}{_faq_and_story()}{_closing()}{_footer()}</div>')
