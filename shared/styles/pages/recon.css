@@ -885,6 +885,21 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 }
 
 @media (max-width: 640px) {
+    /* Four steps in two rows instead of a sideways scroll on a phone; the connector line is dropped. */
+    .rec-stepper {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 0.9rem;
+        overflow-x: visible;
+    }
+
+    .stepper-item {
+        min-width: 0;
+    }
+
+    .stepper-item:not(:last-child)::after {
+        display: none;
+    }
+
     .rec-title h1 {
         font-size: 2.15rem !important;
     }

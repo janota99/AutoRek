@@ -1,3 +1,7 @@
+[client]
+# Production look: hide Streamlit's Deploy button and developer menu from visitors.
+toolbarMode = "minimal"
+
 [theme]
 # The apps' stylesheets assume a light page, so don't follow the OS dark mode.
 base = "light"

@@ -213,7 +213,11 @@
 .pp-l-footer a:hover, .pp-l-footer button:hover { color: var(--pp-accent-strong) !important; text-decoration: underline !important; }
 
 @media (max-width: 960px) {
-    .pp-l-hero, .pp-l-panel, .pp-l-split { grid-template-columns: 1fr; }
+    /* minmax(0, 1fr), not 1fr: a bare 1fr will not shrink below its widest child, which pushed the explorer past
+       the right edge of a phone. Wide tables scroll inside their panel instead. */
+    .pp-l-hero, .pp-l-panel, .pp-l-split { grid-template-columns: minmax(0, 1fr); }
+    .pp-l-panel > * { min-width: 0; }
+    .pp-l-panel-main { overflow-x: auto; }
     .pp-l-steps, .pp-l-caps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .pp-l-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .pp-l-links { display: none; }
