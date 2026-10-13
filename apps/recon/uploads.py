@@ -35,11 +35,17 @@ def render_dataset_summary(summary: dict[str, Any]) -> None:
     if worksheet:
         items.append(("Worksheet", str(worksheet)))
 
+    fiscal = summary.get("fiscal_periods")
+    if fiscal:
+        items.append(("Fiscal period", fiscal))
+
     date_start = summary.get("date_start")
     date_end = summary.get("date_end")
     if date_start and date_end:
         date_value = date_start if date_start == date_end else f"{date_start}–{date_end}"
         items.append(("Dates", date_value))
+    elif not fiscal:
+        items.append(("Period", "Not detected"))
 
     if summary.get("amount_total_cents") is not None:
         cents = int(summary["amount_total_cents"])
@@ -47,14 +53,14 @@ def render_dataset_summary(summary: dict[str, Any]) -> None:
         items.append(("Signed total", f"{sign}${abs(cents) / 100:,.2f}"))
 
     missing = summary.get("missing_fields") or []
-    found_label = "Required fields"
+    found_label = "Validation"
     status_markup = (
         f'<span class="dataset-summary-item dataset-summary-warn">'
-        f'<span class="dataset-summary-label">Missing</span>'
-        f'<strong>{html.escape(", ".join(missing))}</strong></span>'
+        f'<span class="dataset-summary-label">Validation</span>'
+        f'<strong>&#10007; Missing {html.escape(", ".join(missing))}</strong></span>'
         if missing else
         f'<span class="dataset-summary-item dataset-summary-ok">'
-        f'<span class="dataset-summary-label">{found_label}</span><strong>&#10003; Found</strong></span>'
+        f'<span class="dataset-summary-label">{found_label}</span><strong>&#10003; PO, Invoice, Amount found</strong></span>'
     )
     filename = summary.get("filename")
     name_markup = (
@@ -142,6 +148,15 @@ def cached_dataset_summary(
     labels = {"po": "PO", "invoice": "Invoice", "amount": "Amount"}
     summary["missing_fields"] = [labels[f] for f, col in found.items() if col is None]
 
+    # Fiscal period(s) in the file, when it has a period column of whole numbers 1-13 (display only).
+    period_col = infer_column(columns, patterns["period"]) if "period" in patterns else None
+    if period_col:
+        nums = pd.to_numeric(frame[period_col], errors="coerce").dropna()
+        nums = nums[(nums >= 1) & (nums <= 13) & (nums % 1 == 0)].astype(int)
+        if not nums.empty:
+            lo, hi = int(nums.min()), int(nums.max())
+            summary["fiscal_periods"] = f"P{lo:02d}" if lo == hi else f"P{lo:02d}–P{hi:02d}"
+
     # Signed total of the amount column. QuickBooks subtotal rows are dropped first (the same
     # filter the reconciliation applies), or the total would double count. Display only.
     if found["amount"]:
@@ -194,4 +209,4 @@ def render_uploaded_dataset_summary(
         )
         render_dataset_summary(summary)
     except Exception:
-        st.caption("Dataset summary will appear after the import settings are confirmed.")
+        st.caption(f"{file_obj.name}: the dataset summary will appear after the import settings are confirmed.")

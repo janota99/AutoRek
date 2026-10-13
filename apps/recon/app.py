@@ -157,7 +157,7 @@ def main() -> None:
             qb_file, _ = sample_uploader(
                 "Upload primary QuickBooks sales data",
                 key="qb_file", sample_file="recon_quickbooks_sales.xlsx",
-                types=["xlsx", "csv"],
+                types=["xlsx", "csv"], replace_label="Replace file",
                 help="Drag and drop or click to upload the current QuickBooks sales export.",
             )
             render_source_status(
@@ -182,7 +182,7 @@ def main() -> None:
             inf_file, _ = sample_uploader(
                 "Upload primary Infinium sales data",
                 key="inf_file", sample_file="recon_infinium_sales.xlsx",
-                types=["xlsx", "csv"],
+                types=["xlsx", "csv"], replace_label="Replace file",
                 help="Drag and drop or click to upload the current Infinium sales export.",
             )
             render_source_status(
@@ -229,7 +229,7 @@ def main() -> None:
                     qb_secondary_file, _ = sample_uploader(
                         "Upload historical QuickBooks data",
                         key="qb_secondary_file", sample_file="recon_quickbooks_historical.xlsx",
-                        types=["xlsx", "csv"],
+                        types=["xlsx", "csv"], replace_label="Replace file",
                         help="Drag and drop or click to upload optional historical QuickBooks data.",
                     )
                     if qb_secondary_file:
@@ -253,7 +253,7 @@ def main() -> None:
                     inf_secondary_file, _ = sample_uploader(
                         "Upload historical Infinium data",
                         key="inf_secondary_file", sample_file="recon_infinium_historical.xlsx",
-                        types=["xlsx", "csv"],
+                        types=["xlsx", "csv"], replace_label="Replace file",
                         help="Drag and drop or click to upload optional historical Infinium data.",
                     )
                     if inf_secondary_file:

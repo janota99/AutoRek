@@ -180,7 +180,7 @@ def render_source_status(
     if filename:
         st.markdown(
             f'<div class="source-status complete"><span class="status-dot"></span>'
-            f'<span>Loaded: {html.escape(filename)}</span></div>',
+            f'<span>File loaded</span></div>',
             unsafe_allow_html=True,
         )
     else:

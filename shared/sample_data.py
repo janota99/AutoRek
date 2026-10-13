@@ -73,6 +73,7 @@ def sample_uploader(
     help: Optional[str] = None,
     label_visibility: str = "collapsed",
     show_badge: bool = True,
+    replace_label: Optional[str] = None,
 ):
     """st.file_uploader plus a "Use Sample Data" button.
 
@@ -81,9 +82,15 @@ def sample_uploader(
     Returns (file, is_sample). `file` is the real upload if there is one, else the sample when it
     has been loaded, else None. A real upload replaces the sample. `on_clear` runs whenever a
     sample is cleared or replaced, for callers whose page state absorbed the sample's contents.
+
+    ``replace_label`` adds an obvious button once a file is loaded: "Clear sample" becomes that label,
+    and a real upload gets a button of that name that empties the uploader so a new file can be chosen.
     """
+    gen_key = f"_upload_gen_{key}"
+    generation = st.session_state.get(gen_key, 0)
     uploaded = st.file_uploader(
-        label, type=types, key=key, help=help, label_visibility=label_visibility
+        label, type=types, key=key if not generation else f"{key}__{generation}",
+        help=help, label_visibility=label_visibility,
     )
     flag = _flag(key)
 
@@ -95,6 +102,12 @@ def sample_uploader(
     if uploaded is not None:
         if st.session_state.get(flag):
             clear()
+        if replace_label:
+            st.button(
+                replace_label, key=f"{key}_replace_file", type="secondary", width="content",
+                icon=":material/swap_horiz:", help="Removes this file so a different one can be uploaded.",
+                on_click=st.session_state.__setitem__, args=(gen_key, generation + 1),
+            )
         return uploaded, False
 
     _seed_demo(key)
@@ -108,8 +121,8 @@ def sample_uploader(
                 unsafe_allow_html=True,
             )
         st.button(
-            "Clear sample", key=f"{key}_clear_sample", type="secondary", width="content",
-            icon=":material/close:", on_click=clear,
+            replace_label or "Clear sample", key=f"{key}_clear_sample", type="secondary", width="content",
+            icon=":material/swap_horiz:" if replace_label else ":material/close:", on_click=clear,
         )
         return sample, True
 

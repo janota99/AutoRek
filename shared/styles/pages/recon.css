@@ -25,7 +25,7 @@
     --rec-shadow-hover: 0 12px 30px rgba(20, 32, 51, 0.11);
     /* The upload cards' row. The title, stepper, and pre-upload callouts share its left edge,
        and the stepper and callouts its right edge, so the page reads as one column. */
-    --rec-content-width: 1240px;
+    --rec-content-width: 1480px;
 }
 
 /* Canvas and global typography */
