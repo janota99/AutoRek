@@ -219,6 +219,22 @@
   }
   setInterval(markActiveNav, 500);
 
+  // Streamlit draws a few icon-only controls without an accessible name. Give them one so a screen reader announces
+  // what they do instead of "button". Streamlit re-renders them, so this runs on a timer like markActiveNav.
+  var CONTROL_NAMES = {
+    stNumberInputStepDown: 'Decrease value',
+    stNumberInputStepUp: 'Increase value',
+    'stBaseButton-headerNoPadding': 'Show or hide the sidebar'
+  };
+  function nameControls() {
+    Object.keys(CONTROL_NAMES).forEach(function (testid) {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-testid="' + testid + '"]'), function (b) {
+        if (!b.getAttribute('aria-label') && !(b.textContent || '').trim()) b.setAttribute('aria-label', CONTROL_NAMES[testid]);
+      });
+    });
+  }
+  setInterval(nameControls, 1000);
+
   window.ppSuiteBanner = { render: render };
   render();
 })();

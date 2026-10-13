@@ -6,3 +6,5 @@ toolbarMode = "minimal"
 # The apps' stylesheets assume a light page, so don't follow the OS dark mode.
 base = "light"
 primaryColor = "#1e3a8a"
+# Streamlit's default success-text green is 4.3:1 on its own tint; this is 6:1.
+greenTextColor = "#166534"

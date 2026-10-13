@@ -5,16 +5,16 @@
     letter-spacing: .14em; text-transform: uppercase; }
 .pp-sales h1 { margin: 0 0 .6rem; padding: 0; color: var(--pp-navy); font-size: 2.5rem; font-weight: 800;
     letter-spacing: -.02em; line-height: 1.15; }
-.pp-sales p.pp-lede { margin: 0; color: #64748b; font-size: .95rem; }
+.pp-sales p.pp-lede { margin: 0; color: #526173; font-size: .95rem; }
 [class*="st-key-pp-plan-"] { background: #fff; border-radius: .9rem; border: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px rgba(15, 35, 65, .08); }
 .st-key-pp-plan-professional { border: 2px solid #2f70a8; box-shadow: 0 8px 24px rgba(47, 112, 168, .18); }
-.pp-tier-label { margin: 0; color: #4b81b8; font-size: .75rem; font-weight: 700;
+.pp-tier-label { margin: 0; color: #3b6ea5; font-size: .75rem; font-weight: 700;
     letter-spacing: .12em; text-transform: uppercase; }
 .pp-tier-name { margin: .25rem 0 .25rem; color: var(--pp-navy); font-size: 1.5rem; font-weight: 800; }
-.pp-tier-for { margin: 0 0 1rem; min-height: 2.8em; color: #64748b; font-size: .9rem; line-height: 1.4; }
+.pp-tier-for { margin: 0 0 1rem; min-height: 2.8em; color: #526173; font-size: .9rem; line-height: 1.4; }
 .pp-price { margin: 0 0 1rem; color: var(--pp-navy); font-size: 2.4rem; font-weight: 800; line-height: 1; }
-.pp-price small { color: #64748b; font-size: .9rem; font-weight: 500; }
+.pp-price small { color: #526173; font-size: .9rem; font-weight: 500; }
 .pp-feats { margin: 0 0 .5rem; padding: 0; list-style: none; }
 /* Cards in a row share one height: the column, its layout wrapper, and the card all stretch. */
 [data-testid="stColumn"]:has([class*="st-key-pp-plan-"]) > [data-testid="stVerticalBlock"] { height: 100%; }
@@ -50,7 +50,7 @@
 .pp-cmp th, .pp-cmp td { padding: .6rem .8rem; border-top: 1px solid #e2e8f0; text-align: left; vertical-align: top; line-height: 1.45; }
 .pp-cmp thead th { border-top: 0; color: var(--pp-navy); font-size: 1rem; background: #f4f7fb; }
 .pp-cmp tbody th { width: 14rem; color: var(--pp-navy); font-weight: 700; }
-.pp-cmp-note { margin: .6rem 0 0; color: #64748b; font-size: .85rem; }
+.pp-cmp-note { margin: .6rem 0 0; color: #526173; font-size: .85rem; }
 .pp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 /* Charge register: a card in the right-hand column that stays in view while the plans scroll. */
 [data-testid="stColumn"]:has(.pp-register) { position: sticky; top: 4.5rem; align-self: flex-start; }

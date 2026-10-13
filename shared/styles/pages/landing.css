@@ -158,20 +158,20 @@
 [class*="st-key-pp-l-report-"] > [data-testid="stElementContainer"]:first-child { flex: 1; }
 .pp-l-kind { margin: 0; color: var(--pp-accent); font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .pp-l-rep-h { margin: .25rem 0 .3rem; color: var(--pp-navy); font-size: 1.15rem; font-weight: 800; }
-.pp-l-rep-p { margin: 0 0 .5rem; color: #64748b; font-size: .9rem; line-height: 1.45; }
+.pp-l-rep-p { margin: 0 0 .5rem; color: #526173; font-size: .9rem; line-height: 1.45; }
 
 /* 6. Plans and the purchase sequence */
 .pp-l-stepper { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 1.2rem; padding: 0; list-style: none; }
-.pp-l-stepper li { display: flex; align-items: center; gap: .4rem; padding: .3rem .8rem .3rem .35rem; border-radius: 999px; background: #eceff3; color: #64748b; font-size: .85rem; font-weight: 700; }
-.pp-l-stepper li span { display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: #cbd5e1; color: #fff; font-size: .75rem; }
+.pp-l-stepper li { display: flex; align-items: center; gap: .4rem; padding: .3rem .8rem .3rem .35rem; border-radius: 999px; background: #eceff3; color: #526173; font-size: .85rem; font-weight: 700; }
+.pp-l-stepper li span { display: grid; place-items: center; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: #cbd5e1; color: #1e293b; font-size: .75rem; }
 .pp-l-stepper li[data-state="now"] { background: var(--pp-navy); color: #fff; }
-.pp-l-stepper li[data-state="now"] span { background: #2563eb; }
+.pp-l-stepper li[data-state="now"] span { background: #2563eb; color: #fff; }
 .pp-l-stepper li[data-state="done"] { background: #eefaf1; color: #17552b; }
-.pp-l-stepper li[data-state="done"] span { background: #3fa468; }
+.pp-l-stepper li[data-state="done"] span { background: #2f7d4f; color: #fff; }
 .pp-l-chosen { margin: 0 0 1rem; color: var(--ink); font-size: .95rem; }
 .pp-l-chosen strong { color: var(--pp-navy); }
 .pp-l-total { margin: 0 0 .6rem; color: var(--pp-navy); font-size: 1rem; font-weight: 800; }
-.pp-l-total small { color: #64748b; font-weight: 500; }
+.pp-l-total small { color: #526173; font-weight: 500; }
 .pp-l-review { margin: 0 0 1rem; padding: 1.1rem 1.3rem; border: 1px solid #dbe4ee; border-radius: .9rem; background: #fff; color: #334155; }
 .pp-l-review h3 { margin: 0 0 .4rem; color: var(--pp-navy); font-size: 1.25rem; font-weight: 800; }
 .pp-l-review h4 { margin: .8rem 0 .2rem; color: var(--pp-navy); font-size: .95rem; }

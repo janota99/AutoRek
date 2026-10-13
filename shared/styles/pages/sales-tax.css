@@ -249,7 +249,7 @@ button[kind="secondary"],
 }
 .st-pill { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.55rem;
            border-radius: 999px; margin-left: 0.4rem; vertical-align: middle; }
-.st-pill-ok { background: #e3f4e5; color: #2e7d32; }
+.st-pill-ok { background: #e3f4e5; color: #276a2c; }
 .st-pill-missing { background: #fdeccd; color: #8a5300; }
 
 /* Run Cleanup: large, high-contrast; visibly inactive while disabled */
@@ -338,13 +338,13 @@ button[kind="secondary"],
 .st-step { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding-right: 1rem; }
 .st-step:not(:last-child)::after { content: ""; position: absolute; top: 17px; left: 46px; right: 8px; height: 2px; background: #cdd8e4; }
 .st-step[data-state="complete"]:not(:last-child)::after { background: #2e7d32; }
-.st-node { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid #cdd8e4; border-radius: 50%; background: #fff; color: #65758a; font-weight: 800; font-size: .9rem; position: relative; z-index: 1; }
+.st-node { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid #cdd8e4; border-radius: 50%; background: #fff; color: #566679; font-weight: 800; font-size: .9rem; position: relative; z-index: 1; }
 .st-node .material-symbols-rounded { font-size: 1.2rem; }
 .st-step[data-state="complete"] .st-node { background: #2e7d32; border-color: #2e7d32; color: #fff; }
 .st-step[data-state="active"] .st-node { background: var(--pp-navy); border-color: var(--pp-navy); color: #fff; box-shadow: 0 0 0 4px rgba(25, 54, 93, .2); }
-.st-step-title { margin-top: .55rem; color: #65758a; font-weight: 700; font-size: 1rem; }
+.st-step-title { margin-top: .55rem; color: #566679; font-weight: 700; font-size: 1rem; }
 .st-step[data-state="active"] .st-step-title, .st-step[data-state="complete"] .st-step-title { color: var(--pp-navy); }
-.st-step-detail { color: #65758a; font-size: .85rem; line-height: 1.35; }
+.st-step-detail { color: #566679; font-size: .85rem; line-height: 1.35; }
 
 .st-section { margin: .4rem 0 1rem; }
 .stApp .st-section h2 { margin: 0; padding: 0; color: var(--pp-navy); font-family: var(--pp-heading-font); font-size: var(--pp-h2-size); font-weight: 700; }

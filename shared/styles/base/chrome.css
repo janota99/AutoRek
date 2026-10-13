@@ -365,3 +365,27 @@
 .stApp .stMain [data-testid="stHeading"] h1 { font-size: var(--pp-h1-size); font-weight: 800; line-height: 1.12; letter-spacing: -0.02em; }
 .stApp .stMain [data-testid="stHeading"] h2 { font-size: var(--pp-h2-size); font-weight: 700; line-height: 1.2; letter-spacing: -0.015em; }
 .stApp .stMain [data-testid="stHeading"] h3 { font-size: var(--pp-h3-size); font-weight: 700; line-height: 1.3; }
+
+/* Keyboard focus: a visible ring on the custom controls (links, buttons, summaries) the suite draws itself, so
+   tabbing through the Dashboard, the landing page, and the account strip always shows where you are. Streamlit's
+   own widgets keep their native focus styles. White on the dark bands, blue elsewhere. */
+:where(.pp-land, .pp-dash, .pp-suite-banner, .pp-sales, .pp-wf-steps) :is(a, button, summary, [tabindex="0"]):focus-visible {
+    outline: 3px solid var(--pp-accent);
+    outline-offset: 2px;
+    border-radius: 0.35rem;
+}
+.pp-l-dark :is(a, button, summary, [tabindex="0"]):focus-visible,
+.pp-l-hero :is(a, button, summary, [tabindex="0"]):focus-visible {
+    outline-color: #ffffff;
+}
+
+/* Reduced motion: the person asked their system for less movement, so animations end at once, transitions are
+   instant, and nothing scrolls smoothly. Content is unchanged; only the movement goes. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}

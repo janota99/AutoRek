@@ -10,7 +10,7 @@
     --pp-sidebar-bg: var(--pp-navy);
     --pp-surface: #ffffff;
     --pp-text-secondary: #4a5a6e;
-    --pp-text-muted: #65758a;
+    --pp-text-muted: #566679;   /* 5.9:1 on white; the old #65758a was 4.4:1 */
     --pp-border: #d8e1ea;
     --pp-border-strong: #c9d4e0;
     --pp-border-soft: #e6ecf2;
