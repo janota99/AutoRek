@@ -14,7 +14,11 @@ Schema for saved reconciliation mappings and the FIFO period/layer store. The Cu
 | `tests/test_store_live.py` | The saved-mapping library through the real app role; needs `DB_TEST_ADMIN_URL`. |
 | `tests/test_migrate.py` | File checks; always runs. |
 | `tests/test_runs_migration.py`, `tests/test_runs_live.py` | Migration 004 file checks (always run); saved runs through the real app role (need `DB_TEST_ADMIN_URL`). |
+| `run_live_tests.py` | `py -m db.run_live_tests`: starts a temporary embedded PostgreSQL, runs `pytest db` against it, and removes it. |
 | `tests/test_schema_live.py` | Applies the migrations to a throwaway database and checks every rule; runs only when `DB_TEST_ADMIN_URL` is set. |
+
+No server handy? `py -m db.run_live_tests` runs the live tests against a throwaway embedded PostgreSQL
+(`pip install pixeltable-pgserver` first; see the file's docstring for the one `pgcrypto` workaround it applies).
 
 ```powershell
 pip install "psycopg[binary]"

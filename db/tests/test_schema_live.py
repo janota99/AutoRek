@@ -116,7 +116,8 @@ def test_current_layers_follow_the_latest_closed_period(conn, org):
 
 
 def test_organizations_cannot_be_deleted(conn, org):
-    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+    # ON DELETE RESTRICT raises RestrictViolation (not ForeignKeyViolation); both are integrity errors.
+    with pytest.raises(psycopg.errors.RestrictViolation):
         with conn.transaction():
             conn.execute("DELETE FROM organizations WHERE org_id = %s", (org,))
 
