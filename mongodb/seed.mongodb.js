@@ -1,9 +1,9 @@
-// Creates the janota_fin database with three validated collections and loads the sample documents.
+// Creates the janota_fin database with four validated collections and loads the sample documents.
 //
 // Run from the repository root:
 //   mongosh "mongodb://localhost:27017" --file mongodb/seed.mongodb.js
 //
-// It DROPS and recreates reviews, plans and tools in the janota_fin database, so it is safe to run
+// It DROPS and recreates reviews, plans, tools and taxRules in the janota_fin database, so it is safe to run
 // again, and should not be pointed at a database holding anything you want to keep. The website is
 // not connected to MongoDB yet; this only establishes the data structure.
 

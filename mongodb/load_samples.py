@@ -1,7 +1,7 @@
 """Loads the sample documents into Atlas, without needing mongosh.
 
     py -m mongodb.load_samples            # creates what is missing; never overwrites existing data
-    py -m mongodb.load_samples --reset    # drops and recreates reviews, plans and tools first
+    py -m mongodb.load_samples --reset    # drops and recreates reviews, plans, tools and taxRules first
 
 Uses the same settings as ``py -m mongodb.check_connection``. Each collection is created with its
 ``$jsonSchema`` validator from ``mongodb/schemas/`` (strict, so the server rejects a wrong type, a missing

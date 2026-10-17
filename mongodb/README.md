@@ -1,7 +1,7 @@
 # MongoDB collections
 
-Four collections that describe the data the website already uses. The site is **not connected to
-MongoDB yet**; this folder establishes the structure so connecting it later is a straight mapping.
+Four collections that describe the data the website already uses. Only the Texas Tax Rules tab reads MongoDB so far (falling back
+to the bundled JSON); the rest of the site does not yet. This folder establishes the structure so connecting more of it is a straight mapping.
 
 Database: `janota_fin`. Each collection has a `$jsonSchema` validator in `schemas/`, so the server rejects a
 document with a wrong type, an out-of-range value, a missing field, or an extra field.
@@ -15,7 +15,7 @@ document with a wrong type, an out-of-range value, a missing field, or an extra 
 
 ## Connect to Atlas (ready to connect)
 
-The site is not wired to MongoDB, but the connection layer is in place and testable:
+Only the Texas Tax Rules tab reads MongoDB so far (it falls back to the bundled JSON); the rest of the site does not. The connection layer is in place and testable:
 
 1. In Atlas: a cluster, a database user with only `readWrite` on `janota_fin`, and your IP in the IP Access List.
 2. Add a `[mongodb]` block to `.streamlit/secrets.toml` (copy it from `secrets.toml.example`), or set
@@ -27,7 +27,7 @@ The site is not wired to MongoDB, but the connection layer is in place and testa
 py -m mongodb.check_connection
 ```
 
-It pings the cluster, confirms the three collections and their counts, validates every stored document against
+It pings the cluster, confirms the four collections and their counts, validates every stored document against
 `schemas/`, and warns if the connecting user is over-privileged. It only reads. `connection.py` holds the
 settings loader (`load_config`, `connect`) and plain-language failure reasons (`describe_error`);
 `test_connection.py` covers them without a server.
@@ -38,7 +38,7 @@ settings loader (`load_config`, `connect`) and plain-language failure reasons (`
 mongosh "mongodb://localhost:27017" --file mongodb/seed.mongodb.js
 ```
 
-Run from the repository root. It **drops and recreates** the three collections in `janota_fin`, creates them
+Run from the repository root. It **drops and recreates** the four collections in `janota_fin`, creates them
 with their validators, inserts the sample documents, and runs a few queries (number, Boolean and null filters).
 Or load one file at a time: `mongoimport --db janota_fin --collection reviews --jsonArray --file mongodb/reviews.json`
 (into a collection that does not exist yet, this creates it without the validator).

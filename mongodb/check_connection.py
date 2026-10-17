@@ -7,7 +7,7 @@ Reads the same settings the app will (``AUTOREK_MONGODB_URI`` or the ``[mongodb]
 
   1. a connection string is configured and well formed
   2. the cluster answers a ping (catches wrong password, IP not allowed, paused cluster)
-  3. the database holds the three collections, with the expected document counts
+  3. the database holds the four collections, with the expected document counts
   4. every stored document still satisfies its local schema (``mongodb/schemas``)
   5. the database user is not over-privileged (a warning, not a failure)
 

@@ -520,7 +520,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 }
 
 .source-status.pending {
-    background: #f3f5f7;
+    background: var(--pp-status-neutral-bg);
     color: var(--rec-text-muted) !important;
 }
 
@@ -914,7 +914,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
 /* Validation summary chips after an upload, and the short matching statement before one. */
 .dataset-summary-ok { background: var(--rec-green-soft); border-color: #b7dfcf; }
 .dataset-summary-ok strong { color: #116447 !important; }
-.dataset-summary-warn { background: #fdecea; border-color: #f3b9b4; }
+.dataset-summary-warn { background: var(--pp-status-fail-bg); border-color: #f3b9b4; }
 .dataset-summary-warn strong { color: var(--rec-red) !important; }
 .matching-summary {
     max-width: var(--rec-content-width);

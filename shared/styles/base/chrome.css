@@ -281,7 +281,7 @@
 
 /* Demo banner (apps/demo_banner.py): above a solution's tool when it was opened from a "Try ..." button. */
 .st-key-pp-demo-bar { margin: .5rem 0 1rem; padding: .9rem 1.2rem; border-radius: .75rem; background: linear-gradient(135deg, var(--pp-navy), var(--pp-accent)); }
-.pp-demo-copy { color: #dbeafe; }
+.pp-demo-copy { color: var(--pp-accent-soft-hover); }
 .pp-demo-copy h2 { display: flex; align-items: center; gap: .5rem; margin: .25rem 0 .2rem; padding: 0; color: #fff; font-size: 1.35rem; font-weight: 800; }
 .pp-demo-copy p { margin: 0; font-size: .95rem; line-height: 1.5; }
 .pp-demo-tag { display: inline-block; padding: .1rem .6rem; border-radius: 999px; background: rgba(255, 255, 255, .16); color: #fff; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
@@ -349,9 +349,9 @@
 
 [data-testid="stHeader"] a[data-testid="stTopNavLink"][data-pp-active],
 [data-testid="stHeader"] [data-testid="stTopNavSection"][data-pp-active] {
-    color: #1e3a8a;
+    color: var(--pp-primary);
     font-weight: 600;
-    background-color: #eff6ff;
+    background-color: var(--pp-accent-soft);
 }
 
 /* Heading scale (tokens.css): Streamlit's own headings, so st.title / st.header / st.subheader match the pages that

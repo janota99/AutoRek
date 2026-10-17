@@ -1,9 +1,9 @@
 /* FIFO Inventory page styles (shared/styles/pages/fifo.css). */
 div[data-testid="stDownloadButton"] button {
-    background-color: #1e3a8a;
+    background-color: var(--pp-primary);
     color: #FFFFFF;
     font-weight: 700;
-    border: 1px solid #1e3a8a;
+    border: 1px solid var(--pp-primary);
 }
 div[data-testid="stDownloadButton"] button:hover {
     background-color: #1e40af;
@@ -11,7 +11,7 @@ div[data-testid="stDownloadButton"] button:hover {
     border: 1px solid #1e40af;
 }
 div[data-testid="stDownloadButton"] button:active {
-    background-color: #1e3a8a;
+    background-color: var(--pp-primary);
     color: #FFFFFF;
 }
 
@@ -31,13 +31,13 @@ div[data-testid="stVerticalBlockBorderWrapper"] div[data-testid="stVerticalBlock
     border: 1px solid #e2e8f0;
 }
 
-h1, h2, h3, h4 { color: #1e3a8a; }
-[data-testid="stSidebar"] h2 { color: #1e3a8a; }
+h1, h2, h3, h4 { color: var(--pp-primary); }
+[data-testid="stSidebar"] h2 { color: var(--pp-primary); }
 
 div[data-testid="stDownloadButton"] button,
 div[data-testid="stDownloadButton"] button:active {
-    background-color: #1e3a8a;
-    border-color: #1e3a8a;
+    background-color: var(--pp-primary);
+    border-color: var(--pp-primary);
 }
 div[data-testid="stDownloadButton"] button:hover {
     background-color: #1e40af;
