@@ -47,6 +47,20 @@ nothing, and every application stays open to anyone. Never describe it as access
 - Scripts inlined through `st.html` must not contain `<` followed by a letter, even in a comment:
   Streamlit's sanitizer drops the whole script. `suite_banner.js` avoids `<` entirely.
 
+### Real sign-in (optional, attribution only)
+
+Separate from the simulated sign-in above. With an `[auth]` block in `secrets.toml` (OpenID Connect; keys in
+`secrets.toml.example`) Streamlit's own `st.login` is available, and `shared/auth_ui.py:render_sign_in` draws a status line
+with Sign in / Sign out at the top of the Recon page (nothing is drawn without the block; a block missing keys names them).
+
+- `shared/auth.py` decides who is **verified**: authenticated by the provider, email not reported unverified, and on the
+  `[access]` allow-list (`emails` and/or `domains`). With no allow-list nobody is verified.
+- `shared/identity.py` turns that into the actor recorded with saved Recon runs, notes and workpapers. A signed-in person who
+  is not verified keeps their email, marked unverified. The browser-only sign-in never produces a verified identity.
+- It labels who did what; it does **not** restrict any page yet. Signing in reloads the page (loses uploads), so the status
+  line asks people to do it first. Roles (preparer/reviewer/admin) are not built.
+- Provider setup: redirect URI `https://<domain>/oauth2callback` (and `http://localhost:8501/oauth2callback` locally).
+
 ## Landing page (Home, `/`)
 
 `apps/landing.py` is the default page. Sections 1-4 (navigation, opening, solution explorer, walkthrough) and 7-8 (FAQ and

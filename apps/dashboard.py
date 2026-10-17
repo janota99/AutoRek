@@ -145,7 +145,8 @@ _DATA_HANDLING = (
     "balance cache, which everyone using the app shares; and Recon's confirmed vendor aliases, with who confirmed "
     "each one and when. To remove any of these, delete the files from the app's folders.</li>"
     "<li><strong>Access:</strong> the sign-in is simulated in your browser and is not access control. Anyone who can "
-    "open this app can open every tool and the stored data above.</li>"
+    "open this app can open every tool and the stored data above. Where your organization has set up a real sign-in, "
+    "it only labels who ran and reviewed things in the Recon run history as verified; it does not restrict access.</li>"
     "<li><strong>Demo data</strong> is synthetic: made-up vendors, customers, and amounts.</li></ul></details>"
 )
 
