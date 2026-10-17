@@ -148,3 +148,89 @@ def totals(results: list[dict]) -> tuple[int, int]:
 def safe_url(url: Any) -> Optional[str]:
     """Only https links are rendered as links."""
     return url if isinstance(url, str) and url.startswith("https://") else None
+
+
+# --- a person's own rules ----------------------------------------------------------------------------------------
+# These live in the visitor's session (and in a downloaded file they choose to keep). They are never written to the
+# shared collection, are labeled as the person's own, and carry no "drafted" or "verified" claim.
+MAX_CUSTOM = 50
+EXPORT_FORMAT = "janota-fin-custom-tax-rules"
+CUSTOM_FIELDS = ("title", "category", "treatment", "summary", "taxableWhen", "nontaxableWhen", "inPractice",
+                 "authority", "url")
+CATEGORY_CHOICES = ("Food classification", "Manufacturing and processing", "Equipment and supplies",
+                    "Packaging and charges", "Real property and services", "Other")
+TREATMENT_CHOICES = ("Generally taxable", "Generally nontaxable", "Depends on the facts")
+_LIMITS = {"title": (3, 120), "summary": (10, 800), "taxableWhen": (0, 600), "nontaxableWhen": (0, 600),
+           "inPractice": (0, 600), "authority": (0, 200), "url": (0, 300)}
+
+
+def clean_custom_entry(raw: dict) -> dict:
+    """The whitelisted, trimmed fields of one entry, or ValueError listing what is wrong."""
+    if not isinstance(raw, dict):
+        raise ValueError("An entry must be a set of named fields.")
+    entry = {k: str(raw.get(k) or "").strip() for k in CUSTOM_FIELDS}
+    problems = []
+    for field, (low, high) in _LIMITS.items():
+        n = len(entry[field])
+        if n < low:
+            problems.append(f"{field}: needs at least {low} characters")
+        if n > high:
+            problems.append(f"{field}: keep it to {high} characters or fewer")
+    if entry["category"] not in CATEGORY_CHOICES:
+        problems.append("category: choose one of the listed categories")
+    if entry["treatment"] not in TREATMENT_CHOICES:
+        problems.append("treatment: choose one of the listed treatments")
+    if entry["url"] and safe_url(entry["url"]) is None:
+        problems.append("url: a source link must start with https://")
+    if problems:
+        raise ValueError("; ".join(problems))
+    return entry
+
+
+def custom_docs(entries: list[dict]) -> list[dict]:
+    """Display documents (same shape as the reference's) for the person's entries, numbered C1, C2, ..."""
+    docs = []
+    for i, entry in enumerate(entries):
+        number = f"C{i + 1}"
+        authority = entry["authority"] or "No authority cited"
+        sources = ([{"key": "Link", "label": entry["url"], "url": entry["url"]}] if entry["url"] else [])
+        docs.append({
+            "_id": f"custom-{i + 1}", "custom": True, "customIndex": i,
+            "title": entry["title"], "category": entry["category"], "usualTreatment": entry["treatment"],
+            "summary": entry["summary"], "jurisdiction": "Custom", "authorities": [authority], "sources": sources,
+            "scenarios": [{
+                "no": number, "title": entry["title"],
+                "taxableWhen": entry["taxableWhen"] or "Not stated.",
+                "nontaxableWhen": entry["nontaxableWhen"] or "Not stated.",
+                "inPractice": entry["inPractice"] or entry["summary"],
+                "authority": authority, "sourceKeys": [], "industry": ANY_BUSINESS,
+            }],
+            "status": "custom", "lastVerified": None, "sortOrder": 10_000 + i,
+        })
+    return docs
+
+
+def export_entries(entries: list[dict]) -> str:
+    return json.dumps({"format": EXPORT_FORMAT, "version": 1, "rules": entries}, ensure_ascii=False, indent=2)
+
+
+def import_entries(text: str, existing: int = 0) -> list[dict]:
+    """Entries from an exported file. Every field is re-validated; anything else in the file is ignored."""
+    if len(text) > 400_000:
+        raise ValueError("That file is too large to be a list of rules.")
+    try:
+        payload = json.loads(text)
+    except ValueError as exc:
+        raise ValueError("That is not a valid JSON file.") from exc
+    if not isinstance(payload, dict) or payload.get("format") != EXPORT_FORMAT or not isinstance(payload.get("rules"), list):
+        raise ValueError("That file was not exported from this page.")
+    rules = payload["rules"]
+    if existing + len(rules) > MAX_CUSTOM:
+        raise ValueError(f"A session can hold {MAX_CUSTOM} of your own rules; this file would go over.")
+    cleaned = []
+    for n, raw in enumerate(rules, 1):
+        try:
+            cleaned.append(clean_custom_entry(raw))
+        except ValueError as exc:
+            raise ValueError(f"Rule {n} in the file: {exc}") from exc
+    return cleaned

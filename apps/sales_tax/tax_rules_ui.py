@@ -18,6 +18,8 @@ _GUIDE_JS = (Path(__file__).resolve().parent / "contractor_guide.js").read_text(
 
 _E = html.escape
 _STATE = "tr_"          # session-state prefix for this tab's widgets
+_ENTRIES = _STATE + "custom_entries"      # the visitor's own rules (their session only)
+_IMPORTED = _STATE + "imported_file"
 _TREATMENT_TONE = {"Generally taxable": "tax", "Generally nontaxable": "free", "Depends on the facts": "depends"}
 
 
@@ -66,15 +68,25 @@ def _sources_html(doc: dict) -> str:
 
 
 def _status_html(doc: dict) -> str:
+    if doc.get("custom"):
+        return '<span class="tr-status tr-custom">Your rule, not reviewed</span>'
     if doc.get("status") == "verified" and doc.get("lastVerified"):
         return f'<span class="tr-status tr-verified">Verified {_E(str(doc["lastVerified"])[:10])}</span>'
     return '<span class="tr-status tr-drafted">Drafted, not yet verified</span>'
 
 
+def _remove_entry(index: int) -> None:
+    entries = list(st.session_state.get(_ENTRIES, []))
+    if 0 <= index < len(entries):
+        entries.pop(index)
+    st.session_state[_ENTRIES] = entries
+
+
 def _principle(doc: dict, *, expanded: bool) -> None:
     shown, total = len(doc["scenarios"]), doc.get("totalScenarios", len(doc["scenarios"]))
     count = f"{shown} of {total} scenarios" if shown != total else f"{total} scenarios"
-    with st.expander(f"{doc['title']}  ·  {doc['usualTreatment']}  ·  {count}", expanded=expanded):
+    mine = "Your rule  ·  " if doc.get("custom") else ""
+    with st.expander(f"{mine}{doc['title']}  ·  {doc['usualTreatment']}  ·  {count}", expanded=expanded):
         tone = _TREATMENT_TONE.get(doc["usualTreatment"], "depends")
         cites = "".join(f"<li>{_E(c)}</li>" for c in doc["authorities"])
         st.html(
@@ -84,6 +96,9 @@ def _principle(doc: dict, *, expanded: bool) -> None:
             f'<ul class="tr-cites">{cites}</ul>{_sources_html(doc)}'
             + "".join(_scenario_html(s) for s in doc["scenarios"])
         )
+        if doc.get("custom"):
+            st.button("Remove this rule", key=f"tr-rm-{doc['customIndex']}", icon=":material/delete:",
+                      on_click=_remove_entry, args=(doc["customIndex"],))
 
 
 def _contractor_guide(docs: list[dict]) -> None:
@@ -104,8 +119,66 @@ def _contractor_guide(docs: list[dict]) -> None:
     )
 
 
+def _custom_section() -> None:
+    """Add, download, load and (per rule, in the results) remove the visitor's own rules."""
+    entries = list(st.session_state.get(_ENTRIES, []))
+    label = "Add your own rule" + (f" ({len(entries)} added)" if entries else "")
+    with st.expander(label, expanded=False):
+        st.caption(
+            "Your own rules sit beside the reference below, marked as yours. They stay in this browser session only "
+            "and are never added to the shared reference: download them to keep them. Do not enter confidential "
+            "information."
+        )
+        with st.form("tr_add_rule", clear_on_submit=True):
+            title = st.text_input("Rule title", max_chars=120, placeholder="e.g. Equipment rentals to a customer")
+            summary = st.text_area("What the rule says", max_chars=800, height=90,
+                                   placeholder="Plain-language statement of the rule")
+            c1, c2 = st.columns(2)
+            category = c1.selectbox("Category", tax_rules.CATEGORY_CHOICES)
+            treatment = c2.selectbox("Usual treatment", tax_rules.TREATMENT_CHOICES, index=2)
+            t1, t2 = st.columns(2)
+            taxable = t1.text_area("Taxable when (optional)", max_chars=600, height=80)
+            free = t2.text_area("Nontaxable or exempt when (optional)", max_chars=600, height=80)
+            practice = st.text_area("In practice (optional)", max_chars=600, height=70)
+            a1, a2 = st.columns(2)
+            authority = a1.text_input("Authority or citation (optional)", max_chars=200,
+                                      placeholder="e.g. Tax Code section, rule, or ruling")
+            url = a2.text_input("Source link (optional, https only)", max_chars=300, placeholder="https://")
+            submitted = st.form_submit_button("Add rule", type="primary")
+        if submitted:
+            if len(entries) >= tax_rules.MAX_CUSTOM:
+                st.error(f"You can keep {tax_rules.MAX_CUSTOM} of your own rules in a session. Remove one first.")
+            else:
+                try:
+                    entry = tax_rules.clean_custom_entry({
+                        "title": title, "category": category, "treatment": treatment, "summary": summary,
+                        "taxableWhen": taxable, "nontaxableWhen": free, "inPractice": practice,
+                        "authority": authority, "url": url})
+                except ValueError as exc:
+                    st.error(f"Not added: {exc}")
+                else:
+                    st.session_state[_ENTRIES] = entries + [entry]
+                    st.toast(f"Added \u201c{entry['title']}\u201d. Search for it below, or filter by category.")
+                    st.rerun()
+        if entries:
+            st.download_button("Download my rules (.json)", tax_rules.export_entries(entries),
+                               file_name="my-tax-rules.json", mime="application/json", icon=":material/download:",
+                               key="tr-export")
+        upload = st.file_uploader("Load rules you downloaded earlier", type=["json"], key="tr-import")
+        if upload is not None and st.session_state.get(_IMPORTED) != upload.file_id:
+            st.session_state[_IMPORTED] = upload.file_id
+            try:
+                loaded = tax_rules.import_entries(upload.getvalue().decode("utf-8", errors="replace"), len(entries))
+            except ValueError as exc:
+                st.error(f"Not loaded: {exc}")
+            else:
+                st.session_state[_ENTRIES] = entries + loaded
+                st.toast(f"Loaded {len(loaded)} rule(s).")
+                st.rerun()
+
+
 def render_tax_rules() -> None:
-    docs, origin = _rules()
+    reference, origin = _rules()
     st.html(
         '<div class="st-section"><h2>Texas Tax Rules</h2>'
         '<p>Sixteen principles and the worked scenarios under them, with the authority for each. Search, or narrow by '
@@ -118,7 +191,10 @@ def render_tax_rules() -> None:
     )
 
     with st.container(key="tr-guide"):
-        _contractor_guide(docs)
+        _contractor_guide(reference)
+    _custom_section()
+    mine = tax_rules.custom_docs(list(st.session_state.get(_ENTRIES, [])))
+    docs = reference + mine
 
     query = st.text_input("Search the rules", key=_STATE + "query", placeholder="Try: ripening, forklift, delivery charge, janitorial")
     c1, c2, c3 = st.columns(3, gap="medium")
@@ -137,10 +213,12 @@ def render_tax_rules() -> None:
     all_principles, all_scenarios = tax_rules.totals(tax_rules.search(docs))
 
     where = "the database" if origin == "database" else "the copy bundled with the app"
+    yours = f" ({len(mine)} of them yours)" if mine else ""
     if filters.active:
-        st.caption(f"Showing {principles} of {all_principles} principles and {scenarios} of {all_scenarios} scenarios. Read from {where}.")
+        st.caption(f"Showing {principles} of {all_principles} principles and {scenarios} of {all_scenarios} scenarios"
+                   f"{yours}. Reference read from {where}.")
     else:
-        st.caption(f"{all_principles} principles, {all_scenarios} scenarios. Read from {where}.")
+        st.caption(f"{all_principles} principles, {all_scenarios} scenarios{yours}. Reference read from {where}.")
 
     if not results:
         st.info("No rule matches those filters. Clear a filter or try fewer words; every word in the search must appear.")

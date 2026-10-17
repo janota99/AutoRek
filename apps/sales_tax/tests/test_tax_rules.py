@@ -112,3 +112,75 @@ def test_a_phrase_found_only_in_a_principle_returns_its_scenarios():
     results = search(DOCS, Filters(query="carved out"))
     group = next(d for d in results if d["_id"] == "candy-drinks-snacks")
     assert len(group["scenarios"]) == group["totalScenarios"] == 5
+
+
+# --- a person's own rules ------------------------------------------------------------------------------------------
+
+import pytest
+
+
+def _entry(**over):
+    base = {"title": "Equipment rentals", "category": "Equipment and supplies", "treatment": "Depends on the facts",
+            "summary": "Rentals of movable equipment follow the rule for the underlying property.",
+            "taxableWhen": "The renter uses it for general business.", "nontaxableWhen": "", "inPractice": "",
+            "authority": "Tax Code \u00a7151.007", "url": "https://example.com/source"}
+    base.update(over)
+    return base
+
+
+def test_a_valid_entry_becomes_a_searchable_document_marked_as_the_visitors_own():
+    entry = tax_rules.clean_custom_entry(_entry())
+    doc = tax_rules.custom_docs([entry])[0]
+    assert doc["custom"] is True and doc["status"] == "custom" and doc["scenarios"][0]["no"] == "C1"
+    assert doc["scenarios"][0]["nontaxableWhen"] == "Not stated."
+    found = search(DOCS + [doc], Filters(query="equipment rentals"))
+    assert any(d.get("custom") for d in found)
+    assert any(d.get("custom") for d in search(DOCS + [doc], Filters(categories=("Equipment and supplies",))))
+
+
+@pytest.mark.parametrize("over, fragment", [
+    ({"title": "ab"}, "title"),
+    ({"summary": "short"}, "summary"),
+    ({"url": "http://example.com"}, "https"),
+    ({"url": "javascript:alert(1)"}, "https"),
+    ({"category": "Not a category"}, "category"),
+    ({"treatment": "Maybe"}, "treatment"),
+    ({"authority": "x" * 201}, "authority"),
+])
+def test_bad_entries_are_refused_with_a_reason(over, fragment):
+    with pytest.raises(ValueError) as exc:
+        tax_rules.clean_custom_entry(_entry(**over))
+    assert fragment in str(exc.value)
+
+
+def test_unknown_fields_are_dropped_not_stored():
+    entry = tax_rules.clean_custom_entry({**_entry(), "script": "<script>alert(1)</script>", "_id": "hacked"})
+    assert set(entry) == set(tax_rules.CUSTOM_FIELDS)
+
+
+def test_export_then_import_round_trips_and_revalidates():
+    entries = [tax_rules.clean_custom_entry(_entry()), tax_rules.clean_custom_entry(_entry(title="Second rule"))]
+    assert tax_rules.import_entries(tax_rules.export_entries(entries)) == entries
+
+
+def test_import_refuses_other_files_bad_rules_and_too_many():
+    with pytest.raises(ValueError):
+        tax_rules.import_entries("not json")
+    with pytest.raises(ValueError):
+        tax_rules.import_entries('{"format": "something-else", "rules": []}')
+    bad = tax_rules.export_entries([_entry(url="http://insecure.example")])
+    with pytest.raises(ValueError):
+        tax_rules.import_entries(bad)
+    many = tax_rules.export_entries([_entry()] * (tax_rules.MAX_CUSTOM + 1))
+    with pytest.raises(ValueError):
+        tax_rules.import_entries(many)
+    ok = tax_rules.export_entries([_entry()] * 3)
+    with pytest.raises(ValueError):
+        tax_rules.import_entries(ok, existing=tax_rules.MAX_CUSTOM - 2)
+
+
+def test_a_visitors_text_is_escaped_when_drawn():
+    from apps.sales_tax.tax_rules_ui import _scenario_html
+    doc = tax_rules.custom_docs([tax_rules.clean_custom_entry(_entry(title="<img src=x onerror=alert(1)> rule"))])[0]
+    drawn = _scenario_html(doc["scenarios"][0])
+    assert "<img" not in drawn and "&lt;img" in drawn

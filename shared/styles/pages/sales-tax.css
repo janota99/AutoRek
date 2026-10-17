@@ -512,3 +512,4 @@ button[kind="secondary"],
 @keyframes cg-pop { 0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, .35); } 100% { box-shadow: 0 0 0 14px rgba(37, 99, 235, 0); } }
 @keyframes cg-ripple { to { transform: scale(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .cg-enter, .cg-pop, .cg-chip, .cg-option { animation: none; } .cg-ripple { display: none; } }
+.tr-custom { background: #eff6ff; color: #1e40af; border: 1px solid #c9dcff; }
