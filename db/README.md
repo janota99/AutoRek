@@ -1,17 +1,19 @@
 # Database (PostgreSQL)
 
-Schema for saved reconciliation mappings and the FIFO period/layer store. Only the Custom mapping library uses it so far (`apps/recon/custom/store.py`); FIFO still uses its JSON snapshots. The app runs without a database configured.
+Schema for saved reconciliation mappings and the FIFO period/layer store. The Custom mapping library (`apps/recon/custom/store.py`) and saved Recon runs (`apps/recon/run_store.py`) use it; FIFO still uses its JSON snapshots. The app runs without a database configured.
 
 | File | What it is |
 |---|---|
 | `migrations/001_recon_mappings_and_fifo.sql` | Tables, composite tenant keys, views, deferred layer-total check. |
 | `migrations/002_integrity_and_tenant_security.sql` | Sequence, rollforward and latest-only-reopen triggers; tolerance on layer totals; append-only history; no cascading deletes; row-level security; the `app_runtime_role` grants. |
 | `migrations/003_supabase_hardening_and_app_login.sql` | Takes Supabase's `anon` and `authenticated` roles' access away (now and by default for new tables); creates `app_login`, the role the deployed app connects as. It has no password until you set one by hand. |
+| `migrations/004_recon_saved_runs.sql` | Saved Recon runs: `recon_runs`, `recon_run_inputs` (file fingerprints only), `recon_run_events` (notes, reviewed, workpaper prepared), `recon_run_workpapers`. All append-only, row-level security, no update/delete for the app role. Used by `apps/recon/run_store.py`. |
 | `connection.py` | Reads the app's database settings and opens a connection scoped to one organization; refuses an owner connection. |
 | `migrate.py` | Applies new migration files once each (`py -m db.migrate`, `--status`). Reads `DATABASE_URL`. |
 | `tests/test_connection.py` | Settings handling; always runs. |
 | `tests/test_store_live.py` | The saved-mapping library through the real app role; needs `DB_TEST_ADMIN_URL`. |
 | `tests/test_migrate.py` | File checks; always runs. |
+| `tests/test_runs_migration.py`, `tests/test_runs_live.py` | Migration 004 file checks (always run); saved runs through the real app role (need `DB_TEST_ADMIN_URL`). |
 | `tests/test_schema_live.py` | Applies the migrations to a throwaway database and checks every rule; runs only when `DB_TEST_ADMIN_URL` is set. |
 
 ```powershell

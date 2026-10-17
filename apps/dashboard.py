@@ -135,7 +135,12 @@ _DATA_HANDLING = (
     '<details class="pp-panel pp-data"><summary>How your data is handled</summary><ul>'
     "<li><strong>Uploads</strong> are held in memory for your browser session only. Leaving an application or closing "
     "the tab clears them.</li>"
-    "<li><strong>Excel outputs</strong> are built on request for you to download. The apps keep no copy.</li>"
+    "<li><strong>Excel outputs</strong> are built on request for you to download. With no database configured the "
+    "apps keep no copy.</li>"
+    "<li><strong>Saved Recon runs</strong> (only when your organization's database is connected): each run's "
+    "figures, controls, rule versions, who ran it, and a fingerprint of each uploaded file, plus any workpaper you "
+    "prepare and any notes. The uploaded files themselves are never stored. Saved runs cannot be edited or deleted "
+    "from the app. Runs on the built-in sample data are never saved.</li>"
     "<li><strong>Saved on the server's disk:</strong> FIFO closed-period snapshots and settings; the Sales Tax trial "
     "balance cache, which everyone using the app shares; and Recon's confirmed vendor aliases, with who confirmed "
     "each one and when. To remove any of these, delete the files from the app's folders.</li>"

@@ -48,6 +48,7 @@ from apps.recon.ingestion import (
     secondary_mapping_panel,
 )
 from apps.recon.matching import APP_VERSION, MATCHING_RULE_VERSION, build_reconciliation
+from apps.recon.run_history import record_run, render_history_panel, render_save_notice
 from apps.recon.run_status import (
     MONEY_KEYS,
     SUMMARY_LABELS,
@@ -134,6 +135,7 @@ def main() -> None:
     # its final state is determined later in the application run.
     progress_container = st.container()
     status_container = st.container()  # what is blocking the next step; filled in wherever the run stops
+    render_history_panel()  # the team's saved runs; draws nothing until a database is configured
 
     render_section_heading(
         "Upload data sources",
@@ -795,6 +797,11 @@ def main() -> None:
             st.session_state["recon_last_summary"] = summarize_run(result.metrics)
             st.session_state.pop("recon_cleared_by", None)
             st.session_state.reconciliation_result = result
+            record_run(result, {
+                "quickbooks": qb_mapping, "infinium": inf_mapping,
+                "quickbooks_historical": qb_secondary_mapping, "infinium_historical": inf_secondary_mapping},
+                uses_sample=any(getattr(f, "is_sample", False) for f in
+                                (qb_file, inf_file, qb_secondary_file, inf_secondary_file)))
             # Workbook bytes are generated only from the Downloads tab. This
             # keeps the reconciliation action focused on matching and controls.
             clear_prepared_workbooks()
@@ -806,6 +813,7 @@ def main() -> None:
     current_result = st.session_state.get("reconciliation_result")
     if current_result is not None:
         render_result(current_result, run_started=run_started)
+        render_save_notice(current_result.run_id)
         status = result_status(
             current_result.metrics, int(current_result.controls["Status"].ne("PASS").sum()),
             primary_workbook_prepared(),

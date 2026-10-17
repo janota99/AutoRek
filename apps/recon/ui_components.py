@@ -24,6 +24,7 @@ from shared.status import status_badge, status_styler
 from shared.styles import inject_page
 
 from .matching import QB_ID, ReconciliationResult, numeric_sum
+from .run_history import keep_workpaper
 from .ui_review import render_review_panel
 from .utils import format_currency
 from .workpapers import (
@@ -728,6 +729,8 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
                     build_started = time.perf_counter()
                     with st.spinner("Preparing the accounting workpaper..."):
                         st.session_state.primary_workbook = build_primary_workbook(export_result)
+                        keep_workpaper(result.run_id, "primary", f"Sales_Reconciliation_{result.run_id}.xlsx",
+                                       st.session_state.primary_workbook)
                     st.session_state.primary_workbook_timing = {
                         "build": time.perf_counter() - build_started,
                     }
@@ -760,6 +763,8 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
                 try:
                     with st.spinner("Preparing the legacy-format workbook..."):
                         st.session_state.legacy_workbook = build_legacy_workbook(result)
+                        keep_workpaper(result.run_id, "legacy", f"Sales_Reconciliation_Legacy_{result.run_id}.xlsx",
+                                       st.session_state.legacy_workbook)
                     st.toast("Legacy-format workbook prepared.", icon="✅")
                 except Exception as exc:
                     _render_workbook_exception("legacy-format workbook", exc)
