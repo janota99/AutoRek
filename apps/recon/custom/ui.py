@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import hashlib
 import html
+import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from dataclasses import asdict, dataclass
 from typing import Optional
 
@@ -35,7 +37,8 @@ from .engine import ReconResult, normalize_value, reconcile
 from . import store
 from .export import build_workbook
 from .spec import (
-    ID_POSITIONS, MAX_GROUP_SIZE, NORMALIZERS, ColumnPair, ReconSpec, find_column, validate_spec,
+    ID_POSITIONS, MAX_GROUP_SIZE, NORMALIZERS, PATTERNS, ColumnPair, ReconSpec, build_spec, builder_problems, find_column,
+    validate_spec,
 )
 
 PRESETS_KEY = "cr_presets"
@@ -47,7 +50,9 @@ DATA_KEY = "cr_data"  # {"a": (filename, frame, is_sample), "b": ...}
 KEYS_KEY = "cr_keys"  # registry of mapping-widget keys to keep alive across steps
 NONE_LABEL = "None (use row numbers)"
 STEPS = ("Template", "Upload data", "Configure rules", "Review & run")
-PATTERNS = ("1 : 1", "Many : 1", "1 : Many", "Many : Many")
+DB_DOWN_KEY = "cr_db_down_until"  # when the shared library was last unreachable: skip it until then
+DB_WAIT_SECONDS = 3                # how long the template step waits for the shared library
+DB_COOLDOWN_SECONDS = 120          # after a failure, do not try again for this long (every click would wait again)
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 # The placeholder starting mapping for the QuickBooks and Infinium sample layouts.
@@ -58,11 +63,10 @@ PLACEHOLDER = ReconSpec(
     align=[ColumnPair("P.O. NUMBER", "OHDESC", "digits")],
     id_a="Num", id_b="OHOBNO",
 )
-BLANK = ReconSpec(name="My mapping")
+BLANK = ReconSpec(name="My mapping")  # what the Build your template step starts from
 # The template library. Add a real mapping here (with its column names) to offer it as a card.
 BUILT_IN = (
     (PLACEHOLDER, "Accounting / ERP", "Example"),
-    (BLANK, "Custom", "Blank"),
 )
 
 
@@ -140,6 +144,8 @@ def _stepper(current: int, done: list[bool]) -> None:
 
 def _use_template(spec: dict) -> None:
     st.session_state[SPEC0_KEY] = spec
+    for key in [k for k in st.session_state if str(k).startswith("crb_")]:  # the builder starts again from this template
+        st.session_state.pop(key)
     st.session_state["cr_ver"] = st.session_state.get("cr_ver", 0) + 1
     st.session_state.pop(DRAFT_KEY, None)
     st.session_state[STEP_KEY] = 1
@@ -177,12 +183,28 @@ def _library() -> tuple[list, bool]:
     config = _db_config()
     if config is None:
         return session, False
+    if time.time() < st.session_state.get(DB_DOWN_KEY, 0):  # it failed a moment ago: do not make every click wait again
+        st.session_state["cr_db_problem"] = "The shared mapping library could not be reached a moment ago."
+        return session, False
+    def fetch():
+        with tenant_connection(config, connect_timeout=DB_WAIT_SECONDS) as conn:
+            return store.list_all_versions(conn)
+
+    # A hard deadline for the whole lookup. libpq applies its connect timeout to each address a host name resolves to, so
+    # a database that is down can otherwise keep the page waiting for several multiples of it.
+    pool = ThreadPoolExecutor(max_workers=1)
     try:
-        with tenant_connection(config) as conn:
-            rows = store.list_all_versions(conn)
+        rows = pool.submit(fetch).result(timeout=DB_WAIT_SECONDS + 1)
+    except FutureTimeout:
+        st.session_state["cr_db_problem"] = "The shared mapping library did not answer in time."
+        st.session_state[DB_DOWN_KEY] = time.time() + DB_COOLDOWN_SECONDS
+        return session, False
     except Exception as exc:  # noqa: BLE001 - never block the page because the library is unreachable
         st.session_state["cr_db_problem"] = f"The shared mapping library could not be reached ({_why(exc)})."
+        st.session_state[DB_DOWN_KEY] = time.time() + DB_COOLDOWN_SECONDS
         return session, False
+    finally:
+        pool.shutdown(wait=False)  # an attempt that is still running is abandoned, not waited for
     entries: dict = {}
     for row in rows:
         entry = entries.setdefault(row.template_id, LibEntry(row.name, row.template_id, []))
@@ -275,24 +297,109 @@ def _saved_card_actions(entry: LibEntry, shared: bool) -> None:
                   on_click=st.session_state.__setitem__, args=("cr_confirm_archive", entry.name))
 
 
+def _spec_from_builder_state() -> ReconSpec:
+    """The template described by the Build your template settings (or, before they are touched, the chosen template)."""
+    base = _spec_from(st.session_state.get(SPEC0_KEY)) or BLANK
+    get = st.session_state.get
+    return build_spec(
+        base,
+        name=get("crb_name", base.name), label_a=get("crb_la", base.label_a), label_b=get("crb_lb", base.label_b),
+        pattern=get("crb_pattern") or _pattern_of(base),
+        size_a=get("crb_ma", max(2, base.max_a_per_b)), size_b=get("crb_mb", max(2, base.max_b_per_a)),
+        add_match_id=get("crb_addid", base.add_match_id), match_id_header=get("crb_idh", base.match_id_header),
+        match_id_position=get("crb_idp", base.match_id_position),
+    )
+
+
+def _continue_from_builder() -> None:
+    _use_template(asdict(_spec_from_builder_state()))
+
+
+def _builder() -> tuple[ReconSpec, list[str]]:
+    """Draw the settings that need no file, and return the template they describe."""
+    base = _spec_from(st.session_state.get(SPEC0_KEY)) or BLANK
+    with st.container(border=True, key="cr-builder"):
+        c1, c2, c3 = st.columns([2, 1.5, 1.5])
+        c1.text_input("Template name", base.name, key=_k("crb", "name"), max_chars=80,
+                      help="What this mapping is called if you save it.")
+        c2.text_input("Name of the first dataset", base.label_a, key=_k("crb", "la"), max_chars=40)
+        c3.text_input("Name of the second dataset", base.label_b, key=_k("crb", "lb"), max_chars=40)
+        label_a = (st.session_state.get("crb_la") or "").strip() or "Dataset A"
+        label_b = (st.session_state.get("crb_lb") or "").strip() or "Dataset B"
+
+        st.markdown("**Matching volume**")
+        pattern = st.segmented_control(
+            "Matching volume", PATTERNS, default=_pattern_of(base), key=_k("crb", "pattern"), label_visibility="collapsed",
+            help=f"1 : 1 matches one row to one row. Many : 1 lets several {label_a} rows add up to one {label_b} row; "
+                 f"1 : Many is the reverse.",
+        ) or PATTERNS[0]
+        sizes = list(range(2, MAX_GROUP_SIZE + 1))
+        max_a = max_b = 1
+        s1, s2 = st.columns(2)
+        if pattern in (PATTERNS[1], PATTERNS[3]):
+            with s1:
+                max_a = st.segmented_control(f"Up to how many {label_a} rows make one {label_b} row", sizes,
+                                             default=max(2, base.max_a_per_b), key=_k("crb", "ma")) or 2
+        if pattern in (PATTERNS[2], PATTERNS[3]):
+            with s2:
+                max_b = st.segmented_control(f"Up to how many {label_b} rows make one {label_a} row", sizes,
+                                             default=max(2, base.max_b_per_a), key=_k("crb", "mb")) or 2
+        st.markdown(f'<span class="cr-pill">Active: {_volume_text(label_a, label_b, max_a, max_b)}</span>',
+                    unsafe_allow_html=True)
+
+        add_id = st.toggle("Write a Match ID column back into both datasets", base.add_match_id, key=_k("crb", "addid"),
+                           help="Every match gets its own ID (M-0001, M-0002, ...).")
+        if add_id:
+            m1, m2 = st.columns(2)
+            m1.text_input("Match ID column name", base.match_id_header, key=_k("crb", "idh"))
+            positions = list(ID_POSITIONS)
+            m2.selectbox("Position", positions, index=positions.index(base.match_id_position),
+                         format_func=ID_POSITIONS.get, key=_k("crb", "idp"),
+                         help="\"After a chosen column\" is settled in step 3, once your files are loaded.")
+        st.caption("Which columns hold the amount, the alignment fields and any unique ID is chosen in step 3, after you "
+                   "upload your two datasets. Amounts always have to agree exactly, to the cent.")
+        spec = _spec_from_builder_state()
+        problems = builder_problems(spec)
+    return spec, problems
+
+
 def _step_template() -> None:
-    render_section_heading("Choose a template", "Start from a ready mapping, one you saved this session, or a blank one.")
-    entries, shared = _library()
+    render_section_heading(
+        "Build your template",
+        "Set the basics here, then upload your two files. Or start from a ready example further down.",
+    )
+    status = st.container()                      # filled in below, once the settings above have been read
+    spec, problems = _builder()
+    with status:                                  # what the person needs to know before continuing
+        st.html(workflow.status_html(
+            problems, "Ready to continue",
+            next_step="Next you upload your two datasets, then map their columns. Nothing is matched until you run it.",
+        ))
+    st.button("Continue with this template", icon=":material/arrow_forward:", type="primary", key="cr_build_go",
+              disabled=bool(problems), on_click=_use_template, args=(asdict(spec),))
+
+    render_section_heading("Or start from an existing template",
+                           "A ready example, or a mapping you saved earlier. Choosing one replaces the settings above.")
+    with st.spinner("Checking for saved mappings..."):
+        entries, shared = _library()
     notice = st.session_state.pop("cr_notice", None)
     if notice:
         st.success(notice)
     problem = st.session_state.pop("cr_db_problem", None)
     if problem:
         st.warning(f"{problem} Showing this session's mappings instead.")
+        if time.time() < st.session_state.get(DB_DOWN_KEY, 0):
+            st.button("Try the shared library again", key="cr_db_retry", icon=":material/refresh:",
+                      on_click=st.session_state.pop, args=(DB_DOWN_KEY, None))
     st.caption("Saved mappings are shared with your organization." if shared
                else "Saved mappings last until this browser session ends. Connect a database to share them.")
 
     c1, c2 = st.columns([2, 3], vertical_alignment="bottom")
     query = c1.text_input("Search templates", key="cr_search", placeholder="Search by name or system").strip().casefold()
-    categories = ["All", "Accounting / ERP", "Custom", "Saved mappings"]
+    categories = ["All", "Accounting / ERP", "Saved mappings"]
     category = c2.segmented_control("Category", categories, default="All", key="cr_category") or "All"
 
-    cards = [(spec, cat, tag, None) for spec, cat, tag in BUILT_IN]
+    cards = [(spec_, cat, tag, None) for spec_, cat, tag in BUILT_IN]
     cards += [(ReconSpec.from_dict(e.versions[0][1]), "Saved mappings", "Shared" if shared else "This session", e)
               for e in entries]
     shown = [(s, c, t, e) for s, c, t, e in cards
@@ -301,19 +408,19 @@ def _step_template() -> None:
         st.info("No template matches that search.")
     for row_start in range(0, len(shown), 3):  # noqa: B007
         columns = st.columns(3, gap="medium")
-        for offset, (column, (spec, cat, tag, entry)) in enumerate(zip(columns, shown[row_start: row_start + 3])):
+        for offset, (column, (spec_, cat, tag, entry)) in enumerate(zip(columns, shown[row_start: row_start + 3])):
             index = row_start + offset
             with column, st.container(border=True, key=f"cr-tpl-{index}"):
-                blank = spec.amount is None
-                chips = (f'{_chip(spec.label_a)}<span class="cr-arrow">⟷</span>{_chip(spec.label_b)}'
+                blank = spec_.amount is None
+                chips = (f'{_chip(spec_.label_a)}<span class="cr-arrow">⟷</span>{_chip(spec_.label_b)}'
                          if not blank else '<span class="cr-chip cr-chip--initial" style="--cr-hue:215">+</span>')
                 st.markdown(f'<div class="cr-tpl-head">{chips}{_badge(tag, "info" if tag == "Example" else "neutral")}</div>',
                             unsafe_allow_html=True)
-                st.markdown(f"**{html.escape(spec.name)}**")
-                st.caption(_template_description(spec))
+                st.markdown(f"**{html.escape(spec_.name)}**")
+                st.caption(_template_description(spec_))
                 if entry is None:
-                    st.button("Use template" if not blank else "Start blank", key=f"cr_use_{index}", type="primary",
-                              width="stretch", on_click=_use_template, args=(asdict(spec),))
+                    st.button("Use template", key=f"cr_use_{index}", width="stretch",
+                              on_click=_use_template, args=(asdict(spec_),))
                 else:
                     _saved_card_actions(entry, shared)
     st.markdown('<p class="cr-note">QuickBooks and Infinium is the only built-in example. Mappings you save while '
@@ -727,8 +834,7 @@ def render() -> None:
     _stepper(step, [spec0 is not None, have_data, draft is not None and not blocking, RESULT_KEY in st.session_state])
 
     # What is blocking the next step. Step 2 lists its own problems live beside the form, so it is not repeated.
-    waiting = (["Choose a template to continue."] if step == 0 and spec0 is None
-               else ["Upload both datasets to continue."] if step == 1 and not have_data
+    waiting = (["Upload both datasets to continue."] if step == 1 and not have_data
                else blocking if step == 3 else [])
     if waiting:
         st.html(workflow.status_html(waiting, ""))
@@ -814,6 +920,7 @@ def _nav_bar(step: int, has_template: bool, have_data: bool, blocking: list[str]
             go.button("Next: review and run", icon=":material/arrow_forward:", type="primary", key="cr_next",
                       disabled=bool(blocking), on_click=_go, args=(3,), width="stretch")
         elif step == 0:
-            hint.caption("Choose a template above to continue." if not has_template else "Template chosen.")
+            problems = builder_problems(_spec_from_builder_state())
+            hint.caption(problems[0] if problems else "Continue with the settings above, or pick an example below.")
             go.button("Next: upload data", icon=":material/arrow_forward:", type="primary", key="cr_next",
-                      disabled=not has_template, on_click=_go, args=(1,), width="stretch")
+                      disabled=bool(problems), on_click=_continue_from_builder, width="stretch")

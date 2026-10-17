@@ -56,7 +56,17 @@ The app connects as `app_login` and refuses an owner or administrator connection
 - Streamlit forgets the widgets of a step that is off screen. Mapping widget keys are registered with `_k()` and
   re-stored each run by `_keep_alive()`; loaded datasets (`cr_data`), the chosen template (`cr_spec0`) and the draft
   mapping (`cr_draft`) are plain session keys. Buttons and uploaders must never be registered.
-- The template library is `BUILT_IN` in `ui.py` plus mappings saved this session. Only QuickBooks and Infinium exists
-  because it is the only mapping with real column names; add a card by adding a `ReconSpec` there.
+- Step 1 is **Build your template**, first on the page, with the "what is blocking me" panel directly beneath it. The
+  builder holds the settings that need no file (template name, the two dataset names, the matching volume, and the Match
+  ID column); the columns themselves are chosen in step 3 once the files are loaded. `spec.build_spec` lays those
+  settings over a chosen template (keeping its columns) and `spec.builder_problems` is the only thing that can block
+  Next. **Next is never greyed out for lack of a template.**
+- The template library follows the builder as "Or start from an existing template": `BUILT_IN` in `ui.py` plus mappings
+  saved this session or in the shared database. Only QuickBooks and Infinium exists because it is the only mapping with
+  real column names; add a card by adding a `ReconSpec` there. Choosing a card replaces the builder's settings.
+- The shared library is an optional lookup and must never hold the page up. `_library()` runs it under a hard deadline
+  (`DB_WAIT_SECONDS` + 1 seconds, in a worker thread) because libpq applies its connect timeout to every address a host
+  name resolves to. After a failure it is skipped for `DB_COOLDOWN_SECONDS`, with a "Try the shared library again"
+  button. `db.connection.tenant_connection` takes `connect_timeout` for this.
 - Not built, on purpose: ratings or popularity badges, credit balance and Pro gating (no billing exists), an
   organization switcher, dark mode, and any fuzzy or AI matching (it would break the no-closest-match rule).

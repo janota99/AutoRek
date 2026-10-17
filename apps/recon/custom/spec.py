@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Iterable, Optional
 
 SPEC_VERSION = 1
@@ -153,3 +153,42 @@ def validate_spec(spec: ReconSpec, columns_a: Iterable[str], columns_b: Iterable
         if spec.match_id_after_a not in columns_a or spec.match_id_after_b not in columns_b:
             problems.append("Choose the column the Match ID should follow in each dataset.")
     return problems
+
+
+PATTERNS = ("1 : 1", "Many : 1", "1 : Many", "Many : Many")
+
+
+def build_spec(base: ReconSpec, *, name: str, label_a: str, label_b: str, pattern: str = PATTERNS[0],
+               size_a: int = 2, size_b: int = 2, add_match_id: bool = True, match_id_header: str = "Match ID",
+               match_id_position: str = "last") -> ReconSpec:
+    """`base` with the settings a person chooses on the Build your template step laid over it.
+
+    These are the settings that do not need a file: what the two datasets are called, how many rows may add up to one,
+    and where the Match ID goes. Column choices (amount, alignment, unique IDs) are kept from `base` when it is a
+    template that has them, and otherwise chosen after the files are uploaded. Values are trimmed and clamped to
+    what `ReconSpec.from_dict` accepts.
+    """
+    def size(value: int) -> int:
+        try:
+            return max(2, min(MAX_GROUP_SIZE, int(value)))
+        except (TypeError, ValueError):
+            return 2
+
+    many_a = pattern in (PATTERNS[1], PATTERNS[3])   # several A rows may add up to one B row
+    many_b = pattern in (PATTERNS[2], PATTERNS[3])
+    return replace(
+        base,
+        name=(name or "").strip(),
+        label_a=(label_a or "").strip() or "Dataset A",
+        label_b=(label_b or "").strip() or "Dataset B",
+        max_a_per_b=size(size_a) if many_a else 1,
+        max_b_per_a=size(size_b) if many_b else 1,
+        add_match_id=bool(add_match_id),
+        match_id_header=(match_id_header or "").strip() or "Match ID",
+        match_id_position=match_id_position if match_id_position in ID_POSITIONS else "last",
+    )
+
+
+def builder_problems(spec: ReconSpec) -> list[str]:
+    """What stops a template built from the settings alone from continuing."""
+    return [] if spec.name else ["Give your template a name."]

@@ -1007,3 +1007,4 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.source-status.complete)
     box-shadow: 0 -4px 16px rgba(25, 54, 93, 0.1);
 }
 .st-key-cr-nav button[kind="primary"] { min-height: 3rem; font-size: 1.02rem; font-weight: 700; }
+.st-key-cr-builder { border-top: 4px solid var(--pp-accent) !important; }

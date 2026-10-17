@@ -73,11 +73,14 @@ def _assert_app_role(conn) -> None:
 
 
 @contextmanager
-def tenant_connection(config: DatabaseConfig) -> Iterator[Any]:
-    """One transaction scoped to the configured organization; commits on success, rolls back on any error."""
+def tenant_connection(config: DatabaseConfig, *, connect_timeout: int = 8) -> Iterator[Any]:
+    """One transaction scoped to the configured organization; commits on success, rolls back on any error.
+
+    ``connect_timeout`` is how many seconds to wait for the server: a page that only reads a list passes a short one so
+    an unreachable database never holds the page up."""
     import psycopg  # imported here so the rest of the app runs without the driver installed
 
-    conn = psycopg.connect(config.url, connect_timeout=8)
+    conn = psycopg.connect(config.url, connect_timeout=connect_timeout)
     try:
         with conn.transaction():
             _assert_app_role(conn)
