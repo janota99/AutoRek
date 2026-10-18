@@ -213,20 +213,26 @@ def test_duplicate_identity_is_normalized_and_uses_signed_cents(qb_mapping, inf_
     assert ledger.loc["QB-1", "Final Disposition"] != DISPOSITION_DUPLICATE_EXCLUDED
 
 
-def test_a_weak_basis_sibling_of_a_matched_row_is_held_not_accrued(qb_mapping, inf_mapping, make_metadata):
-    """Only a PO (no invoice) ties these two QuickBooks rows together. One matches;
-    the other is already-represented evidence -- held for review, not accrued."""
+def test_two_rows_sharing_only_a_po_compete_for_one_counterpart_and_both_are_held(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    """Only a PO (no invoice) ties these two QuickBooks rows together, and one Infinium row answers
+    to both. Nothing tells them apart, so neither is matched by file order: both are held for review
+    and neither is accrued (matching policy 2026.10-EXACT-FIRST-NO-ORDER-PAIRING)."""
     result = _reconcile(
         [_qb("PO-W", "", 60.00), _qb("PO-W", "", 60.00)],
         [_inf("PO-W", "", 60.00)],
         qb_mapping, inf_mapping, make_metadata,
     )
     ledger = _ledger(result)
-    assert ledger.loc["QB-1", "Final Disposition"] == DISPOSITION_MATCHED
+    assert result.matches == []
+    assert ledger.loc["QB-1", "Final Disposition"] == DISPOSITION_REVIEW_HOLD
+    assert ledger.loc["QB-1", "Reason Code"] == "REVIEW_HOLD_EXACT_CANDIDATE_NOT_UNIQUE"
     assert ledger.loc["QB-2", "Final Disposition"] == DISPOSITION_REVIEW_HOLD
     assert ledger.loc["QB-2", "Reason Code"] == "REVIEW_HOLD_POTENTIAL_DUPLICATE"
-    assert ledger.loc["QB-2", "Related Match Ref."] == "M-001"
+    assert (ledger["In Proposed JE"] == "No").all()
     assert result.metrics["Proposed JE Amount"] == 0
+    assert result.metrics["Control Status"] == "PASS"
 
 
 # ---------------------------------------------------------------------------
@@ -443,21 +449,22 @@ def test_two_legitimate_sales_with_the_same_key_but_different_identities_are_not
     qb_mapping, inf_mapping, make_metadata,
 ):
     """Same PO, invoice, and amount -- but a different customer and date: two real
-    sales, not one entered twice. The sibling of the matched row is held for review
-    (never discarded, never accrued) and points at the match."""
+    sales, not one entered twice. Customer and date corroborate; they do not decide which sale the
+    single Infinium row belongs to, so both are held for review (never discarded, never accrued,
+    never matched by file order)."""
     result = _reconcile(
         [_sales("Acme", "2026-01-05"), _sales("Beta", "2026-01-09")],
         [_inf("PO1", "INV1", 100.00)],
         _stable(qb_mapping), inf_mapping, make_metadata,
     )
     ledger = _ledger(result)
-    assert ledger.loc["QB-1", "Final Disposition"] == DISPOSITION_MATCHED
+    assert result.matches == []
+    assert ledger.loc["QB-1", "Final Disposition"] == DISPOSITION_REVIEW_HOLD
+    assert ledger.loc["QB-1", "Reason Code"] == "REVIEW_HOLD_EXACT_CANDIDATE_NOT_UNIQUE"
     assert ledger.loc["QB-2", "Final Disposition"] == DISPOSITION_REVIEW_HOLD
     assert ledger.loc["QB-2", "Reason Code"] == "REVIEW_HOLD_POTENTIAL_DUPLICATE"
-    assert ledger.loc["QB-2", "Related Match Ref."] == "M-001"
     assert ledger.loc["QB-2", "Canonical QBO Row ID"] == "QB-1"
-    assert "Potential Duplicate of Match M-001" in ledger.loc["QB-2", "Final Reason"]
-    assert ledger.loc["QB-2", "In Proposed JE"] == "No"
+    assert (ledger["In Proposed JE"] == "No").all()
     assert result.duplicate_qb_rows == [] and result.metrics["Proposed JE Amount"] == 0
     # The evidence for why it was not confirmed stays visible.
     report = result.duplicate_analysis.set_index("Source Row ID")
@@ -823,14 +830,18 @@ def test_infinium_copies_need_the_same_sufficient_evidence(qb_mapping, inf_mappi
     thin = _reconcile(qb_rows, [_thin_inf("PO1", "INV1", 100.00), _thin_inf("PO1", "INV1", 100.00)],
                       qb_mapping, THIN_INF, make_metadata)
     assert thin.duplicate_inf_rows == []
-    assert thin.duplicate_review_hold_inf_rows == [1]          # the sibling of the matched row
-    assert len(thin.matches) == 1
+    # Two Infinium rows answer to one QuickBooks row and nothing tells them apart, so neither is matched by file
+    # order: the QuickBooks row and both Infinium rows are held.
+    assert thin.matches == []
+    assert thin.duplicate_review_hold_inf_rows == [0, 1]
+    assert thin.qb_dispositions.set_index("QBO Row ID").loc["QB-1", "Final Disposition"] == "REVIEW_HOLD"
     reason = thin.infinium_duplicate_analysis.set_index("Source Row ID").loc["INF-2", "Potential Duplicate Reason"]
     assert "not sufficient" in reason
     assert thin.metrics["Control Status"] == "PASS"
+    assert thin.metrics["Proposed JE Amount"] == 0
     # Both Infinium rows stay in the audit trail.
     sections = sorted(row["Section"] for row in thin.paired_rows if row["Infinium Index"] is not None)
-    assert sections == ["01 Matched", "07 Duplicate Review Hold Infinium"]
+    assert sections == ["07 Duplicate Review Hold Infinium", "07 Duplicate Review Hold Infinium"]
 
 
 def test_an_infinium_line_level_id_follows_the_same_contradiction_safeguard(qb_mapping, make_metadata):

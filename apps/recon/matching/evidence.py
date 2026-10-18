@@ -25,6 +25,8 @@ from .core import (
     clean_po,
     CORR_CUSTOMER,
     CORR_DATE,
+    EXACT_INV,
+    EXACT_PO,
     identifier_text,
     INF_ID,
     INV_FIELD_USED,
@@ -134,6 +136,15 @@ def ensure_key_columns(frame: pd.DataFrame) -> pd.DataFrame:
         frame[KEY_PO] = frame[NORM_PO].map(specific_key)
     if KEY_INV not in frame.columns:
         frame[KEY_INV] = frame[NORM_INV].map(specific_key)
+    for exact, key, src, norm, kind in (
+        (EXACT_PO, KEY_PO, SRC_PO, NORM_PO, "PO"), (EXACT_INV, KEY_INV, SRC_INV, NORM_INV, "INV"),
+    ):
+        if exact not in frame.columns:
+            texts = frame[src] if src in frame.columns else frame[norm]    # no source text: the normalized value
+            frame[exact] = [
+                folded_source(kind, text) if keyed else ""
+                for keyed, text in zip(frame[key].astype(bool), texts)
+            ]
     return frame
 
 
@@ -287,7 +298,7 @@ def assess_group_links(
     return assessment
 
 
-def _folded_source(kind: str, text: Any) -> str:
+def folded_source(kind: str, text: Any) -> str:
     """Source text folded by the documented equivalences only -- case,
     whitespace, a trailing ".0", and (for a PO) the leading "PO" / "P.O."
     marker -- and nothing else, so punctuation survives for comparison."""
@@ -311,10 +322,10 @@ def punctuation_discrepancies(
         i_by_key: dict[str, set[str]] = {}
         for r in q_rows:
             if qb.at[int(r), key_col]:
-                q_by_key.setdefault(qb.at[int(r), key_col], set()).add(_folded_source(kind, qb.at[int(r), src_col]))
+                q_by_key.setdefault(qb.at[int(r), key_col], set()).add(folded_source(kind, qb.at[int(r), src_col]))
         for r in i_rows:
             if inf.at[int(r), key_col]:
-                i_by_key.setdefault(inf.at[int(r), key_col], set()).add(_folded_source(kind, inf.at[int(r), src_col]))
+                i_by_key.setdefault(inf.at[int(r), key_col], set()).add(folded_source(kind, inf.at[int(r), src_col]))
         for key in set(q_by_key) & set(i_by_key):
             if not q_by_key[key] & i_by_key[key]:
                 notes.append(

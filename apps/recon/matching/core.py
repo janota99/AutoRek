@@ -18,7 +18,7 @@ from ..duplicates import AMOUNT_CENTS, IDENTITY_GRADE_ROLES, STABLE_FINGERPRINT_
 APP_VERSION = "2.17.0"
 
 
-MATCHING_RULE_VERSION = "2026.10-EVIDENCE-LINK-CHECKS"
+MATCHING_RULE_VERSION = "2026.10-EXACT-FIRST-NO-ORDER-PAIRING"
 
 
 # Grouped matching is intentionally bounded to keep reconciliation runs
@@ -57,6 +57,18 @@ KEY_PO = "__REC_KEY_PO"
 
 
 KEY_INV = "__REC_KEY_INV"
+
+
+# Punctuation-kept match keys: the source PO / invoice folded only by the documented normalizations (case, whitespace,
+# a trailing ".0", and the leading "PO" prefix on a PO -- prefix normalization, not literal equality), with
+# punctuation INSIDE the identifier KEPT, and blank wherever the matching key
+# (KEY_PO / KEY_INV) is blank, so a weak reference can never create a match here either. The first matching passes
+# read these; the punctuation-insensitive KEY_* passes are only a fallback for rows these leave unmatched.
+
+EXACT_PO = "__REC_EXACT_PO"
+
+
+EXACT_INV = "__REC_EXACT_INV"
 
 
 # The values exactly as the source file carried them, and which source column

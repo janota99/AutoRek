@@ -34,6 +34,19 @@ match one to one only. Rows with a blank or non-numeric amount, or a blank align
 never dropped. The search has a step budget per group (`SEARCH_BUDGET`); when it runs out the group is left
 unmatched with a REVIEW control, not partly searched.
 
+### Ties and file order
+
+Custom mode is a separate, user-defined workflow, not the QuickBooks / Infinium engine, but it follows the same
+discipline: rows are paired one-to-one only when exactly one row on each side has the same alignment values and
+amount. Equal rows are **never** paired by file order; they are all flagged Ambiguous, and the result is the same
+whichever way either file is sorted (tests: `test_engine.py`, "No file-order pairing").
+
+It does **not** have the main engine's "exact text first, punctuation-insensitive fallback" ordering. The user
+chooses how each alignment pair is compared. "Text" keeps punctuation (`HP-2231` and `HP2231` are different and pair
+exactly). "Letters and digits only" ignores it, so two rows that differ only by punctuation become indistinguishable
+and are flagged Ambiguous. That is the conservative result; to resolve it, use "Text", or add an alignment column
+(an invoice number, say) that tells the rows apart.
+
 ## Saved mappings
 
 Two places, chosen automatically. With a database configured (see `db/connection.py` and `.streamlit/secrets.toml.example`)

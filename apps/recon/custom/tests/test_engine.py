@@ -1,4 +1,7 @@
+import itertools
+
 import pandas as pd
+import pytest
 
 from apps.recon.custom.engine import reconcile, normalize_value
 from apps.recon.custom.spec import ColumnPair, ReconSpec, find_column, missing_columns, validate_spec
@@ -182,3 +185,49 @@ def test_search_limit_leaves_rows_unresolved(monkeypatch):
     assert statuses(result)[1] == ["Unmatched"]
     assert result.controls.set_index("Check").loc["Combination search completed", "Status"] == "REVIEW"
     assert result.warnings
+
+
+# ---------------------------------------------------------------------------
+# No file-order pairing (the same discipline as the QuickBooks / Infinium engine). Custom mode does not guess
+# among rows it cannot tell apart; every file order must give the same result.
+# ---------------------------------------------------------------------------
+
+def _orders(rows_a, rows_b):
+    for flip_a, flip_b in itertools.product((False, True), repeat=2):
+        yield (rows_a[::-1] if flip_a else rows_a), (rows_b[::-1] if flip_b else rows_b)
+
+
+def test_text_mode_keeps_punctuation_so_variants_pair_exactly_in_any_file_order():
+    rows_a = [("HP-2231", "4860.00"), ("HP2231", "4860.00")]
+    rows_b = [("HP2231", "4860.00"), ("HP-2231", "4860.00")]
+    for order_a, order_b in _orders(rows_a, rows_b):
+        a, b = frames(order_a, order_b)
+        result = reconcile(a, b, make_spec(align=[ColumnPair("PO", "Ref", "text")]))
+        assert statuses(result) == (["Matched"] * 2, ["Matched"] * 2)
+        by_id_a = dict(zip(result.dataset_a["Match ID"], result.dataset_a["PO"]))
+        by_id_b = dict(zip(result.dataset_b["Match ID"], result.dataset_b["Ref"]))
+        assert by_id_a == by_id_b, "a row was paired with the other punctuation variant"
+
+
+@pytest.mark.parametrize("rows_a, rows_b", [
+    ([("HP-2231", "4860.00"), ("HP2231", "4860.00")], [("HP2231", "4860.00"), ("HP-2231", "4860.00")]),
+    ([("HP-2231", "4860.00"), ("HP2231", "4860.00")], [("HP2231", "4860.00")]),
+    ([("HP-2231", "4860.00")], [("HP2231", "4860.00"), ("HP-2231", "4860.00")]),
+])
+def test_a_punctuation_ignoring_mode_flags_colliding_rows_ambiguous_in_any_file_order(rows_a, rows_b):
+    for order_a, order_b in _orders(rows_a, rows_b):
+        a, b = frames(order_a, order_b)
+        result = reconcile(a, b, make_spec(align=[ColumnPair("PO", "Ref", "alnum")]))
+        assert result.matches.empty
+        assert set(result.dataset_a["Recon Status"]) == {"Ambiguous"}
+        assert set(result.dataset_b["Recon Status"]) == {"Ambiguous"}
+
+
+def test_identical_rows_are_never_paired_by_file_order():
+    rows_a = [("LOWES", "200.00"), ("LOWES", "200.00")]
+    rows_b = [("LOWES", "200.00"), ("LOWES", "200.00")]
+    for order_a, order_b in _orders(rows_a, rows_b):
+        a, b = frames(order_a, order_b)
+        result = reconcile(a, b, make_spec(align=[ColumnPair("PO", "Ref", "text")]))
+        assert result.matches.empty
+        assert statuses(result) == (["Ambiguous"] * 2, ["Ambiguous"] * 2)

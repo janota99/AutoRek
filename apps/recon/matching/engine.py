@@ -40,6 +40,8 @@ from .core import (
     identifier_text,
     INF_ID,
     INV_FIELD_USED,
+    EXACT_INV,
+    EXACT_PO,
     KEY_INV,
     KEY_PO,
     MatchGroup,
@@ -295,81 +297,6 @@ def _group_candidates(
     )
 
 
-def _duplicate_cluster_key(frame: pd.DataFrame, idx: int) -> Optional[tuple[str, str, str, int]]:
-    """The identity a row shares with every other row it is genuinely
-    indistinguishable from: full PO+Invoice+Amount agreement, or PO+Amount
-    agreement with invoice blank on the row (nothing is being ignored --
-    there simply is no invoice), or the symmetric Invoice+Amount case."""
-    amount = frame.at[idx, AMOUNT_CENTS]
-    if pd.isna(amount):
-        return None
-    po = frame.at[idx, KEY_PO]
-    invoice = frame.at[idx, KEY_INV]
-    has_po = bool(po)
-    has_invoice = bool(invoice)
-    if has_po and has_invoice:
-        return ("STRICT", str(po), str(invoice), int(amount))
-    if has_po:
-        return ("PO_ONLY", str(po), "", int(amount))
-    if has_invoice:
-        return ("INVOICE_ONLY", "", str(invoice), int(amount))
-    return None
-
-
-_CLUSTER_KEY_METHOD = {
-    "STRICT": ("PO + Invoice + Amount", "Strong"),
-    "PO_ONLY": ("PO + Amount", "Moderate"),
-    "INVOICE_ONLY": ("Invoice + Amount", "Strong"),
-}
-
-
-def _duplicate_cluster_pairs(
-    qb: pd.DataFrame,
-    inf: pd.DataFrame,
-    remaining_q: set[int],
-    remaining_i: set[int],
-) -> list[MatchGroup]:
-    """Pair up to min(count) rows within a same-key cluster of rows that
-    are genuinely indistinguishable from each other -- e.g. two QuickBooks
-    rows sharing the exact same PO, invoice, and amount. The ordinary
-    one-to-one passes above intentionally refuse to guess among candidates
-    that AREN'T uniquely identifiable (there could be a real difference
-    between them the pass just can't see), and that stays exactly as
-    conservative as before. This is a different situation: cluster members
-    carry no distinguishing information at all, so pairing them by stable
-    source-file order is exactly as correct as any other pairing -- there
-    is nothing to get wrong. Only fires for a key with 2+ rows on at least
-    one side; a key that is already unique on both sides was already
-    matched (or not) by the ordinary passes above.
-    """
-    q_groups: dict[tuple, list[int]] = defaultdict(list)
-    for idx in sorted(remaining_q, key=lambda i: qb.at[i, SOURCE_POS]):
-        key = _duplicate_cluster_key(qb, idx)
-        if key is not None:
-            q_groups[key].append(idx)
-    i_groups: dict[tuple, list[int]] = defaultdict(list)
-    for idx in sorted(remaining_i, key=lambda i: inf.at[i, SOURCE_POS]):
-        key = _duplicate_cluster_key(inf, idx)
-        if key is not None:
-            i_groups[key].append(idx)
-
-    groups: list[MatchGroup] = []
-    for key, q_list in q_groups.items():
-        i_list = i_groups.get(key, [])
-        if len(q_list) < 2 and len(i_list) < 2:
-            continue
-        method, confidence = _CLUSTER_KEY_METHOD[key[0]]
-        explanation = (
-            f"Unique {method.lower()} agreement is not possible here because more than one row "
-            "shares the exact same key -- but every row sharing it is financially identical, so "
-            "pairing them in stable source order is exactly as correct as any other pairing. "
-            "Any group member left over is accounted for separately rather than assumed away."
-        )
-        for qidx, iidx in zip(q_list, i_list):
-            groups.append(MatchGroup([qidx], [iidx], method, confidence, explanation))
-    return groups
-
-
 _KIND_FROM_METHOD = (("PO", "PO"), ("INV", "Invoice"))
 
 
@@ -452,15 +379,32 @@ def perform_matching(
         remaining_i.difference_update(group.inf_rows)
         return True
 
+    # Evidence priority is unchanged: PO + invoice, then PO, then invoice. WITHIN each tier the exact text goes
+    # first and the punctuation-insensitive fallback second, so an exact invoice match can never outrank a PO +
+    # invoice match whose PO differs only by punctuation (that pair keeps its PO + Invoice + Amount method).
+    # The first pass of each tier reads EXACT_PO / EXACT_INV (the source text with the documented normalizations
+    # applied -- case, spacing, a leading "PO" prefix on a PO, a trailing ".0" -- and punctuation KEPT); fallback passes read the normalized KEY_PO / KEY_INV and accept only the single
+    # candidate left on each side, recording the difference (ACCEPTED_MATCH_WITH_IDENTIFIER_DISCREPANCY). Every
+    # pass pairs rows only when the key is unique on BOTH sides (``unique_rows``), so no pairing depends on file
+    # order; anything with several candidates stays unmatched and is held for review by the evidence layer.
+    # Nothing is chosen by source order, and dates are not a matching key.
     passes = [
+        ((EXACT_PO, EXACT_INV, AMOUNT_CENTS), "PO + Invoice + Amount", "Strong",
+         "Unique PO, invoice (case, spacing and \"PO\" prefix normalized; punctuation kept), and signed amount agree."),
         ((KEY_PO, KEY_INV, AMOUNT_CENTS), "PO + Invoice + Amount", "Strong",
-         "Unique normalized PO, invoice, and signed amount agree."),
+         "Fallback: the only PO, invoice, and signed amount candidates left on each side agree after "
+         "punctuation is ignored."),
+        ((EXACT_PO, AMOUNT_CENTS), "PO + Amount", "Moderate",
+         "Unique PO (case, spacing and \"PO\" prefix normalized; punctuation kept) and signed amount agree."),
         ((KEY_PO, AMOUNT_CENTS), "PO + Amount", "Moderate",
-         "Unique normalized PO and signed amount agree."),
-        ((KEY_INV, AMOUNT_CENTS), "Invoice + Amount", "Strong",
-         "Unique normalized invoice and signed amount agree -- invoice number is the "
+         "Fallback: the only PO and signed amount candidates left on each side agree after punctuation is ignored."),
+        ((EXACT_INV, AMOUNT_CENTS), "Invoice + Amount", "Strong",
+         "Unique invoice (case, spacing and \"PO\" prefix normalized; punctuation kept) and signed amount agree -- invoice number is the "
          "designated secondary reconciliation check, so a unique match on it carries the "
          "same confidence as a PO match even when the PO itself doesn't agree."),
+        ((KEY_INV, AMOUNT_CENTS), "Invoice + Amount", "Strong",
+         "Fallback: the only invoice and signed amount candidates left on each side agree after punctuation "
+         "is ignored."),
     ]
 
     def unique_rows(
@@ -495,12 +439,6 @@ def perform_matching(
         kinds = _key_kinds(method)
         for qidx, iidx in pair_indexes:
             accept(MatchGroup([int(qidx)], [int(iidx)], method, confidence, explanation), kinds)
-
-    # Same-key duplicate clusters (see _duplicate_cluster_pairs): rows that
-    # couldn't match above purely because they weren't globally unique, even
-    # though they carry no distinguishing information from their siblings.
-    for group in _duplicate_cluster_pairs(qb, inf, remaining_q, remaining_i):
-        accept(group, _key_kinds(group.method))
 
     grouped_passes = [
         (

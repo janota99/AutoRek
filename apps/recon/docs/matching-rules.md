@@ -5,17 +5,39 @@ Read this before changing anything in `matching/`, `duplicates.py`, `fuzzy_po_ma
 
 ## Matching order (`matching/engine.py`)
 
-1. Unique PO + invoice + exact signed amount.
-2. Unique PO + exact signed amount.
-3. Unique invoice + exact signed amount.
-4. Same-key duplicate clusters (`_duplicate_cluster_pairs`). When two or more rows share the
-   exact same PO/invoice/signed-amount key and carry nothing else that tells them apart, they're
-   paired in source-file order. Any leftover row stays unresolved.
-5. Unique grouped aggregate by PO and/or invoice. This pass is bounded by `MAX_GROUP_POOL_ROWS`
+Evidence priority is **PO + invoice, then PO, then invoice**. Within each of those tiers the rows are matched in
+two steps, so the order is:
+
+1. Unique PO + invoice + exact signed amount, comparing the identifiers with **punctuation kept**.
+2. The same keys as a **punctuation-insensitive fallback** (`AB-12` = `AB12`), for rows step 1 left unmatched. It pairs
+   only the **single** remaining candidate on each side, and the match is labelled
+   `ACCEPTED_MATCH_WITH_IDENTIFIER_DISCREPANCY` with both source texts on the match.
+3. Unique PO + exact signed amount, punctuation kept.
+4. The same, as the punctuation-insensitive fallback.
+5. Unique invoice + exact signed amount, punctuation kept.
+6. The same, as the punctuation-insensitive fallback.
+7. Unique grouped aggregate by PO and/or invoice. This pass is bounded by `MAX_GROUP_POOL_ROWS`
    (20) and `MAX_GROUP_SIZE` (8); larger pools stay unresolved for review.
-6. Confirmed vendor aliases (`vendor_aliases.py`). These post like an exact match, not as a
+8. Confirmed vendor aliases (`vendor_aliases.py`). These post like an exact match, not as a
    review hold, and run even when fuzzy matching is switched off for historical rows.
-7. Bounded fuzzy passes (`fuzzy_po_matching.py`) over rows that survive every pass above.
+9. Bounded fuzzy passes (`fuzzy_po_matching.py`) over rows that survive every pass above.
+
+"Punctuation kept" is **prefix normalization, not literal equality.** Before comparing, case and spacing are folded, a
+trailing `.0` is dropped, and a leading `PO` / `P.O.` / `PO#` / `PO-` on a **PO** is removed (so `PO-2231` and `2231`
+are the same PO; this is the long-standing documented equivalence, covered by `test_clean_po` and
+`test_a_leading_po_prefix_is_normalized_away...`). Punctuation **inside** the identifier is not ignored until the
+fallback step (`PO-AB-12` still differs from `AB12`). An invoice has no prefix rule.
+
+Exact-then-fallback happens within a tier, not across tiers, so an exact invoice match can never outrank a PO +
+invoice match whose PO differs only by punctuation (that pair keeps its "PO + Invoice + Amount" method).
+
+Every step pairs rows only when the key is unique on **both** sides, so no pairing depends on the order of
+either file (`HP-2231` / `HP2231` pair correctly whichever way the two files list them). Rows that share a key
+and cannot be told apart are **not** paired in source order; they are held (`REVIEW_HOLD_EXACT_CANDIDATE_NOT_UNIQUE`,
+`REVIEW_HOLD_MULTIPLE_CANDIDATES`, or `REVIEW_HOLD_POTENTIAL_DUPLICATE`) and stay out of journal-entry support. A
+reference is *specific* (usable as evidence) but that is not the same as *unique*: repeated `LOWES` rows at the
+same amount are resolved only by a defined field (an invoice number puts them in the strongest tier), never by a
+"closest date" guess. Dates and customers corroborate; they do not decide.
 
 **Amounts must agree exactly to the signed cent.** Anything ambiguous stays unresolved for
 review. Never add a similarity-percentage or "closest match" rule.
@@ -26,8 +48,9 @@ Matching and exception classification read the same evidence through one module.
 
 - **Normalization** (`core.identifier_text`, `clean_po`, `clean_alphanumeric`): numeric cells become
   exact digit strings, never floats; whitespace, zero-width characters, an Excel text prefix (`'0105`) and
-  `="..."` wrappers are removed; a trailing `.0` is dropped. Leading zeros are kept. Case, spacing,
-  punctuation and a leading `PO`/`P.O.` are ignored when comparing (the documented equivalences). Scientific
+  `="..."` wrappers are removed; a trailing `.0` is dropped. Leading zeros are kept. Case, spacing
+  and a leading `PO`/`P.O.` on a PO are ignored when comparing (the documented prefix normalization); punctuation inside the
+  identifier is ignored only in the labelled fallback step (see Matching order). Scientific
   notation (`1.2E+11`) is flagged, never repaired. The source text is kept in `SRC_PO` / `SRC_INV`, and a match
   whose two sides agree only after ignoring punctuation records that on the match.
 - **Fallback evidence columns** (mapping keys `po_fallback`, `invoice_fallback`; sidebar multiselects): used
@@ -39,7 +62,7 @@ Matching and exception classification read the same evidence through one module.
 - **Weak evidence policy:** a weak reference whose Infinium record agrees to the cent is a **posting hold**
   (`REVIEW_HOLD_WEAK_REFERENCE`: the sale may already be recorded). A weak reference with no exact-amount
   candidate is an **informational flag** only (`EVIDENCE_INSUFFICIENT_WEAK_REFERENCE`); the row stays JE support.
-- **Link vetting.** Every proposed match (pairs, clusters, groups, alias, typo) is checked before it is
+- **Link vetting.** Every proposed match (pairs, groups, alias, typo) is checked before it is
   accepted. For each identifier that was *not* the key, if both sides carry different values:
   - neither value is carried by another record: **non-competing discrepancy**, the match stands and records it
     (`ACCEPTED_MATCH_WITH_IDENTIFIER_DISCREPANCY`);
