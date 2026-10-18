@@ -8,6 +8,7 @@ The applications and the navigation bar are registered in shared/layout.py.
 import streamlit as st
 
 from apps import demo_banner
+from apps import feedback
 from apps.sales_page import PLAN_KEY, VIEW_KEY
 from urllib.parse import urlparse
 
@@ -35,6 +36,8 @@ page = build_navigation()
 if page.url_path != DASHBOARD_URL:  # leaving the Dashboard: close its sales page
     st.session_state.pop(VIEW_KEY, None)
     st.session_state.pop(PLAN_KEY, None)
+if page.url_path:  # Home's url_path is empty; leaving Home: close its Reviews & Feedback view
+    st.session_state.pop(feedback.VIEW_KEY, None)
 apply_template()
 demo_banner.render(page.url_path)
 page.run()

@@ -85,6 +85,11 @@
     if (t.closest("[data-rerun]")) { rerun(t.closest(".pp-l-panel")); return; }
     if (t.closest("[data-demo]")) { scrollToId("pp-l-solutions"); setTimeout(function () { rerun(activePanel()); }, reduced ? 0 : 450); return; }
     if (t.closest("[data-signin]")) { signIn(); return; }
+    if (t.closest("[data-feedback]")) {
+      var open = document.querySelector(".st-key-pp-l-open-feedback button");
+      if (open) open.click();
+      return;
+    }
     var route = t.closest("a[data-route]");
     if (route && ev.button === 0 && !ev.metaKey && !ev.ctrlKey && !ev.shiftKey) {
       var path = new URL(route.href, location.href).pathname.replace(/\/$/, "");

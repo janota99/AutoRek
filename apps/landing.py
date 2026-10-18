@@ -19,6 +19,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from apps import feedback
 from apps import landing_data as data
 from apps import sales_page
 from apps.sales_page import TIERS, _ANNUAL, _CYCLE_KEY, _MONTHLY
@@ -426,7 +427,7 @@ def _footer() -> str:
         '<li><button type="button" data-scroll="pp-l-how">How it works</button></li>'
         '<li><button type="button" data-scroll="pp-l-pricing">Plans and pricing</button></li>'
         '<li><a href="/workspace" target="_self" data-route>Workspace</a></li>'
-        '<li><a href="/feedback" target="_self" data-route>Reviews &amp; Feedback</a></li></ul></nav>'
+        '<li><button type="button" data-feedback>Reviews &amp; Feedback</button></li></ul></nav>'
         '<div class="pp-l-foot-note"><h4>Beta preview</h4><p>No payment is taken during the beta, and sign-in is a '
         'preview that personalizes only. The Invoice Lifecycle Hub is an early preview.</p></div></footer>'
     )
@@ -769,6 +770,10 @@ def _purchase() -> None:
 
 # --- page ---------------------------------------------------------------------------------------------------------------------
 
+if feedback.is_open():  # opened from the footer link; not a registered page, like the Dashboard's Plans page
+    feedback.render()
+    st.stop()
+
 st.html(f"{style_tag('landing')}{style_tag('sales-page')}{_wordmark_style()}"
         f'<div class="pp-land" id="pp-l-top">{_nav()}{_hero()}{_marquee()}{_explorer()}{_walkthrough()}{_impact()}{_value()}{_formats()}</div>{_script()}',
         unsafe_allow_javascript=True)
@@ -777,3 +782,7 @@ _roi()
 _deliverables()
 _purchase()
 st.html(f'<div class="pp-land">{_business()}{_faq_and_story()}{_closing()}{_footer()}</div>')
+# The footer's "Reviews & Feedback" link clicks this hidden button (landing.js); it is the only way into that view.
+if st.button("Reviews & Feedback", key="pp-l-open-feedback"):
+    st.session_state[feedback.VIEW_KEY] = feedback.FEEDBACK_VIEW
+    st.rerun()

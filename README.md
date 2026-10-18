@@ -83,7 +83,7 @@ each time you open a new terminal.
 The app opens on a **Home** landing page that introduces the platform: an interactive example you can inspect and rerun, a
 walkthrough, sample downloads, plans, and a simulated purchase flow. The **Workspace** page is the Dashboard, with one card
 per tool. Use the navigation bar at the top to
-switch tools; **Reviews & Feedback** is the last item in that bar. The top-right corner of every
+switch tools. The top-right corner of every
 page shows your account: a **Sign in** button (a demo account works), or, once you're signed in, a
 greeting with your role and a menu with your profile, your invoice workspace, and sign out. Uploaded files are cleared when you switch to another tool, but finished results
 (FIFO layers and the latest reconciliation) stay available until you close the browser session.
@@ -179,7 +179,7 @@ build an updated mapping file.
 A **prototype** of an Outlook invoice tracker. It uses fictitious data and doesn't connect to
 any real mailbox. Its page has two tabs: the service overview and **My Dashboard**, where
 invoices and vendor bills move through approval queues with the time at each stage tracked
-(sign in to use it). The feedback page is **Reviews & Feedback** in the navigation bar.
+(sign in to use it). **Reviews & Feedback** is opened from the footer of the Home page; it is not in the navigation bar.
 
 > **Note:** Sign-in is simulated in your browser. It isn't real security or access control, and
 > it doesn't restrict any of the tools.

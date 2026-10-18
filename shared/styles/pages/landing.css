@@ -378,3 +378,6 @@ html.pp-js [data-reveal].pp-in { opacity: 1; transform: none; }
 .st-key-pp-l-roi-box .pp-l-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin-top: .5rem; }
 @media (max-width: 900px) { .st-key-pp-l-roi-box .pp-l-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pp-l-value-grid.pp-l-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* Hidden Streamlit button the footer's Reviews & Feedback link clicks (apps/landing.js). */
+.st-key-pp-l-open-feedback { display: none; }

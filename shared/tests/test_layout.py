@@ -5,8 +5,8 @@ from shared.layout import APPS, DASHBOARD_URL, FAVICON_PATH, browser_title, titl
 
 
 def test_every_page_has_its_own_title_with_the_brand():
-    titles = {title_for_path(p) for p in ("", DASHBOARD_URL, "feedback", *(a.url_path for a in APPS))}
-    assert len(titles) == 2 + 1 + len(APPS)
+    titles = {title_for_path(p) for p in ("", DASHBOARD_URL, *(a.url_path for a in APPS))}
+    assert len(titles) == 2 + len(APPS)
     assert title_for_path("recon") == "Data Reconciliation Studio | Janota FIN"
     assert title_for_path("/workspace/") == "Workspace | Janota FIN"
     assert title_for_path("") == browser_title("", is_home=True) and title_for_path("").startswith("Janota FIN |")

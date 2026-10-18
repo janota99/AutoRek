@@ -179,7 +179,8 @@ if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
 def _calendar_editor(calendar: FiscalCalendar) -> None:
     """The calendar controls: fiscal year, first day of Period 1, and an editable end date for each period.
 
-    Edits are held in a form and saved only by "Save calendar", so a half-finished edit is never stored.
+    Edits are held in a form and saved only by "Save calendar", so a half-finished edit is never stored. Changing only
+    the year or the start date rebuilds the 13 end dates from it; edit the table to set them by hand.
     """
     resets = st.session_state.get("pp-fiscal-resets", 0)
     with st.form("pp-fiscal-form", border=False):
@@ -193,18 +194,18 @@ def _calendar_editor(calendar: FiscalCalendar) -> None:
             column_config={"Ends": st.column_config.DateColumn("Period end date", format="YYYY-MM-DD", required=True)},
             key=f"pp-fiscal-ends-{resets}",
         )
-        rebuild = st.checkbox("Rebuild all 13 end dates from the start date (28 days each) instead of the table",
-                              key=f"pp-fiscal-rebuild-{resets}")
         saved = st.form_submit_button("Save calendar", type="primary", icon=":material/save:")
     if saved:
-        if rebuild:
+        ends = tuple(d.date() if hasattr(d, "date") else d for d in edited["Ends"])
+        if ends == calendar.period_ends and (year, start) != (calendar.year, calendar.start):
+            # Only the year or start date changed and the table was left alone: move the whole year with it
+            # (13 four-week periods) rather than keep end dates that no longer fit.
             new_calendar = default_calendar(year, start)
         else:
-            ends = tuple(d.date() if hasattr(d, "date") else d for d in edited["Ends"])
             new_calendar = FiscalCalendar(year, start, ends)
         problem = validate(new_calendar)
         if problem:
-            st.error(problem + " Nothing was saved. To move the whole year, tick the rebuild box.")
+            st.error(problem + " Nothing was saved. Fix the period end dates in the table.")
         else:
             fiscal_session.set_calendar(new_calendar)
             st.session_state["pp-fiscal-resets"] = resets + 1   # fresh widgets that show what was saved

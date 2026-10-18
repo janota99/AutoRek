@@ -16,7 +16,7 @@ It's a static HTML/JavaScript site in `site/` with three pages:
 - `app.py` (the Invoice Lifecycle Hub page) renders that component: `index.html` (Service) with a
   `workspace-nav` tab bar (Service | My Dashboard) that switches the frame to `dashboard.html`.
   Links to `feedback.html` carry `standalone-only` and are hidden in the suite.
-- `apps/feedback.py` (the suite's Reviews & Feedback page) embeds it with
+- `apps/feedback.py` (the suite's Reviews & Feedback view, opened from Home's footer) embeds it with
   `invoice_hub(page="feedback.html")`. The component always opens `index.html`; the bridge reads
   `page` from the first render and opens that page instead. It also opens `dashboard.html` once
   when the suite's account strip set sessionStorage `pp.suite.hubPage` (Sign in, My invoice workspace).

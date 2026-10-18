@@ -119,20 +119,16 @@ APPS: list[AppEntry] = [
 LANDING_SCRIPT = "apps/landing.py"
 DASHBOARD_SCRIPT = "apps/dashboard.py"
 DASHBOARD_URL = "workspace"
-# Reviews & Feedback is a page in the navigation bar, not an application card on the Dashboard.
-FEEDBACK_SCRIPT = "apps/feedback.py"
-
 
 WIDGETS_MENU = ":material/build: Tools"
-FEEDBACK_MENU = ":material/rate_review: Feedback"
 
 
 def build_navigation():
     """Register every page and return the one the visitor selected.
 
-    Top navigation: Home (the landing page, at "/"), Workspace (the Dashboard), a "Tools"
-    dropdown holding the four tools, then Feedback (the Reviews & Feedback page). Streamlit renders a named section as a dropdown. Feedback sits in a one-page
-    section only to keep its place after the dropdown; suite_banner.js makes that label a direct link.
+    Top navigation: Home (the landing page, at "/"), Workspace (the Dashboard), then a "Tools"
+    dropdown holding the four tools (Streamlit renders a named section as a dropdown). Reviews & Feedback is not
+    a page: Home opens it in place (apps/feedback.py).
     """
     home = st.Page(LANDING_SCRIPT, title="Home", icon=":material/home:", default=True)
     dashboard = st.Page(DASHBOARD_SCRIPT, title="Workspace", icon=":material/dashboard:", url_path=DASHBOARD_URL)
@@ -140,9 +136,7 @@ def build_navigation():
         st.Page(app.script, title=app.title, icon=app.icon, url_path=app.url_path)
         for app in APPS
     ]
-    feedback = st.Page(FEEDBACK_SCRIPT, title="Reviews & Feedback", icon=":material/rate_review:",
-                       url_path="feedback")
-    return st.navigation({"": [home, dashboard], WIDGETS_MENU: widgets, FEEDBACK_MENU: [feedback]}, position="top")
+    return st.navigation({"": [home, dashboard], WIDGETS_MENU: widgets}, position="top")
 
 
 def browser_title(page_title: str, *, is_home: bool = False) -> str:
@@ -161,7 +155,7 @@ def title_for_path(path: str) -> str:
     path = (path or "").strip("/")
     if path == "":
         return browser_title("", is_home=True)
-    titles = {DASHBOARD_URL: "Workspace", "feedback": "Reviews & Feedback", **{a.url_path: a.title for a in APPS}}
+    titles = {DASHBOARD_URL: "Workspace", **{a.url_path: a.title for a in APPS}}
     return browser_title(titles[path]) if path in titles else BRAND
 
 

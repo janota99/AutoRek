@@ -293,3 +293,16 @@ def test_the_business_case_uses_the_real_plan_prices_and_breaks_even_from_the_ca
     assert "The business case" in html and "Who buys it" in html and "What has to be true." in html
     assert "Starter pays for itself after 0.5 hours" in html and "Professional after 2.5" in html
     assert "$200 or $1,000 a year" in html
+
+
+def test_reviews_and_feedback_is_a_home_view_not_a_page():
+    from apps import feedback
+    from shared.layout import build_navigation  # noqa: F401  (import check: the nav builds without a feedback page)
+    at = AppTest.from_file(str(ROOT / "apps" / "landing.py"), default_timeout=90)
+    at.session_state[feedback.VIEW_KEY] = feedback.FEEDBACK_VIEW
+    at.run()
+    assert not at.exception
+    assert [b.label for b in at.button] == ["Back to Home"]        # the landing page itself is not drawn
+    at.button[0].click().run()
+    assert feedback.VIEW_KEY not in at.session_state
+    assert any(b.key == "pp-l-open-feedback" for b in at.button)    # the footer link's hidden trigger is back

@@ -13,7 +13,7 @@ tools for a bottling/packaging operation behind a shared top navigation bar:
 | Invoice Lifecycle Hub (`/invoice-hub`) | `apps/invoice_hub/` | Static HTML/JS prototype of an Outlook invoice tracker, embedded as a Streamlit component. Its page has two tabs: Service overview and My Dashboard (the signed-in person's invoice workspace). |
 | Sales page (no URL) | `apps/sales_page.py` | Three-tier pricing page reachable only from the Dashboard's "View Plans" button in the top-right corner (session flag, not a registered page). Placeholder prices; no payment processing. |
 | Custom mapping mode (inside `/recon`) | `apps/recon/custom/` | The Recon page's Mode control switches to a custom mode: map columns, alignment columns, unique ID and Match ID placement, and 1-to-1 up to N-to-1 group sums for any two datasets; mappings save for the session. |
-| Reviews & Feedback (`/feedback`) | `apps/feedback.py` | Navigation-bar page (not a Dashboard card): the hub's reviews and feedback form, embedded. |
+| Reviews & Feedback (no URL) | `apps/feedback.py` | Opened only from the Home page footer (session flag, not a registered page, like the Plans page): the hub's reviews and feedback form, embedded. |
 
 The audience is an accountant/inventory controller, not a developer. Accuracy,
 auditability, and "never silently change the books" beat convenience everywhere.

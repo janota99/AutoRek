@@ -192,16 +192,6 @@
   }, 1000);
   setInterval(render, 60000);
 
-  // "Feedback" (the Reviews & Feedback page) is a one-page dropdown section in the navigation bar; clicking its label
-  // goes straight to the page instead of opening a menu with a single entry.
-  document.addEventListener('click', function (event) {
-    var section = event.target.closest && event.target.closest('[data-testid="stTopNavSection"]');
-    if (!section || section.textContent.trim() !== 'rate_review Feedback' && section.textContent.trim() !== 'Feedback') return;
-    var link = Array.prototype.slice.call(document.querySelectorAll('a[data-testid="stTopNavDropdownLink"]'))
-      .find(function (a) { return /\/feedback\/?$/.test(a.pathname); });
-    if (link) { event.preventDefault(); event.stopPropagation(); link.click(); }
-  }, true);
-
   // Mark the navigation item for the current page (a link, or the dropdown label holding it) so
   // chrome.css can tint it. Streamlit re-renders the bar, so this runs on a timer.
   function markActiveNav() {

@@ -8,7 +8,7 @@ template, or touching anything that crosses app boundaries.
 ```
 streamlit run app.py
   app.py                    set_page_config(wide) → build_navigation() → apply_template() → page.run()
-  shared/layout.py          APPS registry, st.navigation(position="top") (the apps plus Reviews & Feedback),
+  shared/layout.py          APPS registry, st.navigation(position="top") (Home, Workspace, and the Tools dropdown),
                             st.logo, theme injection, and the account strip (st.html + shared/suite_banner.js)
   shared/styles/            every stylesheet, in one place (see "Stylesheets" below); base/ is injected before each page's own CSS
   shared/workflow.py        the one wording for "where am I, what blocks me, what changed" (see "Workflow state" below)
@@ -29,8 +29,9 @@ Sign-in is the Invoice Hub's **simulated, browser-only** sign-in. It personalize
 nothing, and every application stays open to anyone. Never describe it as access control.
 
 - The Invoice Lifecycle Hub page has two tabs inside the embedded hub: Service and My Dashboard
-  (the invoice workspace). Signed out, My Dashboard is the sign-in panel. Reviews & Feedback is its
-  own page in the navigation bar (`apps/feedback.py`, `invoice_hub(page="feedback.html")`); it needs no sign-in.
+  (the invoice workspace). Signed out, My Dashboard is the sign-in panel. Reviews & Feedback is not a
+  page: it opens in place of Home from the footer link (`apps/feedback.py`, `invoice_hub(page="feedback.html")`,
+  session flag `pp_l_view`, cleared by app.py when you leave Home); it needs no sign-in.
 - The hub keeps the signed-in email in sessionStorage (`invoiceHub.session.v1`). Its
   `streamlit-bridge.js` copies name, role line, and intro to `pp.suite.profile.v1` and posts a
   `pp-suite:session` message to the page. Same origin, same tab, so the pages share both keys.
@@ -137,7 +138,7 @@ a shared on-disk cache. Recon reads QuickBooks column A as the fiscal period, so
 `app.py` calls `st.set_page_config` once, before `st.navigation`, with a title for the requested page
 (`shared.layout.title_for_path`, read from `st.context.url`) and `shared/assets/favicon.png`. A call made after
 `st.navigation` is silently ignored, so the page cannot come from the navigation result. A new page needs an
-entry in `title_for_path` (it reads `APPS` plus the Workspace and Feedback paths); an unknown path gets the plain
+entry in `title_for_path` (it reads `APPS` plus the Workspace path); an unknown path gets the plain
 brand title.
 
 ## Card details and the MongoDB samples

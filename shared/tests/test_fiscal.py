@@ -103,7 +103,6 @@ def test_workspace_calendar_form_saves_only_on_save(tmp_path, monkeypatch):
     at = AppTest.from_file(str(root / "apps" / "dashboard.py"), default_timeout=60).run()
     at.number_input(key="pp-fiscal-year-0").set_value(2027)
     at.date_input(key="pp-fiscal-start-0").set_value(date(2027, 1, 4))
-    at.checkbox(key="pp-fiscal-rebuild-0").check()
     at.run()
     assert not path.exists()                       # edits alone store nothing
     next(b for b in at.button if b.label == "Save calendar").click().run()
