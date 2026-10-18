@@ -356,7 +356,7 @@ def render_vendor_reconciliation():
         head1 = st.empty()
         old_file, old_sample = sample_uploader(
             "Previous Vendor Listing", key="old_vendor_file",
-            sample_file="vendor_listing_previous.xlsx", types=["xlsx"], show_badge=False,
+            sample_file="vendor_listing_previous.xlsx", types=["xlsx", "xlsm"], show_badge=False,
         )
         head1.markdown(ui.drop_head(1, "Previous Vendor Listing", "The listing your current mapping was built from",
                                     "history", _pill(old_file, old_sample)), unsafe_allow_html=True)
@@ -364,7 +364,7 @@ def render_vendor_reconciliation():
         head2 = st.empty()
         new_file, new_sample = sample_uploader(
             "Updated Vendor Listing", key="new_vendor_file",
-            sample_file="vendor_listing_updated.xlsx", types=["xlsx"], show_badge=False,
+            sample_file="vendor_listing_updated.xlsx", types=["xlsx", "xlsm"], show_badge=False,
         )
         head2.markdown(ui.drop_head(2, "Updated Vendor Listing", "The newer export to compare against", "update",
                                     _pill(new_file, new_sample)), unsafe_allow_html=True)
@@ -382,7 +382,7 @@ def render_vendor_reconciliation():
         except Exception as e:
             friendly_error(
                 "We couldn't read one of the vendor listings",
-                "Check that both files are unprotected .xlsx workbooks with a header row on the first sheet, "
+                "Check that both files are unprotected .xlsx or .xlsm workbooks with a header row on the first sheet, "
                 "then upload them again.",
                 e,
             )

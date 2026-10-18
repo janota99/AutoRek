@@ -106,7 +106,7 @@ def _drop_zone(number: int, title: str, hint: str, glyph: str, key: str, sample_
     what the file should be; once a file is in, a strip of facts to check it against the export it came from."""
     status = st.empty()
     uploaded, is_sample = sample_uploader(
-        title, key=key, sample_file=sample_file, types=["xlsx"], show_badge=False,
+        title, key=key, sample_file=sample_file, types=["xlsx", "xlsm"], show_badge=False,
     )
     if is_sample:
         pill = "<span class='st-pill st-pill-sample'>&#9679; Demo data</span>"
@@ -195,7 +195,7 @@ def render_transaction_cleanup():
             sample_downloads([
                 ("Source Transactions (.xlsx)", "sales_tax_source_transactions.xlsx"),
                 ("Vendor Mapping (.xlsx)", "sales_tax_vendor_mapping.xlsx"),
-                ("Trial Balance (.xlsx)", "sales_tax_trial_balance.xlsx"),
+                ("Trial Balance (.xlsx or .xlsm)", "sales_tax_trial_balance.xlsx"),
             ], key="st_cleanup")
             st.caption(
                 "The sample trial balance is a download only, because the real one is cached on "
@@ -251,8 +251,8 @@ def render_transaction_cleanup():
                 )
             with st.expander("Replace or clear cached file"):
                 replacement = st.file_uploader(
-                    "Upload a new Trial Balance (.xlsx)",
-                    type=["xlsx"],
+                    "Upload a new Trial Balance (.xlsx or .xlsm)",
+                    type=["xlsx", "xlsm"],
                     key="tb_replace",
                     help="Replaces the cached trial balance used for GL account lookups.",
                 )
@@ -289,8 +289,8 @@ def render_transaction_cleanup():
             # file is broken and GL matching is currently unavailable".
             st.error(f"Cached Trial Balance is invalid: {cached_tb_status.error}")
             replacement = st.file_uploader(
-                "Upload a replacement Trial Balance (.xlsx)",
-                type=["xlsx"],
+                "Upload a replacement Trial Balance (.xlsx or .xlsm)",
+                type=["xlsx", "xlsm"],
                 key="tb_initial",
                 help="The company trial balance export, used to match each GL account to an Account Name.",
             )
@@ -305,8 +305,8 @@ def render_transaction_cleanup():
         else:
             st.warning("No Trial Balance file cached yet.")
             initial_upload = st.file_uploader(
-                "Upload Trial Balance (.xlsx)",
-                type=["xlsx"],
+                "Upload Trial Balance (.xlsx or .xlsm)",
+                type=["xlsx", "xlsm"],
                 key="tb_initial",
                 help="The company trial balance export, used to match each GL account to an Account Name.",
             )
