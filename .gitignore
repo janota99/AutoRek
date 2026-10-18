@@ -16,3 +16,6 @@ apps/fifo_inventory/app_settings.json
 
 # Homework draft (not part of the project)
 docs/Homework3-Draft.docx
+
+# Workspace fiscal calendar and period end date (saved per server)
+shared/fiscal_settings.json

@@ -32,7 +32,8 @@ def test_validate_rejects_out_of_order_ends():
     assert locate(bad, date(2026, 2, 1)) is None
 
 
-def test_pending_hands_off_once_per_change():
+def test_pending_hands_off_once_per_change(tmp_path, monkeypatch):
+    monkeypatch.setenv("FISCAL_SETTINGS_PATH", str(tmp_path / "fiscal.json"))
     from streamlit.testing.v1 import AppTest
 
     def script():
@@ -53,3 +54,39 @@ def test_pending_hands_off_once_per_change():
     at.button[0].click().run()   # the change is made after this run's hand-off, so it lands on the next run
     at.run()
     assert at.session_state["log"][-1] == (True, False)
+
+
+def test_settings_persist_across_sessions(tmp_path, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+    path = tmp_path / "fiscal.json"
+    monkeypatch.setenv("FISCAL_SETTINGS_PATH", str(path))
+
+    def script():
+        import streamlit as st
+        from datetime import date
+        from shared import fiscal_session
+        if st.button("set"):
+            fiscal_session.set_end_date(date(2026, 7, 15))
+        st.write(str(fiscal_session.get_end_date()))
+        st.write(str(fiscal_session.get_calendar().year))
+
+    first = AppTest.from_function(script).run()
+    first.button[0].click().run()
+    assert path.exists()
+    second = AppTest.from_function(script).run()          # a brand-new session
+    assert second.markdown[0].value == "2026-07-15"
+
+
+def test_corrupt_settings_file_falls_back_to_defaults(tmp_path, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+    path = tmp_path / "fiscal.json"
+    path.write_text("{not json", encoding="utf-8")
+    monkeypatch.setenv("FISCAL_SETTINGS_PATH", str(path))
+
+    def script():
+        import streamlit as st
+        from shared import fiscal_session
+        st.write(str(fiscal_session.get_end_date()))
+
+    at = AppTest.from_function(script).run()
+    assert not at.exception and at.markdown[0].value == "None"

@@ -212,6 +212,8 @@ with st.container(key="pp-fiscal"):
         else:
             fiscal_session.set_calendar(new_calendar)
     fiscal_session.set_end_date(entered)
+    if fiscal_session.save_failed():
+        st.warning("These settings could not be saved to disk, so they will be gone next session.")
     context = fiscal_session.current()
     if context is None:
         status.caption("No date set: each tool keeps its own fiscal period controls.")
