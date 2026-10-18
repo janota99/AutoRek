@@ -4,18 +4,30 @@ from datetime import date, datetime
 import pandas as pd
 import streamlit as st
 
+from shared import fiscal_session
+
 from .fifo_layer_store import SNAPSHOT_DIR
 from .user_inputs import OPENING_SEED_FISCAL_YEAR, PERIOD_12_OPENING_LAYERS
 
 
 def render_sidebar(layer_store):
     """Draw the sidebar and return (fiscal_year, current_period, period_end_date, selected_key)."""
+    # A fiscal period entered on the Workspace page fills these once; the controls win after that.
+    pending = fiscal_session.pending_for("fifo")
+    if pending:
+        st.session_state["fifo_period_end"] = pending.end_date
+        if pending.period is not None and 2000 <= pending.fiscal_year <= 2200:
+            st.session_state["fifo_fiscal_year"] = pending.fiscal_year
+            st.session_state["fifo_fiscal_period"] = pending.period
+    st.session_state.setdefault("fifo_fiscal_year", datetime.now().year)
+    st.session_state.setdefault("fifo_fiscal_period", 12)
+    st.session_state.setdefault("fifo_period_end", date.today())
     with st.sidebar:
         st.header("Settings")
-        fiscal_year = int(st.number_input("Fiscal Year", min_value=2000, max_value=2200,
-                                          value=datetime.now().year, step=1))
-        current_period = st.selectbox("Select Fiscal Period", range(1, 14), index=11)
-        period_end_date = st.date_input("Fiscal Period End Date", value=date.today(),
+        fiscal_year = int(st.number_input("Fiscal Year", min_value=2000, max_value=2200, step=1,
+                                          key="fifo_fiscal_year"))
+        current_period = st.selectbox("Select Fiscal Period", range(1, 14), key="fifo_fiscal_period")
+        period_end_date = st.date_input("Fiscal Period End Date", key="fifo_period_end",
                                         help="Used for reproducible FIFO layer aging.")
 
         last_closed = st.session_state.get('fifo_last_closed_period')

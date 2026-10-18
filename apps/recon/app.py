@@ -79,7 +79,7 @@ from apps.recon.utils import (
     run_id_for_inputs,
 )
 from apps.recon.assets.ui_assets import INFOR_LOGO_URI, QUICKBOOKS_LOGO_URI
-from shared import workflow
+from shared import fiscal_session, workflow
 from shared.sample_data import sample_downloads, sample_uploader
 from shared.status import status_styler
 from apps.recon.uploads import (
@@ -267,6 +267,15 @@ def main() -> None:
                         )
 
     st.markdown('<div class="major-section-gap"></div>', unsafe_allow_html=True)
+
+    # A fiscal period entered on the Workspace page fills the year and period once. The plain keys
+    # are the controls' defaults; dropping the widget keys makes them start from those defaults again.
+    pending = fiscal_session.pending_for("recon")
+    if pending and pending.period is not None:
+        st.session_state["recon_fiscal_year"] = pending.fiscal_year
+        st.session_state["recon_fiscal_period_index"] = pending.period
+        for key in [k for k in st.session_state if k.startswith(("pre_fiscal_", "fiscal_year_", "fiscal_period_"))]:
+            del st.session_state[key]
 
     # Shift configuration cleanly into the sidebar
     st.sidebar.markdown("## Configuration Settings")

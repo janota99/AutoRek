@@ -96,7 +96,7 @@ inputs, outputs, limitations, and plan availability, from `AppEntry` in `shared/
   when it sees that parameter, so the workflow opens populated. It reuses the existing sample files and builders; nothing
   else changes, and FIFO still disables Close & Commit while a sample is loaded.
 - **There is no saved-project store, account, or billing system.** The stats strip says "Free preview" and links to the Plans
-  page. No fiscal-period selector lives on the Dashboard: each application sets its own period.
+  page. The Dashboard has an optional fiscal period end date and an editable fiscal calendar (`shared/fiscal_calendar.py`, `shared/fiscal_session.py`). A tool calls `fiscal_session.pending_for(<tool>)` before drawing its fiscal widgets and gets the value once per change; FIFO and Recon use it, Sales Tax and Invoice Hub have no fiscal-period input. Blank means each tool keeps its own controls. The default calendar (13 four-week periods from Jan 1) only pre-fills the editable table.
 - `_DATA_HANDLING` in `apps/dashboard.py` states what is stored where (session uploads, in-memory Excel outputs, and the few
   files written to the server's disk). Update it if an app starts storing something new.
 - **Demo checkout and charge register** (Plans page). After choosing Starter or Professional, a Payment section offers card

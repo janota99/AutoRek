@@ -11,10 +11,13 @@ import html
 import json
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
 from apps import sales_page
 from apps.sales_page import TIERS
+from shared import fiscal_session
+from shared.fiscal_calendar import PERIOD_COUNT, FiscalCalendar, default_calendar, validate
 from shared.layout import APPS
 from shared.styles import style_tag
 
@@ -158,7 +161,7 @@ page = (
     f"{_get_started()}"
     '<div class="pp-notice" role="note"><span class="pp-notice-icon" aria-hidden="true">i</span>'
     '<p><strong>Tip:</strong> Each application keeps its own files while you work; to keep two loaded at once, open '
-    "the second in a new browser tab. Fiscal period is set inside each application.</p>"
+    "the second in a new browser tab. Set a fiscal period end date at the top of this page to fill it in for the tools that take one; you can still change it inside any tool.</p>"
     '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
     '<h2 class="pp-section" id="pp-apps">Applications</h2>'
     f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
@@ -170,6 +173,55 @@ page = (
 if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
     sales_page.render()
     st.stop()
+
+
+
+def _calendar_editor(calendar: FiscalCalendar) -> FiscalCalendar:
+    """The calendar controls: fiscal year, first day of Period 1, and an editable end date for each period."""
+    reset_count = st.session_state.get("pp-fiscal-resets", 0)
+    year_col, start_col, reset_col = st.columns([1, 1, 1], vertical_alignment="bottom")
+    year = int(year_col.number_input("Fiscal year", 1900, 2199, calendar.year, 1, key="pp-fiscal-year"))
+    start = start_col.date_input("Period 1 starts", calendar.start, key=f"pp-fiscal-start-{reset_count}")
+    if reset_col.button("Reset to 13 four-week periods", key="pp-fiscal-reset",
+                        help="Rebuilds all 13 end dates from the start date, 28 days each."):
+        st.session_state["pp-fiscal-resets"] = reset_count + 1
+        fiscal_session.set_calendar(default_calendar(year, start))
+        st.rerun()
+    edited = st.data_editor(
+        pd.DataFrame({"Period": [f"{n:02d}" for n in range(1, PERIOD_COUNT + 1)], "Ends": list(calendar.period_ends)}),
+        hide_index=True, disabled=["Period"], width="stretch", num_rows="fixed",
+        column_config={"Ends": st.column_config.DateColumn("Period end date", format="YYYY-MM-DD", required=True)},
+        key=f"pp-fiscal-ends-{reset_count}",
+    )
+    ends = tuple(d.date() if hasattr(d, "date") else d for d in edited["Ends"])
+    return FiscalCalendar(year, start, ends)
+
+
+with st.container(key="pp-fiscal"):
+    stored_end = fiscal_session.get_end_date()
+    field, calendar_slot, status = st.columns([1.2, 1, 3], vertical_alignment="bottom")
+    entered = field.date_input(
+        "Fiscal period ending date (optional)", value=stored_end, format="YYYY-MM-DD", key="pp-fiscal-end",
+        help="Fills in the fiscal year, period, and period end date in the tools that ask for them. Leave blank to choose inside each tool.",
+    )
+    with calendar_slot.popover("Fiscal calendar", icon=":material/calendar_month:"):
+        new_calendar = _calendar_editor(fiscal_session.get_calendar())
+        problem = validate(new_calendar)
+        if problem:
+            st.error(problem + " Period dates were not saved.")
+        else:
+            fiscal_session.set_calendar(new_calendar)
+    fiscal_session.set_end_date(entered)
+    context = fiscal_session.current()
+    if context is None:
+        status.caption("No date set: each tool keeps its own fiscal period controls.")
+    elif context.period is None:
+        status.warning(f"{context.end_date:%Y-%m-%d} is outside the fiscal calendar, so only the end date is passed on. "
+                       "Open Fiscal calendar to adjust it.", icon=":material/event_busy:")
+    else:
+        status.success(f"FY{context.fiscal_year} Period {context.period:02d}, ending {context.end_date:%Y-%m-%d}. "
+                       "Set in Inventory Costing and Data Reconciliation; change it there any time.",
+                       icon=":material/event_available:")
 
 st.html(page, unsafe_allow_javascript=True)
 # The only way into the sales page: it is not a registered page, so it has no URL or nav entry.
