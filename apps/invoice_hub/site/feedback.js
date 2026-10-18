@@ -12,6 +12,7 @@
   'use strict';
 
   var STORAGE_KEY = 'invoiceTracker.reviews.v1';
+  // Sets the length of the review fields for validation and character counting. The first number is the minimum length, the second is the maximum length.
   var LIMITS = { name: [2, 80], role: [0, 80], feedback: [10, 1000] };
 
   var form = document.getElementById('feedbackForm');
