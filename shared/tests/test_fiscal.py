@@ -90,3 +90,25 @@ def test_corrupt_settings_file_falls_back_to_defaults(tmp_path, monkeypatch):
 
     at = AppTest.from_function(script).run()
     assert not at.exception and at.markdown[0].value == "None"
+
+
+def test_workspace_calendar_form_saves_only_on_save(tmp_path, monkeypatch):
+    import json
+    from datetime import date
+    from pathlib import Path
+    from streamlit.testing.v1 import AppTest
+    path = tmp_path / "fiscal.json"
+    monkeypatch.setenv("FISCAL_SETTINGS_PATH", str(path))
+    root = Path(__file__).resolve().parents[2]
+    at = AppTest.from_file(str(root / "apps" / "dashboard.py"), default_timeout=60).run()
+    at.number_input(key="pp-fiscal-year-0").set_value(2027)
+    at.date_input(key="pp-fiscal-start-0").set_value(date(2027, 1, 4))
+    at.checkbox(key="pp-fiscal-rebuild-0").check()
+    at.run()
+    assert not path.exists()                       # edits alone store nothing
+    next(b for b in at.button if b.label == "Save calendar").click().run()
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert (saved["year"], saved["start"]) == (2027, "2027-01-04")
+    assert saved["period_ends"][0] == "2027-01-31" and not at.exception
+    again = AppTest.from_file(str(root / "apps" / "dashboard.py"), default_timeout=60).run()   # a new session
+    assert again.number_input(key="pp-fiscal-year-0").value == 2027

@@ -176,25 +176,42 @@ if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
 
 
 
-def _calendar_editor(calendar: FiscalCalendar) -> FiscalCalendar:
-    """The calendar controls: fiscal year, first day of Period 1, and an editable end date for each period."""
-    reset_count = st.session_state.get("pp-fiscal-resets", 0)
-    year_col, start_col, reset_col = st.columns([1, 1, 1], vertical_alignment="bottom")
-    year = int(year_col.number_input("Fiscal year", 1900, 2199, calendar.year, 1, key="pp-fiscal-year"))
-    start = start_col.date_input("Period 1 starts", calendar.start, key=f"pp-fiscal-start-{reset_count}")
-    if reset_col.button("Reset to 13 four-week periods", key="pp-fiscal-reset",
-                        help="Rebuilds all 13 end dates from the start date, 28 days each."):
-        st.session_state["pp-fiscal-resets"] = reset_count + 1
-        fiscal_session.set_calendar(default_calendar(year, start))
-        st.rerun()
-    edited = st.data_editor(
-        pd.DataFrame({"Period": [f"{n:02d}" for n in range(1, PERIOD_COUNT + 1)], "Ends": list(calendar.period_ends)}),
-        hide_index=True, disabled=["Period"], width="stretch", num_rows="fixed",
-        column_config={"Ends": st.column_config.DateColumn("Period end date", format="YYYY-MM-DD", required=True)},
-        key=f"pp-fiscal-ends-{reset_count}",
-    )
-    ends = tuple(d.date() if hasattr(d, "date") else d for d in edited["Ends"])
-    return FiscalCalendar(year, start, ends)
+def _calendar_editor(calendar: FiscalCalendar) -> None:
+    """The calendar controls: fiscal year, first day of Period 1, and an editable end date for each period.
+
+    Edits are held in a form and saved only by "Save calendar", so a half-finished edit is never stored.
+    """
+    resets = st.session_state.get("pp-fiscal-resets", 0)
+    with st.form("pp-fiscal-form", border=False):
+        year_col, start_col = st.columns(2)
+        year = int(year_col.number_input("Fiscal year", 1900, 2199, calendar.year, 1, key=f"pp-fiscal-year-{resets}"))
+        start = start_col.date_input("Period 1 starts", calendar.start, key=f"pp-fiscal-start-{resets}")
+        edited = st.data_editor(
+            pd.DataFrame({"Period": [f"{n:02d}" for n in range(1, PERIOD_COUNT + 1)],
+                          "Ends": list(calendar.period_ends)}),
+            hide_index=True, disabled=["Period"], width="stretch", num_rows="fixed",
+            column_config={"Ends": st.column_config.DateColumn("Period end date", format="YYYY-MM-DD", required=True)},
+            key=f"pp-fiscal-ends-{resets}",
+        )
+        rebuild = st.checkbox("Rebuild all 13 end dates from the start date (28 days each) instead of the table",
+                              key=f"pp-fiscal-rebuild-{resets}")
+        saved = st.form_submit_button("Save calendar", type="primary", icon=":material/save:")
+    if saved:
+        if rebuild:
+            new_calendar = default_calendar(year, start)
+        else:
+            ends = tuple(d.date() if hasattr(d, "date") else d for d in edited["Ends"])
+            new_calendar = FiscalCalendar(year, start, ends)
+        problem = validate(new_calendar)
+        if problem:
+            st.error(problem + " Nothing was saved. To move the whole year, tick the rebuild box.")
+        else:
+            fiscal_session.set_calendar(new_calendar)
+            st.session_state["pp-fiscal-resets"] = resets + 1   # fresh widgets that show what was saved
+            st.session_state["pp-fiscal-flash"] = True
+            st.rerun()
+    if st.session_state.pop("pp-fiscal-flash", False):
+        st.success("Calendar saved for future sessions.", icon=":material/check_circle:")
 
 
 with st.container(key="pp-fiscal"):
@@ -205,12 +222,7 @@ with st.container(key="pp-fiscal"):
         help="Fills in the fiscal year, period, and period end date in the tools that ask for them. Leave blank to choose inside each tool.",
     )
     with calendar_slot.popover("Fiscal calendar", icon=":material/calendar_month:"):
-        new_calendar = _calendar_editor(fiscal_session.get_calendar())
-        problem = validate(new_calendar)
-        if problem:
-            st.error(problem + " Period dates were not saved.")
-        else:
-            fiscal_session.set_calendar(new_calendar)
+        _calendar_editor(fiscal_session.get_calendar())
     fiscal_session.set_end_date(entered)
     if fiscal_session.save_failed():
         st.warning("These settings could not be saved to disk, so they will be gone next session.")
