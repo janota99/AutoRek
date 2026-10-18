@@ -508,7 +508,7 @@ def _dataset_card(side: str, spec0: ReconSpec) -> None:
     with st.container(border=True, key=f"cr-card-{side}"):
         st.markdown(f'<div class="cr-card-head">{_chip(label)}<span><span class="cr-role">{role}</span>'
                     f'<span class="cr-card-title">{html.escape(label)}</span></span></div>', unsafe_allow_html=True)
-        file, is_sample = sample_uploader(f"Upload {label}", key=f"cr_file_{side}", types=["xlsx", "csv"],
+        file, is_sample = sample_uploader(f"Upload {label}", key=f"cr_file_{side}", types=["xlsx", "xlsm", "csv"],
                                           sample_file=sample_name, show_badge=False)
         data: dict = st.session_state.setdefault(DATA_KEY, {})
         if file is not None:

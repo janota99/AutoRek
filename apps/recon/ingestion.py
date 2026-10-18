@@ -4,7 +4,7 @@ This module owns everything about getting a raw QuickBooks or Infinium
 export into a clean, well-mapped DataFrame before it is handed to
 the ``matching`` package:
 
-* reading uploaded CSV/XLSX bytes and listing worksheets
+* reading uploaded CSV/XLSX/XLSM bytes and listing worksheets
 * detecting the header row and removing blank columns, repeated header
   rows, and standalone legacy report-timestamp rows
 * excluding QuickBooks subtotal / non-detail rows
@@ -119,8 +119,8 @@ def list_source_sheets(file_bytes: bytes, filename: str) -> tuple[str, ...]:
     suffix = Path(filename).suffix.lower()
     if suffix == ".csv":
         return ()
-    if suffix != ".xlsx":
-        raise ValueError("Only CSV and XLSX source files are supported.")
+    if suffix not in {".xlsx", ".xlsm"}:
+        raise ValueError("Only CSV, XLSX, and XLSM source files are supported.")
     with pd.ExcelFile(io.BytesIO(file_bytes)) as workbook:
         sheets = tuple(str(name) for name in workbook.sheet_names)
     if not sheets:
@@ -136,8 +136,8 @@ def read_raw_source(
 ) -> pd.DataFrame:
     """Parse an uploaded source once and reuse it for detection and cleanup."""
     suffix = Path(filename).suffix.lower()
-    if suffix not in {".csv", ".xlsx"}:
-        raise ValueError("Only CSV and XLSX source files are supported.")
+    if suffix not in {".csv", ".xlsx", ".xlsm"}:
+        raise ValueError("Only CSV, XLSX, and XLSM source files are supported.")
     stream = io.BytesIO(file_bytes)
     if suffix == ".csv":
         return pd.read_csv(stream, header=None, dtype=object)
