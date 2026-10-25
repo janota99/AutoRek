@@ -47,7 +47,7 @@ callers write `from .matching import build_reconciliation`, not the submodule pa
 | `holds` | Reason codes and the reference-evidence review holds. |
 | `dispositions` | Final QuickBooks dispositions, fuzzy-match review holds, historical clearances. |
 | `paired_rows` | The side-by-side paired-row table and per-match assessments. |
-| `summaries` | Method, product (with bottle counts and the items-needing-review list), and customer summaries; exception analysis; the controls table. |
+| `summaries` | Method, product (with bottle counts and the items-needing-review list), and customer summaries; exception analysis; the controls table (integer-cent differences; the hold, duplicate, unresolved and Infinium-only checks take their figure from the disposition ledger or from the rows no bucket claimed, never from the list being checked; `tests/test_control_independence.py` proves each can fail). |
 | `validation` | `validate_reconciliation`: end-of-run integrity checks. |
 | `reconciliation` | `build_reconciliation`: runs every step above in order. |
 

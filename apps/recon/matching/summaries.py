@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Optional
 
 import pandas as pd
@@ -28,7 +28,12 @@ from .core import (
     QB_ID,
     ReconciliationResult,
 )
-from .labels import DISPOSITION_TRUE_UNMATCHED, FINAL_DISPOSITIONS
+from .labels import (
+    DISPOSITION_DUPLICATE_EXCLUDED,
+    DISPOSITION_REVIEW_HOLD,
+    DISPOSITION_TRUE_UNMATCHED,
+    FINAL_DISPOSITIONS,
+)
 
 
 def build_method_summary(
@@ -568,81 +573,121 @@ def build_controls(
     fuzzy_hold_i_total = _amount_total(inf, fuzzy_match_review_hold_inf_rows)
     reference_hold_q_total = _amount_total(qb, reference_hold_qb_rows)
     historical_difference = (
-        round(float(historical_clearances["Amount Difference"].sum()), 2)
-        if not historical_clearances.empty else 0.0
+        _float_cents(historical_clearances["Amount Difference"].sum())
+        if not historical_clearances.empty else 0
     )
+    inf_unresolved_derived = _complement_total(
+        inf, matched_i, historical_i, duplicate_inf_rows,
+        duplicate_review_hold_inf_rows, amount_variance_review_hold_inf_rows, fuzzy_match_review_hold_inf_rows,
+    )
+
+    # Where a total is only restated from the same list that produced it, the check can never fail. These take the
+    # figure from a different place instead: the final-disposition ledger (built from the paired rows every workbook
+    # reads), or the rows no bucket claimed. Without a ledger they fall back to the list itself.
+    def tied(indexes: list[int], expected_disposition: str, total: int) -> int:
+        return total if qb_dispositions is None else _ledger_cents_for(qb, qb_dispositions, indexes, expected_disposition)
+
+    unresolved_ledger = (
+        unresolved_q_total if qb_dispositions is None
+        else _ledger_cents(qb_dispositions, qb_dispositions["Final Disposition"].eq(DISPOSITION_TRUE_UNMATCHED))
+    )
+    qb_rows_out = (
+        len(matched_q) + len(historical_q) + len(unmatched_qb) + len(duplicate_qb_rows)
+        + len(duplicate_review_hold_qb_rows) + len(amount_variance_review_hold_qb_rows)
+        + len(ambiguous_duplicate_qb_rows) + len(fuzzy_match_review_hold_qb_rows)
+        + len(reference_hold_qb_rows)
+    )
+    # (check, expected, actual, kind): amounts are integer cents, counts are plain integers. Differences are taken
+    # on the integers; floats exist only in the displayed columns below.
     records = [
-        ("QuickBooks row completeness", len(qb),
-         len(matched_q) + len(historical_q) + len(unmatched_qb) + len(duplicate_qb_rows)
-         + len(duplicate_review_hold_qb_rows) + len(amount_variance_review_hold_qb_rows)
-         + len(ambiguous_duplicate_qb_rows) + len(fuzzy_match_review_hold_qb_rows)
-         + len(reference_hold_qb_rows)),
+        ("QuickBooks row completeness", len(qb), qb_rows_out, _COUNT),
         ("Infinium row completeness", len(inf),
          len(matched_i) + len(historical_i) + len(unmatched_inf) + len(duplicate_inf_rows)
          + len(duplicate_review_hold_inf_rows) + len(amount_variance_review_hold_inf_rows)
-         + len(fuzzy_match_review_hold_inf_rows)),
-        ("QuickBooks amount roll-forward", cents_to_float(qb_total),
-         cents_to_float(
-             matched_q_total + historical_q_total + unresolved_q_total
-             + duplicate_q_total + review_hold_q_total + variance_hold_q_total
-             + ambiguous_q_total + fuzzy_hold_q_total + reference_hold_q_total
-         )),
-        ("Infinium amount roll-forward", cents_to_float(inf_total),
-         cents_to_float(
-             matched_i_total + historical_i_total + unresolved_i_total
-             + duplicate_i_total + review_hold_i_total + variance_hold_i_total
-             + fuzzy_hold_i_total
-         )),
-        ("Primary-to-primary matched totals", cents_to_float(matched_q_total), cents_to_float(matched_i_total)),
-        ("Historical clearance amount difference", 0.0, historical_difference),
-        ("Unresolved JE support", cents_to_float(unresolved_q_total),
-         cents_to_float(
-             qb_total - matched_q_total - historical_q_total
-             - duplicate_q_total - review_hold_q_total - variance_hold_q_total
-             - ambiguous_q_total - fuzzy_hold_q_total - reference_hold_q_total
-         )),
-        ("Excess QuickBooks copies excluded from JE", cents_to_float(duplicate_q_total),
-         cents_to_float(duplicate_q_total)),
-        ("Duplicate Review Hold QuickBooks items excluded from JE",
-         cents_to_float(review_hold_q_total), cents_to_float(review_hold_q_total)),
-        ("Reference-matched amount variance QuickBooks items excluded from automatic JE",
-         cents_to_float(variance_hold_q_total), cents_to_float(variance_hold_q_total)),
-        ("Ambiguous duplicate QuickBooks items excluded from JE",
-         cents_to_float(ambiguous_q_total), cents_to_float(ambiguous_q_total)),
-        ("Fuzzy match review hold QuickBooks items excluded from automatic JE",
-         cents_to_float(fuzzy_hold_q_total), cents_to_float(fuzzy_hold_q_total)),
-        ("Reference-evidence review hold QuickBooks items excluded from automatic JE",
-         cents_to_float(reference_hold_q_total), cents_to_float(reference_hold_q_total)),
-        # Informational: Infinium-only exceptions are reported in their own total and
-        # can never offset the QuickBooks-based journal entry.
+         + len(fuzzy_match_review_hold_inf_rows), _COUNT),
+        ("QuickBooks amount roll-forward", qb_total,
+         matched_q_total + historical_q_total + unresolved_q_total
+         + duplicate_q_total + review_hold_q_total + variance_hold_q_total
+         + ambiguous_q_total + fuzzy_hold_q_total + reference_hold_q_total, _AMOUNT),
+        ("Infinium amount roll-forward", inf_total,
+         matched_i_total + historical_i_total + unresolved_i_total
+         + duplicate_i_total + review_hold_i_total + variance_hold_i_total
+         + fuzzy_hold_i_total, _AMOUNT),
+        ("Primary-to-primary matched totals", matched_q_total, matched_i_total, _AMOUNT),
+        ("Historical clearance amount difference", 0, historical_difference, _AMOUNT),
+        # The amount left over once every other bucket is taken out must equal what the ledger calls unmatched.
+        ("Unresolved JE support", unresolved_q_total, unresolved_ledger, _AMOUNT),
+        ("Excess QuickBooks copies excluded from JE", duplicate_q_total,
+         tied(duplicate_qb_rows, DISPOSITION_DUPLICATE_EXCLUDED, duplicate_q_total), _AMOUNT),
+        ("Duplicate Review Hold QuickBooks items excluded from JE", review_hold_q_total,
+         tied(duplicate_review_hold_qb_rows, DISPOSITION_REVIEW_HOLD, review_hold_q_total), _AMOUNT),
+        ("Reference-matched amount variance QuickBooks items excluded from automatic JE", variance_hold_q_total,
+         tied(amount_variance_review_hold_qb_rows, DISPOSITION_REVIEW_HOLD, variance_hold_q_total), _AMOUNT),
+        ("Ambiguous duplicate QuickBooks items excluded from JE", ambiguous_q_total,
+         tied(ambiguous_duplicate_qb_rows, DISPOSITION_REVIEW_HOLD, ambiguous_q_total), _AMOUNT),
+        ("Fuzzy match review hold QuickBooks items excluded from automatic JE", fuzzy_hold_q_total,
+         tied(fuzzy_match_review_hold_qb_rows, DISPOSITION_REVIEW_HOLD, fuzzy_hold_q_total), _AMOUNT),
+        ("Reference-evidence review hold QuickBooks items excluded from automatic JE", reference_hold_q_total,
+         tied(reference_hold_qb_rows, DISPOSITION_REVIEW_HOLD, reference_hold_q_total), _AMOUNT),
+        # Infinium-only exceptions are reported in their own total and can never offset the QuickBooks-based journal
+        # entry. The total is checked against the rows that no other bucket claimed.
         ("Infinium-only exceptions reported separately (no QuickBooks JE effect)",
-         cents_to_float(unresolved_i_total), cents_to_float(unresolved_i_total)),
+         unresolved_i_total, inf_unresolved_derived, _AMOUNT),
     ]
     if qb_dispositions is not None:
         # Source rows must tie to their final dispositions in count AND dollars,
         # and the proposed JE is by definition the TRUE_UNMATCHED rows alone.
-        ledger_amounts = qb_dispositions["Amount"].fillna(0.0)
-        true_unmatched = qb_dispositions["Final Disposition"].eq(DISPOSITION_TRUE_UNMATCHED)
+        ledger_total = _ledger_cents(qb_dispositions, pd.Series(True, index=qb_dispositions.index))
         records.extend([
             ("Source QuickBooks rows = Matched + Confirmed Duplicate Excluded + Review-Hold + True-Unmatched rows",
-             len(qb), int(qb_dispositions["Final Disposition"].isin(FINAL_DISPOSITIONS).sum())),
+             len(qb), int(qb_dispositions["Final Disposition"].isin(FINAL_DISPOSITIONS).sum()), _COUNT),
             ("Every QuickBooks source row has exactly one final disposition",
-             len(qb), int(qb_dispositions["QBO Row ID"].nunique())),
+             len(qb), int(qb_dispositions["QBO Row ID"].nunique()), _COUNT),
             ("Source QuickBooks amount = Matched + Confirmed Duplicate Excluded + Review-Hold + True-Unmatched amounts",
-             round(cents_to_float(qb_total), 2), round(float(ledger_amounts.sum()), 2)),
+             qb_total, ledger_total, _AMOUNT),
             ("Proposed JE = sum of TRUE_UNMATCHED QuickBooks amounts",
-             round(cents_to_float(unresolved_q_total), 2), round(float(ledger_amounts[true_unmatched].sum()), 2)),
+             unresolved_q_total, unresolved_ledger, _AMOUNT),
         ])
     output = []
-    for check, expected, actual in records:
-        difference = float(expected) - float(actual)
+    for check, expected, actual, kind in records:
+        difference = int(expected) - int(actual)
+        amount = kind == _AMOUNT
         output.append(
             {
                 "Check": check,
-                "Expected": expected,
-                "Actual": actual,
-                "Difference": difference,
+                "Expected": cents_to_float(expected) if amount else expected,
+                "Actual": cents_to_float(actual) if amount else actual,
+                "Difference": cents_to_float(difference) if amount else float(difference),
                 "Status": "PASS" if difference == 0 else "FAIL",
             }
         )
     return pd.DataFrame(output)
+
+
+_COUNT, _AMOUNT = "count", "amount"
+
+
+def _float_cents(value: Any) -> int:
+    """Whole cents from a dollar figure that was itself built from cents (a column sum), rounded half-up."""
+    return int((Decimal(str(round(float(value), 2))) * 100).to_integral_value(ROUND_HALF_UP))
+
+
+def _ledger_cents(ledger: pd.DataFrame, mask: pd.Series) -> int:
+    """Signed cents of the ledger rows in ``mask``; a blank amount counts as zero, as it does in the source totals."""
+    return sum(_float_cents(a) for a in ledger.loc[mask, "Amount"].fillna(0.0))
+
+
+def _ledger_cents_for(qb: pd.DataFrame, ledger: pd.DataFrame, indexes: list[int], disposition: str) -> int:
+    """Cents the ledger records for these QuickBooks rows *at the expected disposition*. A row the engine listed in a
+    bucket but the ledger holds elsewhere (or not at all) contributes nothing, so the control reports the gap."""
+    ids = {qb.at[int(i), QB_ID] for i in indexes}
+    mask = ledger["QBO Row ID"].isin(ids) & ledger["Final Disposition"].eq(disposition)
+    return _ledger_cents(ledger, mask)
+
+
+def _complement_total(frame: pd.DataFrame, *claimed_groups: Any) -> int:
+    """Cents of the rows no bucket claimed, found by set difference rather than from the engine's own exception list."""
+    claimed: set[int] = set()
+    for group in claimed_groups:
+        claimed.update(int(i) for i in group)
+    return _amount_total(frame, [i for i in frame.index if int(i) not in claimed])
