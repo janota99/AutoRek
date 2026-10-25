@@ -67,6 +67,21 @@ def record_run(result: Any, mappings: dict, *, uses_sample: bool = False) -> Non
             result.run_id, f"This run was not saved to run history ({_reason(exc)}). The reconciliation is unaffected.")
 
 
+@st.cache_data(ttl=120, show_spinner=False)
+def known_input_runs(hashes: tuple[str, ...]) -> dict[str, str]:
+    """Saved runs that already used any of these files (SHA-256 -> run reference); empty with no history. Never raises.
+
+    Cached for two minutes so the page's many reruns do not each wait on the database."""
+    config = _config()
+    if config is None:
+        return {}
+    try:
+        with tenant_connection(config, connect_timeout=DB_WAIT_SECONDS) as conn:
+            return run_store.runs_using_hashes(conn, list(hashes))
+    except Exception:  # noqa: BLE001 - a missing history only means no "used before" notes
+        return {}
+
+
 def keep_workpaper(run_ref: str, kind: str, filename: str, content: bytes) -> None:
     """Keep a workpaper that was just built, if its run was saved. Never raises."""
     config, run_id = _config(), st.session_state.get(_SAVED_KEY, {}).get(run_ref)

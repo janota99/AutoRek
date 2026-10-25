@@ -259,6 +259,7 @@ def read_source_file(
     headers, original_headers, duplicate_renames = _unique_source_headers(raw.iloc[header_row].tolist())
     frame = raw.iloc[header_row + 1:].copy()
     frame.columns = headers
+    source_rows_below_header = len(frame)   # for apps/recon/input_checks.py: every row must be accounted for
 
     # Build the cleaned string representation once and keep its masks aligned
     # with each filtering pass. This avoids rescanning the full frame three
@@ -309,6 +310,7 @@ def read_source_file(
         "repeated_header_rows_removed": repeated_header_rows_removed,
         "standalone_timestamp_rows_removed": standalone_timestamp_rows_removed,
         "blank_rows_removed": blank_rows_removed,
+        "source_rows_below_header": source_rows_below_header,
         "selected_worksheet": sheet_name or "CSV source",
     }
     return frame

@@ -13,6 +13,7 @@ An optional legacy-format export, `Sales_Reconciliation_Legacy_<run>.xlsx`, is a
 |---|---|
 | `app.py` | Page flow only: uploads, worksheet/header-row selection, mapping, validation, the Run button. |
 | `uploads.py` | File hashing, `st.cache_data` wrappers around ingestion, the per-file dataset summary. |
+| `input_checks.py` | Pre-match input checks, added to the Source validation details table: every row below the header accounted for (used or removed, with the reason), the amount sitting in rows left out as subtotals, counts of blank / unreadable / zero amounts, credits, the same file uploaded twice, and a file already used in a saved run. Streamlit-free and read-only; only the row tie-out can FAIL. Period coverage stays in `render_source_period_alignment`. Tests: `tests/test_input_checks.py`. |
 | `run_status.py` | Streamlit-free wording for the status panel under the progress strip: upload blockers, a finished run's blockers (failed control, review hold), the figures compared between runs, and why a result was cleared. |
 | `ingestion.py` | Reading CSV/XLSX, header detection, subtotal-row filtering, column-mapping panels, source validation. |
 | `duplicates.py` | Duplicate detection, classification, and disposition. The lowest layer: imports nothing local. |

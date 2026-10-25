@@ -109,6 +109,17 @@ def list_runs(conn, *, limit: int = 100) -> list[SavedRun]:
     return [_saved(r, inputs.get(r[0], [])) for r in rows]
 
 
+def runs_using_hashes(conn, hashes: list[str]) -> dict[str, str]:
+    """For each SHA-256 that a saved run already used: the reference of the most recent such run."""
+    hashes = sorted({h for h in hashes if h})
+    if not hashes:
+        return {}
+    rows = conn.execute(
+        "SELECT i.sha256, r.run_ref FROM recon_run_inputs i JOIN recon_runs r ON r.run_id = i.run_id "
+        "WHERE i.sha256 = ANY(%s) ORDER BY r.recorded_at ASC", (hashes,)).fetchall()
+    return {sha: ref for sha, ref in rows}   # later (more recent) runs overwrite earlier ones
+
+
 def get_run(conn, run_id) -> Optional[SavedRun]:
     row = conn.execute(f"SELECT {_RUN_COLUMNS} FROM recon_runs WHERE run_id = %s", (run_id,)).fetchone()
     return None if row is None else _saved(row, _inputs_by_run(conn, [run_id]).get(run_id, []))

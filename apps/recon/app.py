@@ -49,7 +49,8 @@ from apps.recon.ingestion import (
 )
 from apps.recon.matching import APP_VERSION, MATCHING_RULE_VERSION, build_reconciliation
 from shared.auth_ui import render_sign_in
-from apps.recon.run_history import record_run, render_history_panel, render_save_notice
+from apps.recon.input_checks import SourceInput, build_input_checks
+from apps.recon.run_history import known_input_runs, record_run, render_history_panel, render_save_notice
 from apps.recon.run_status import (
     MONEY_KEYS,
     SUMMARY_LABELS,
@@ -688,6 +689,18 @@ def main() -> None:
             dataset_label="Infinium Secondary (Historical)",
         ))
         
+    input_sources = [
+        SourceInput("QuickBooks", qb_raw, qb_detail, qb_mapping.get("amount"), qb_hash),
+        SourceInput("Infinium", inf_raw, inf_raw, inf_mapping.get("amount"), inf_hash),
+    ]
+    if qb_secondary_detail is not None and qb_secondary_mapping is not None:
+        input_sources.append(SourceInput("QuickBooks Secondary (Historical)", qb_secondary_raw, qb_secondary_detail,
+                                         qb_secondary_mapping.get("amount"), qb_secondary_hash))
+    if inf_secondary_raw is not None and inf_secondary_mapping is not None:
+        input_sources.append(SourceInput("Infinium Secondary (Historical)", inf_secondary_raw, inf_secondary_raw,
+                                         inf_secondary_mapping.get("amount"), inf_secondary_hash))
+    validation_frames.append(build_input_checks(
+        input_sources, known_input_runs(tuple(sorted({s.sha256 for s in input_sources})))))
     validation_report = pd.concat(validation_frames, ignore_index=True)
     validation_failed = validation_report["Status"].eq("FAIL").any()
     validation_warnings = int(validation_report["Status"].eq("WARNING").sum())
