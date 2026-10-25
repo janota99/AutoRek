@@ -513,3 +513,10 @@ button[kind="secondary"],
 @keyframes cg-ripple { to { transform: scale(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .cg-enter, .cg-pop, .cg-chip, .cg-option { animation: none; } .cg-ripple { display: none; } }
 .tr-custom { background: var(--pp-accent-soft); color: #1e40af; border: 1px solid #c9dcff; }
+
+/* Copy snip button and its status line (tax_calculator_ui.py). */
+.stc-snip-row { display: flex; align-items: center; gap: .75rem; margin: .5rem 0 .25rem; }
+.stc-snip { display: inline-flex; align-items: center; gap: .4rem; min-height: 2.6rem; padding: .4rem 1.1rem; border: 0; border-radius: .6rem; background: var(--pp-primary); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.stc-snip:hover { background: var(--pp-accent-strong); }
+.stc-snip .material-symbols-rounded { font-size: 1.2rem; }
+.stc-snip-note { color: #047857; font-size: .9rem; }

@@ -6,21 +6,25 @@ Custom locations live in session state for the current visit only.
 """
 from __future__ import annotations
 
+import base64
 import html
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 import streamlit as st
 
 from . import ui
 from .tax_calculator import (
-    LOCAL_CAP, PRESET_LOCATIONS, SAAS_TAXABLE_SHARE, STATE_RATE, Location, TaxResult, calculate, compare, to_cents,
+    LOCAL_CAP, PRESET_LOCATIONS, SAAS_TAXABLE_SHARE, STATE_RATE, Location, TaxResult, calculate, compare, parse_price,
 )
 from .tax_tape import tape_pdf, tape_png
 
 _E = html.escape
 _CUSTOM_KEY = "stc_custom_locations"
 _SAAS_LABELS = {False: "Standard sale", True: "SaaS (80% taxable)"}
+_PRICE_LABEL = "Price (pre-tax)"   # also how apps/sales_tax/tax_calculator_live.js finds the field
+_LIVE_JS = (Path(__file__).resolve().parent / "tax_calculator_live.js").read_text(encoding="utf-8")
 
 
 def _usd(v: Decimal) -> str:
@@ -78,6 +82,18 @@ def _summary_html(r: TaxResult) -> str:
     </div>
   </div>
 </div>"""
+
+
+def _snip_html(png: bytes, typed: str) -> str:
+    """The "Copy snip" button, carrying the picture itself; tax_calculator_live.js copies it to the clipboard.
+
+    ``data-for`` is the price text this picture was drawn for, so a click made while a keystroke is still being applied
+    waits for the matching picture instead of copying a stale one. The script is the same text on every run, so the
+    browser attaches it once."""
+    data = "data:image/png;base64," + base64.b64encode(png).decode("ascii")
+    return (f'<div class="stc-snip-row"><button type="button" class="stc-snip" data-stc-snip data-png="{data}" '
+            f'data-for="{_E(typed or "", quote=True)}">{ui.icon("content_copy")} Copy snip</button>'
+            f'<span class="stc-snip-note" data-stc-status role="status"></span></div><script>{_LIVE_JS}</script>')
 
 
 def _compare_html(price: Decimal, current: TaxResult, locations: list[Location]) -> str:
@@ -151,13 +167,17 @@ def render_tax_calculator() -> None:
     if "_stc_pending_location" in st.session_state:
         st.session_state["stc_location"] = st.session_state.pop("_stc_pending_location")
     if st.session_state.get("stc_location") not in names:
-        st.session_state["stc_location"] = names[0]
+        st.session_state["stc_location"] = next((n for n in names if n.startswith("AFI")), names[0])
 
     left, right = st.columns([5, 6], gap="large")
     with left:
         with st.container(border=True, key="st-card-calc"):
-            price_in = st.number_input("Price (pre-tax)", min_value=0.0, max_value=1_000_000_000.0, value=500.0,
-                                       step=10.0, format="%.2f")
+            # A text field, not number_input: it shows exactly what was typed, and tax_calculator_live.js applies it
+            # a moment after each keystroke so nobody has to press Enter. Blank is $0.00.
+            price_text = st.text_input(_PRICE_LABEL, key="stc_price", placeholder="0.00", icon=":material/attach_money:")
+            price, price_problem = parse_price(price_text)
+            if price_problem:
+                st.warning(price_problem)
             loc_name = st.selectbox("Location", names, key="stc_location")
             saas = st.segmented_control("Type of sale", list(_SAAS_LABELS.values()), default=_SAAS_LABELS[False],
                                         key="stc_saas") == _SAAS_LABELS[True]
@@ -167,18 +187,20 @@ def render_tax_calculator() -> None:
                 st.warning("This location's local rate is over the 2.00% Texas cap.")
         _custom_location_form()
 
-    price = to_cents(price_in)
     result = calculate(price, location, saas)
     with right:
         st.html(_summary_html(result))
         stamp = datetime.now().strftime("%b %d, %Y %I:%M %p")
-        st.caption("Save a compact tape of this result to attach as backup to an invoice that needs a tax correction.")
+        png = tape_png(result, stamp)
+        st.html(_snip_html(png, price_text), unsafe_allow_javascript=True)
+        st.caption("Copy a clean picture of these totals and paste it into a document or email, or save it. "
+                   "Use it as backup for an invoice that needs a tax correction.")
         b1, b2 = st.columns(2)
         slug = f"sales-tax-tape-{datetime.now():%Y%m%d-%H%M%S}"
-        b1.download_button("Save tape as image", tape_png(result, stamp), f"{slug}.png", "image/png",
-                           icon=":material/content_cut:", use_container_width=True)
+        b1.download_button("Save snip as image", png, f"{slug}.png", "image/png",
+                           icon=":material/image:", width="stretch")
         b2.download_button("Save tape as PDF", tape_pdf(result, stamp), f"{slug}.pdf", "application/pdf",
-                           icon=":material/picture_as_pdf:", use_container_width=True)
+                           icon=":material/picture_as_pdf:", width="stretch")
 
     ui.section("Compare scenarios", "Total amount due at this price for every location, as a standard sale and as "
                                     "SaaS. Small figures show the difference from the scenario selected above.")

@@ -11,13 +11,13 @@ Rules the screen relies on:
   34 TAC §3.330). The State and local rates both apply to that 80%, never to the full price.
 - Each tax line is rounded half-up to the cent on its own and the total is the sum of the rounded
   lines, so the breakdown always adds up exactly. Money is ``Decimal``, never float.
-- The built-in location rates are examples to get started; a business outside city limits should
-  enter its own county and district rates as a custom location.
+- The two built-in locations (Standard Texas 8.25% and AFI at 6.75%) are permanent; any other business
+  outside city limits should enter its own county and district rates as a custom location.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 CENT = Decimal("0.01")
 STATE_RATE = Decimal("6.25")           # percent
@@ -35,6 +35,7 @@ class Location:
     district_rate: Decimal = Decimal("0")
     combined_local_rate: Decimal = Decimal("0")   # a single undivided local rate, e.g. the 2.00% default
     note: str = ""
+    county_name: str = "County"                   # how the county line is labelled, e.g. "Randall County"
 
     @property
     def local_rate(self) -> Decimal:
@@ -49,13 +50,15 @@ class Location:
         return self.local_rate > LOCAL_CAP
 
 
-# Example locations. "Standard" is the full 8.25% default; "Out of city limits" collects only State
-# plus an example county rate (0.50%).
+# Permanent locations. "Standard" is the full 8.25% default. AFI (the company this tool is built for) is outside
+# Amarillo city limits, so it collects State 6.25% plus Randall County 0.50% = 6.75% on a standard sale; the SaaS 80%
+# taxable base still applies to it like any other location.
 STANDARD = Location("Standard Texas (8.25%)", combined_local_rate=Decimal("2.00"),
                     note="Default: the maximum 2.00% local rate on top of the 6.25% State rate.")
-OUT_OF_CITY = Location("Out of city limits (county only)", county_rate=Decimal("0.50"),
-                       note="Business outside city limits: State and county tax only, no city or district tax.")
-PRESET_LOCATIONS: tuple[Location, ...] = (STANDARD, OUT_OF_CITY)
+AFI = Location("AFI (outside Amarillo city limits)", county_rate=Decimal("0.50"), county_name="Randall County",
+               note="AFI: outside Amarillo city limits, so State 6.25% + Randall County 0.50% = 6.75% on a standard "
+                    "sale. SaaS is still taxed on 80% of the price.")
+PRESET_LOCATIONS: tuple[Location, ...] = (STANDARD, AFI)
 
 
 @dataclass(frozen=True)
@@ -98,6 +101,23 @@ def to_cents(value) -> Decimal:
     return Decimal(str(value)).quantize(CENT, rounding=ROUND_HALF_UP)
 
 
+def parse_price(text) -> tuple[Decimal, str | None]:
+    """The price typed in the live field: (dollars, a problem message or None).
+
+    Blank is $0.00 with no message. Anything that is not a non-negative number is also $0.00, with a message, so the
+    screen never shows a result for text it could not read. ``$`` and thousands commas are ignored."""
+    cleaned = str(text or "").replace("$", "").replace(",", "").strip()
+    if not cleaned:
+        return Decimal("0.00"), None
+    try:
+        value = Decimal(cleaned)
+    except InvalidOperation:
+        return Decimal("0.00"), f'"{text}" is not a number, so the price is treated as $0.00.'
+    if not value.is_finite() or value < 0:
+        return Decimal("0.00"), "The price can't be negative or infinite, so it is treated as $0.00."
+    return to_cents(value), None
+
+
 def _line(label: str, rate: Decimal, taxable: Decimal, share: Decimal) -> TaxLine:
     return TaxLine(label, rate, rate * share, to_cents(taxable * rate / 100))
 
@@ -112,7 +132,7 @@ def calculate(price, location: Location, saas: bool) -> TaxResult:
     local = tuple(
         _line(label, rate, taxable, share)
         for label, rate in (("Local (city, county, districts)", location.combined_local_rate),
-                            ("City", location.city_rate), ("County", location.county_rate),
+                            ("City", location.city_rate), (location.county_name, location.county_rate),
                             ("Special district", location.district_rate))
         if rate > 0
     )
