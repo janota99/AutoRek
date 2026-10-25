@@ -297,6 +297,8 @@ class ReconciliationResult:
     qb_dispositions: pd.DataFrame = field(default_factory=pd.DataFrame)
     product_review_items: pd.DataFrame = field(default_factory=pd.DataFrame)
     customer_cases_without_bottles: dict[str, float] = field(default_factory=dict)
+    # Review aids for the unresolved items (same amount on the other side, age, concentration); read-only context.
+    open_item_insights: pd.DataFrame = field(default_factory=pd.DataFrame)
     # Evidence layer: identity-level export controls, and the reviewer layer.
     # Reviewer fields never overwrite engine classifications (see review_decisions).
     export_controls: pd.DataFrame = field(default_factory=pd.DataFrame)

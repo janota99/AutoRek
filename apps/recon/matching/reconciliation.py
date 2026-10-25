@@ -61,6 +61,7 @@ from .summaries import (
     build_product_summary,
     customer_cases_without_bottle_count,
 )
+from .open_items import build_open_item_insights
 from .validation import validate_reconciliation
 
 
@@ -759,6 +760,11 @@ def build_reconciliation(
         qb_dispositions=qb_dispositions,
         product_review_items=product_review_items,
         customer_cases_without_bottles=customer_cases_without_bottles,
+        open_item_insights=build_open_item_insights(
+            qb, inf, unmatched_qb, unmatched_inf,
+            fiscal_period=metadata.get("fiscal_period"), fiscal_year=fiscal_year,
+            customer_col=qb_mapping.get("customer"),
+        ),
     )
     validate_reconciliation(result)
     result.export_controls = assert_exportable(result)

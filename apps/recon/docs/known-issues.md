@@ -27,4 +27,4 @@ Confirm with the user before changing behavior. Some of these may be intentional
    open a generated workbook in Excel once before relying on them.
 7. **Same-amount, no-shared-reference rows are not matched.** On the sample files, 40 of 54 unmatched
    QuickBooks rows have an unconsumed Infinium row at the same amount (repeating price-list totals such as
-   3,505.70) with no shared PO or invoice. That is deliberate: equal amounts are not evidence.
+   3,505.70) with no shared PO or invoice. That is deliberate: equal amounts are not evidence. The Analytics tab's "Open items: review aids" counts and totals these rows for a reviewer without pairing any of them.

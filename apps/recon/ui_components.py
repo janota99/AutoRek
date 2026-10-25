@@ -709,6 +709,21 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
         with right:
             st.markdown("#### Exception analysis")
             st.dataframe(result.exception_analysis, width="stretch", hide_index=True)
+        insights = getattr(result, "open_item_insights", None)
+        if insights is not None and not insights.empty:
+            st.markdown("#### Open items: review aids")
+            st.caption(
+                "Context for whoever works the unresolved items. None of it creates or suggests a match: equal "
+                "amounts are not evidence, and every row below stays unresolved until a reference supports it."
+            )
+            st.dataframe(
+                insights, width="stretch", hide_index=True,
+                column_config={
+                    "Rows": st.column_config.NumberColumn(format="%d"),
+                    "Amount": st.column_config.NumberColumn(format="%.2f"),
+                    "Share of exceptions": st.column_config.NumberColumn(format="percent"),
+                },
+            )
         with st.expander("Normalization and assessment detail", expanded=False):
             st.dataframe(result.assessments, width="stretch", hide_index=True, height=320)
     with downloads_tab:

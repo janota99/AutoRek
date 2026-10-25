@@ -49,6 +49,7 @@ callers write `from .matching import build_reconciliation`, not the submodule pa
 | `dispositions` | Final QuickBooks dispositions, fuzzy-match review holds, historical clearances. |
 | `paired_rows` | The side-by-side paired-row table and per-match assessments. |
 | `summaries` | Method, product (with bottle counts and the items-needing-review list), and customer summaries; exception analysis; the controls table (integer-cent differences; the hold, duplicate, unresolved and Infinium-only checks take their figure from the disposition ledger or from the rows no bucket claimed, never from the list being checked; `tests/test_control_independence.py` proves each can fail). |
+| `open_items` | Review aids for the unresolved items, shown on the Analytics tab: unmatched rows with an unresolved row at the same amount on the other side (counts and dollars only, never a pairing; equal amounts are not evidence), age in fiscal periods back from the selected period, and unresolved QuickBooks value by customer. Read-only; `MATCHING_RULE_VERSION` does not depend on it. Tests: `tests/test_open_items.py`. |
 | `validation` | `validate_reconciliation`: end-of-run integrity checks. |
 | `reconciliation` | `build_reconciliation`: runs every step above in order. |
 
