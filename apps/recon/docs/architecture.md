@@ -3,8 +3,8 @@
 Recon reconciles a QuickBooks sales export against an Infinium export for a fiscal period.
 It can also use prior-period ("secondary"/historical) files to clear timing differences.
 
-It produces one accounting workpaper, `Sales_Reconciliation_<run>.xlsx`, with six sheets:
-Posting Summary, Reconciliation Detail, Unresolved Exceptions, Aggregates, Raw Data, and Audit & Controls.
+It produces one accounting workpaper, `Sales_Reconciliation_<run>.xlsx`, with seven sheets:
+Posting Summary, Reconciliation Detail, Unresolved Exceptions, Open Item Aids, Aggregates, Raw Data, and Audit & Controls.
 An optional legacy-format export, `Sales_Reconciliation_Legacy_<run>.xlsx`, is also available.
 
 ## Module map
@@ -14,6 +14,7 @@ An optional legacy-format export, `Sales_Reconciliation_Legacy_<run>.xlsx`, is a
 | `app.py` | Page flow only: uploads, worksheet/header-row selection, mapping, validation, the Run button. |
 | `uploads.py` | File hashing, `st.cache_data` wrappers around ingestion, the per-file dataset summary. |
 | `input_checks.py` | Pre-match input checks, added to the Source validation details table: every row below the header accounted for (used or removed, with the reason), the amount sitting in rows left out as subtotals, counts of blank / unreadable / zero amounts, credits, the same file uploaded twice, and a file already used in a saved run. Streamlit-free and read-only; only the row tie-out can FAIL. Period coverage stays in `render_source_period_alignment`. Tests: `tests/test_input_checks.py`. |
+| `late_entries.py` + `late_entries_ui.py` | The optional "Late and backdated entries" panel (Streamlit-free logic plus glue). Two read-only checks that change no row, control or workbook: (1) rows created after the end of an earlier fiscal period plus a visible number of close days (default 5), using the mapped transaction date, a chosen created-date column and the Workspace fiscal calendar (a row in a prior fiscal year is measured against the day before this year starts, the latest its period could have ended); (2) a comparison of an earlier export of the same period with the current one: rows added, missing, amount changed or date changed, and the change in the period total. A row is shown as "changed" only when it is the single leftover for its PO and invoice; otherwise it is listed as missing plus added. The earlier file is used for the session only and nothing is saved. Findings can be downloaded as CSV; they are not in the workbook yet. Tests: `tests/test_late_entries.py`. |
 | `run_status.py` | Streamlit-free wording for the status panel under the progress strip: upload blockers, a finished run's blockers (failed control, review hold), the figures compared between runs, and why a result was cleared. |
 | `ingestion.py` | Reading CSV/XLSX, header detection, subtotal-row filtering, column-mapping panels, source validation. |
 | `duplicates.py` | Duplicate detection, classification, and disposition. The lowest layer: imports nothing local. |
@@ -69,6 +70,7 @@ If a new shared constant would create an import cycle, put it in `core` or `labe
 | `detail` | The Reconciliation Detail sheet, paired display frames, row hyperlinks. |
 | `sheet_parts` | Reviewer-facing wording for duplicates, variances, and PO reuse; the KPI band; legends. |
 | `unresolved` | The Unresolved Exceptions sheet. Its summary rows (KPIs, reason codes, exceptions by fiscal period) form an Excel row group that's collapsed when the file opens. |
+| `open_items` | The Open Item Aids sheet: the same-amount, age and customer-concentration tables from `result.open_item_insights`, written as static values. Read by no other sheet. The legacy workbook does not have it. |
 | `summary_sheets` | The Posting Summary and Aggregates sheets. The legacy workbook reuses the Aggregates builder. |
 | `legacy` | The legacy-format workbook. |
 | `audit` | The Audit & Controls sheet: run identity, export controls (static vs live), reviewer adjustments, bridge. |

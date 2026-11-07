@@ -50,6 +50,7 @@ from apps.recon.ingestion import (
 from apps.recon.matching import APP_VERSION, MATCHING_RULE_VERSION, build_reconciliation
 from shared.auth_ui import render_sign_in
 from apps.recon.input_checks import SourceInput, build_input_checks
+from apps.recon.late_entries_ui import render_late_entry_checks
 from apps.recon.run_history import known_input_runs, record_run, render_history_panel, render_save_notice
 from apps.recon.run_status import (
     MONEY_KEYS,
@@ -758,6 +759,7 @@ def main() -> None:
             ),
         },
     )
+    render_late_entry_checks(qb_detail, inf_raw, qb_mapping, inf_mapping, fiscal_year, fiscal_period)
     if qb_secondary_detail is not None or inf_secondary_raw is not None:
         st.caption(
             "Secondary historical scope: "

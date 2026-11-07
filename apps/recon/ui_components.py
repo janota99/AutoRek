@@ -730,7 +730,7 @@ def render_result(result: ReconciliationResult, run_started: Optional[float] = N
         export_result = render_review_panel(result)
         st.markdown("#### Accounting workpaper")
         st.caption(
-            "Six sheets: Posting Summary, Reconciliation Detail, Unresolved Exceptions, Aggregates, "
+            "Seven sheets: Posting Summary, Reconciliation Detail, Unresolved Exceptions, Open Item Aids, Aggregates, "
             "Raw Data, and Audit & Controls."
         )
         if "primary_workbook" not in st.session_state:

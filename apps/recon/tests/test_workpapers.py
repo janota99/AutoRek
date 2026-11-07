@@ -30,6 +30,7 @@ EXPECTED_PRIMARY_SHEETS = [
     "Posting Summary",
     "Reconciliation Detail",
     "Unresolved Exceptions",
+    "Open Item Aids",
     "Aggregates",
     "Raw Data",
     "Audit & Controls",

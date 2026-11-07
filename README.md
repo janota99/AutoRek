@@ -128,8 +128,9 @@ Reconciles a QuickBooks sales export against an Infinium sales export for a fisc
 4. **Click "Run Reconciliation".**
 5. **Review the results tabs.** Then, in the Downloads tab, click **"Prepare Sales
    Reconciliation"** and download the workpaper (`Sales_Reconciliation_<run>.xlsx`).
-   It has five sheets: Posting Summary, Reconciliation Detail, Unresolved Exceptions,
-   Aggregates, and Raw Data. A legacy-format export is also available.
+   It has seven sheets: Posting Summary, Reconciliation Detail, Unresolved Exceptions,
+   Open Item Aids, Aggregates, Raw Data, and Audit & Controls. A legacy-format export is
+   also available.
 
 The Aggregates sheet shows case quantities and bottle counts by product and by customer. A
 product line the app can't size with certainty isn't guessed: it's listed under "Items needing

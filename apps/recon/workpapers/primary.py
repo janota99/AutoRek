@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from ..matching import assert_exportable, ReconciliationResult, validate_match_references
 from .audit import build_audit_sheet
 from .finishing import _apply_workbook_run_metadata, _save_workbook_bytes
+from .open_items import build_open_items_sheet
 from .raw_data import build_raw_data_sheet
 from .detail import (
     _link_reconciled_data_to_unresolved_exceptions,
@@ -30,10 +31,11 @@ def build_primary_workbook(result: ReconciliationResult) -> bytes:
     wb.properties.description = "Accounting workpaper generated from one controlled reconciliation run."
     # Creation order doubles as the final tab order (aside from Posting
     # Summary, moved to the front below): Reconciliation Detail, Unresolved
-    # Exceptions, Aggregates, Raw Data.
+    # Exceptions, Open Item Aids, Aggregates, Raw Data, Audit & Controls.
     build_reconciliation_detail_sheet(wb, result)
     build_unresolved_sheet(wb, result)
     _link_reconciled_data_to_unresolved_exceptions(wb, result)
+    build_open_items_sheet(wb, result)
     build_aggregates_sheet(wb, result, sheet_title="Aggregates")
     build_raw_data_sheet(wb, result)
     build_audit_sheet(wb, result)

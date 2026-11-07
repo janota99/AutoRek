@@ -55,10 +55,16 @@ def _same_amount_rows(side: str, frame: pd.DataFrame, indexes: list[int], other:
             continue
         (same if pool.get(cents) else different).append(cents)
     other_name = "Infinium" if side == "QuickBooks" else "QuickBooks"
+    gross = sum(abs(c) for c in same + different)           # shares are of the non-zero unmatched value on this side
+
+    def share(cents_list: list[int]) -> Optional[float]:
+        return sum(abs(c) for c in cents_list) / gross if gross else None
+
     return [
         _row(SECTION_SAME_AMOUNT, f"Unmatched {side} rows with an unresolved {other_name} row at the same amount", same,
-             note=SAME_AMOUNT_NOTE),
-        _row(SECTION_SAME_AMOUNT, f"Unmatched {side} rows with no unresolved {other_name} row at that amount", different),
+             share(same), SAME_AMOUNT_NOTE),
+        _row(SECTION_SAME_AMOUNT, f"Unmatched {side} rows with no unresolved {other_name} row at that amount",
+             different, share(different)),
     ]
 
 

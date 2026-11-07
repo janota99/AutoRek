@@ -25,6 +25,9 @@ RECONCILIATION_DETAIL_SHEET = "Reconciliation Detail"
 UNRESOLVED_EXCEPTIONS_SHEET = "Unresolved Exceptions"
 
 
+OPEN_ITEM_AIDS_SHEET = "Open Item Aids"
+
+
 def _fiscal_period_prefix(result: ReconciliationResult) -> str:
     """"FISCAL PERIOD 05 - 2026": the leading words of every main-sheet title,
     so a reviewer holding two runs of the same workbook open at once knows at
