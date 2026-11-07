@@ -100,3 +100,17 @@ def test_headline_falls_back_to_neutral_for_an_unknown_tone():
 def test_workflow_html_combines_strip_status_and_changes():
     html = wf.workflow_html([("A", "x"), ("B", "y")], 0, ["Fix it"], "Ready", changes=["c: 1 → 2 (+1)"])
     assert html.index("pp-wf-steps") < html.index("pp-wf-status") < html.index("pp-wf-changes")
+
+
+def test_an_active_step_outside_the_strip_is_refused_but_all_done_is_allowed():
+    with pytest.raises(ValueError):
+        wf.step_states(3, 4)
+    with pytest.raises(ValueError):
+        wf.step_states(3, -1)
+    assert wf.step_states(0, 0) == []
+    assert wf.step_states(3, 3) == ["complete"] * 3
+
+
+def test_a_figure_formatter_is_never_applied_to_a_text_status():
+    boom = lambda v: 1 / 0  # noqa: E731
+    assert wf.changes_since({"s": "PASS"}, {"s": "FAIL"}, {"s": "Controls"}, {"s": boom}) == ["Controls: PASS → FAIL"]
