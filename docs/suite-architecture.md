@@ -51,8 +51,10 @@ nothing, and every application stays open to anyone. Never describe it as access
 ### Real sign-in (optional, attribution only)
 
 Separate from the simulated sign-in above. With an `[auth]` block in `secrets.toml` (OpenID Connect; keys in
-`secrets.toml.example`) Streamlit's own `st.login` is available, and `shared/auth_ui.py:render_sign_in` draws a status line
-with Sign in / Sign out at the top of the Recon page (nothing is drawn without the block; a block missing keys names them).
+`secrets.toml.example`) Streamlit's own `st.login` is available, and `shared/auth_ui.py:render_sign_in` can draw a status line
+with Sign in / Sign out (nothing is drawn without the block; a block missing keys names them). **No page calls it today**:
+Recon's own copy was removed so the suite has one sign-in, the optional account strip. If real sign-in returns, call it
+once from the shared template (`apply_template`), never from a single app.
 
 - `shared/auth.py` decides who is **verified**: authenticated by the provider, email not reported unverified, and on the
   `[access]` allow-list (`emails` and/or `domains`). With no allow-list nobody is verified.

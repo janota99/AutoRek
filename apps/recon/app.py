@@ -48,7 +48,6 @@ from apps.recon.ingestion import (
     secondary_mapping_panel,
 )
 from apps.recon.matching import APP_VERSION, MATCHING_RULE_VERSION, build_reconciliation
-from shared.auth_ui import render_sign_in
 from apps.recon.input_checks import SourceInput, build_input_checks
 from apps.recon.late_entries_ui import render_late_entry_checks
 from apps.recon.run_history import known_input_runs, record_run, render_history_panel, render_save_notice
@@ -138,7 +137,6 @@ def main() -> None:
     # its final state is determined later in the application run.
     progress_container = st.container()
     status_container = st.container()  # what is blocking the next step; filled in wherever the run stops
-    render_sign_in()  # only when [auth] is configured
     render_history_panel()  # the team's saved runs; draws nothing until a database is configured
 
     render_section_heading(
