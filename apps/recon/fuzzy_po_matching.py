@@ -205,12 +205,41 @@ def _build_candidate_edges(
     max_days_variance: int,
     *,
     match_fn: Callable[[frozenset[str], frozenset[str]], bool],
+    shares_a_token: bool = False,
 ) -> list[tuple[int, int]]:
     """Build candidate (qidx, iidx) edges that pass the temporal check and
     ``match_fn`` on the two rows' PO_TOKENS. Shared with the vendor-alias
     pass (see vendor_aliases.py) so every text-driven matching pass runs
     through the exact same graph-building and component-acceptance logic
-    -- one implementation to keep correct, not two that could drift apart."""
+    -- one implementation to keep correct, not two that could drift apart.
+
+    ``shares_a_token=True`` is only for a ``match_fn`` that cannot be true
+    unless the two rows have at least one PO word in common (the exact
+    whole-word containment rule). Each QuickBooks row is then compared only
+    with the Infinium rows holding one of its words, in the same order as a
+    full scan, so the edges are the ones the full scan would have found."""
+    # Read each column once: a pandas ``.at`` per pair is what made this
+    # quadratic scan slow, not the comparison itself.
+    i_amounts = [inf.at[iidx, AMOUNT_CENTS] for iidx in i_rows]
+    i_token_sets = [inf.at[iidx, PO_TOKENS] for iidx in i_rows]
+    i_usable = [not pd.isna(a) and bool(t) for a, t in zip(i_amounts, i_token_sets)]
+
+    use_dates = bool(qb_date_col) and inf_date_col is not None
+    i_dates: dict[int, Any] = {}   # parsed on first use, as the per-pair parse was
+
+    def infinium_date(pos: int) -> Any:
+        if pos not in i_dates:
+            i_dates[pos] = pd.to_datetime(inf.at[i_rows[pos], inf_date_col])
+        return i_dates[pos]
+
+    by_token: dict[str, list[int]] = defaultdict(list)
+    if shares_a_token:
+        for pos, tokens in enumerate(i_token_sets):
+            if i_usable[pos]:
+                for token in tokens:
+                    by_token[token].append(pos)
+
+    all_positions = range(len(i_rows))
     edges: list[tuple[int, int]] = []
     for qidx in q_rows:
         qamount = qb.at[qidx, AMOUNT_CENTS]
@@ -220,21 +249,24 @@ def _build_candidate_edges(
 
         q_date = pd.to_datetime(qb.at[qidx, qb_date_col]) if qb_date_col else None
 
-        for iidx in i_rows:
-            iamount = inf.at[iidx, AMOUNT_CENTS]
-            i_tokens = inf.at[iidx, PO_TOKENS]
-            if pd.isna(iamount) or not i_tokens:
+        if shares_a_token:
+            positions = sorted({pos for token in q_tokens for pos in by_token.get(token, ())})
+        else:
+            positions = all_positions
+
+        for pos in positions:
+            if not i_usable[pos]:
                 continue
 
             # Temporal Anchor constraint
-            if q_date is not None and inf_date_col is not None:
-                i_date = pd.to_datetime(inf.at[iidx, inf_date_col])
+            if q_date is not None and use_dates:
+                i_date = infinium_date(pos)
                 if pd.notna(q_date) and pd.notna(i_date):
                     if abs((q_date - i_date).days) > max_days_variance:
                         continue
 
-            if match_fn(q_tokens, i_tokens):
-                edges.append((qidx, iidx))
+            if match_fn(q_tokens, i_token_sets[pos]):
+                edges.append((qidx, i_rows[pos]))
 
     return edges
 
@@ -353,6 +385,7 @@ def find_fuzzy_po_matches(
     exact_edges = _build_candidate_edges(
         qb, inf, q_rows, i_rows, qb_date_col, inf_date_col, max_days_variance,
         match_fn=lambda a, b: is_fuzzy_po_match(a, b, allow_near_miss=False),
+        shares_a_token=True,   # whole-word containment needs a common word
     )
     accepted_groups = _resolve_components(qb, inf, exact_edges)
 
@@ -379,14 +412,18 @@ def find_controlled_typo_matches(
     typo_words: dict[tuple[int, int], tuple[str, str]] = {}
     q_rows = sorted(remaining_q, key=lambda idx: qb.at[idx, SOURCE_POS])
     i_rows = sorted(remaining_i, key=lambda idx: inf.at[idx, SOURCE_POS])
+    # Only rows with exactly the same amount can pair, so bucket the Infinium
+    # rows by cents once (keeping source order) instead of scanning all of them.
+    i_by_amount: dict[int, list[tuple[int, frozenset[str]]]] = defaultdict(list)
+    for iidx in i_rows:
+        i_amount, i_tokens = inf.at[iidx, AMOUNT_CENTS], inf.at[iidx, PO_TOKENS]
+        if not pd.isna(i_amount) and i_tokens:
+            i_by_amount[int(i_amount)].append((iidx, i_tokens))
     for qidx in q_rows:
         q_amount, q_tokens = qb.at[qidx, AMOUNT_CENTS], qb.at[qidx, PO_TOKENS]
         if pd.isna(q_amount) or not q_tokens:
             continue
-        for iidx in i_rows:
-            i_amount, i_tokens = inf.at[iidx, AMOUNT_CENTS], inf.at[iidx, PO_TOKENS]
-            if pd.isna(i_amount) or not i_tokens or int(q_amount) != int(i_amount):
-                continue
+        for iidx, i_tokens in i_by_amount.get(int(q_amount), ()):
             pair = controlled_typo_pair(q_tokens, i_tokens)
             if pair is not None:
                 q_candidates[qidx].append(iidx)

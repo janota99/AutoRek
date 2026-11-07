@@ -256,3 +256,22 @@ def test_recurring_name_with_two_equal_ties_stays_ambiguous():
     )
     groups = find_fuzzy_po_matches(qb, inf, {0}, {0, 1, 2})
     assert groups == []
+
+
+def test_token_index_finds_the_same_edges_as_a_full_scan():
+    """shares_a_token is a speedup only: it must return exactly the edges of the full pair-by-pair scan, in order."""
+    from apps.recon.fuzzy_po_matching import _build_candidate_edges
+    pos = ["TIM FERRIS", "PRIME STAINLESS TIM FERRIS", "HOPPER", "DAVID HOPPER LLC", "", "FERRIS", "ELLIOT FARMS"]
+    frames = []
+    for offset in (0, 3):
+        frame = pd.DataFrame({"P": pos[offset:] + pos[:offset], AMOUNT_CENTS: [100] * len(pos),
+                              SOURCE_POS: range(len(pos))})
+        frame[PO_TOKENS] = frame["P"].map(significant_po_tokens)
+        frames.append(frame)
+    qb, inf = frames
+    rows = list(range(len(pos)))
+    def match(a, b):
+        return is_fuzzy_po_match(a, b, allow_near_miss=False)
+    full = _build_candidate_edges(qb, inf, rows, rows, None, None, 30, match_fn=match)
+    indexed = _build_candidate_edges(qb, inf, rows, rows, None, None, 30, match_fn=match, shares_a_token=True)
+    assert full and indexed == full
