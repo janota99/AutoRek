@@ -1,3 +1,4 @@
+
 /*
  * Personal dashboard page: sign-in, role-based dashboard, and (for
  * administrators) the access list.
@@ -9,6 +10,17 @@
  *
  * PROTOTYPE ONLY: this runs in the browser, so it demonstrates the experience
  * but does not enforce privacy. See hub-access.js.
+ *
+ * Responsibilities:
+ *   1. Prepare role-specific summaries from the workflow and mailbox modules.
+ *   2. Render queues, filters, pagination, invoice details, and audit history.
+ *   3. Delegate all workflow mutations and access-list changes to their engines.
+ *   4. Clear per-user browser state when the visible session changes.
+ *
+ * SECURITY: Filtering records in JavaScript is not authorization. A production
+ * service must authenticate requests and enforce record- and action-level
+ * permissions on the server. Never send all invoices to a browser and rely
+ * on buildDashboard() to hide rows the user should not see.
  */
 (function () {
   'use strict';
@@ -18,6 +30,12 @@
 
   var STAGE_ALERT_DAYS = 5;   // held this long with the same owner -> flagged
   var AGED_DAYS = 30;         // total age past this -> flagged
+  var DAY_MS = 24 * 60 * 60 * 1000;
+  var TIME_ZONE = 'America/Chicago';
+  var KNOWN_ROLES = ['ap', 'ar', 'approver', 'gl', 'office', 'admin'];
+
+  // Increment to invalidate callbacks from earlier sign-ins or mailbox loads.
+  var sessionGeneration = 0;
 
   var currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -38,7 +56,12 @@
 
   // The hour (0-23) on a US Central clock, whatever timezone the visitor's device is in.
   // "America/Chicago" follows daylight saving, so it matches Central clocks all year.
-  var centralClock = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', hourCycle: 'h23' });
+  var centralClock = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE, hour: 'numeric', hourCycle: 'h23'
+  });
+  var centralDate = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+  });
 
   function centralHour(date) {
     return Number(centralClock.format(date));
@@ -54,12 +77,21 @@
 
   /* ---------- aging ---------- */
 
-  function startOfDay(d) {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  // Convert a timestamp to a calendar-day number in Central Time.
+  // Constructing the UTC day number from Central calendar parts avoids the
+  // 23-hour/25-hour difference across daylight-saving transitions.
+  function centralDayNumber(date) {
+    var value = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(value.getTime())) return NaN;
+    var parts = centralDate.formatToParts(value);
+    var values = {};
+    parts.forEach(function (part) { values[part.type] = part.value; });
+    return Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)) / DAY_MS;
   }
 
   function daysSince(date) {
-    return Math.max(0, Math.round((startOfDay(new Date()) - startOfDay(date)) / 86400000));
+    var elapsed = centralDayNumber(new Date()) - centralDayNumber(date);
+    return Number.isFinite(elapsed) ? Math.max(0, elapsed) : 0;
   }
 
   function withAging(invoice) {
@@ -73,6 +105,8 @@
   /* ---------- the seam: what this user is allowed to see ---------- */
 
   function buildDashboard(user) {
+    // The backend must already have authorized the source records. This
+    // client-side role filtering is a prototype presentation convenience.
     var all = Hub.Workflow.invoices().map(withAging);
     var isAged = function (r) { return r.ageDays > AGED_DAYS; };
     var isHeld = function (r) { return r.stageDays > STAGE_ALERT_DAYS; };
@@ -154,7 +188,7 @@
           ]
         };
 
-      default: // admin: organization-wide totals only, no individual invoice or user dashboards
+      case 'admin': // Aggregate-only administrator view; never expose invoice rows.
         return {
           intro: 'Organization-wide totals and the access list. Individual dashboards stay private to each person.',
           tableTitle: null,
@@ -166,6 +200,10 @@
             { label: 'Aged over ' + AGED_DAYS + ' days', value: count(all, isAged), note: 'across both queues', tone: count(all, isAged) ? 'alert' : '' }
           ]
         };
+
+      default:
+        // Fail closed: an unsupported role must never inherit administrator data.
+        throw new Error('Unsupported dashboard role.');
     }
   }
 
@@ -224,9 +262,17 @@
   };
 
   // allRows: every row this user may see. shown: the filtered, sorted rows (all pages). The detail view
-  // only ever reads from these, so it cannot reach anything outside the user's scope.
+  // only ever reads from these, so it cannot reach anything outside of the user's scope.
   // selected: ids ticked in the table (kept while paging and filtering). lineage: PDF name -> emails it came from.
-  var queue = { allRows: [], shown: [], emptyMessage: '', user: null, page: 1, pageSize: 10, selected: {}, lineage: {}, focusKey: null };
+  // Object.create(null) prevents record IDs such as "__proto__" from
+  // colliding with inherited object properties during selection/lookup.
+  function emptyIndex() { return Object.create(null); }
+
+  var queue = {
+    allRows: [], shown: [], emptyMessage: '', user: null,
+    page: 1, pageSize: 10, selected: emptyIndex(),
+    lineage: emptyIndex(), focusKey: null
+  };
 
   function currentFilters() {
     return { q: $('filterSearch').value.trim().toLowerCase(), stage: $('filterStage').value, aging: $('filterAging').value, sort: $('filterSort').value };
@@ -242,11 +288,14 @@
 
   function docKey(name) { return String(name || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
 
-  // Every email in this person's mailbox that carries each PDF name, oldest first.
+  // Emails sharing each normalized attachment filename, oldest first.
+  // Note: matching names can collide; do not use this as a unique audit key.
   function buildLineage(user) {
-    var index = {};
+    // Filename association is a convenient hint, not proof that two files
+    // represent the same invoice. A production system needs immutable IDs.
+    var index = emptyIndex();
     Hub.Mail.messages(user).forEach(function (msg) {
-      var seen = {};
+      var seen = emptyIndex();
       msg.attachments.forEach(function (a) {
         var key = docKey(a.name);
         if (seen[key]) return;
@@ -260,6 +309,7 @@
 
   function canSelect() { return !!queue.user && Hub.Workflow.canEverAct(queue.user.role); }
   function selectedRows() { return queue.allRows.filter(function (r) { return queue.selected[r.id]; }); }
+  
   function currentPageRows() {
     var start = (queue.page - 1) * queue.pageSize;
     return queue.shown.slice(start, start + queue.pageSize);
@@ -269,7 +319,14 @@
   function setupQueue(dashboard, user, keepFilters) {
     var panel = $('queuePanel');
     panel.hidden = !dashboard.rows;
-    if (!dashboard.rows) { queue.allRows = []; queue.shown = []; queue.user = null; queue.selected = {}; return; }
+    if (!dashboard.rows) {
+      queue.allRows = [];
+      queue.shown = [];
+      queue.user = null;
+      queue.selected = emptyIndex();
+      queue.lineage = emptyIndex();
+      return;
+    }
 
     $('queueTitle').textContent = dashboard.tableTitle;
     $('partyHeading').textContent = dashboard.columns.party;
@@ -281,7 +338,7 @@
     if (!keepFilters) queue.page = 1;
 
     // A selected bill that has left this person's list (for example after it was approved) is no longer selected.
-    var present = {};
+    var present = emptyIndex();
     dashboard.rows.forEach(function (r) { present[r.id] = true; });
     Object.keys(queue.selected).forEach(function (id) { if (!present[id]) delete queue.selected[id]; });
 
@@ -291,7 +348,7 @@
     // Filter choices come from this user's own rows, in workflow order.
     var stageSelect = $('filterStage');
     stageSelect.length = 1;
-    var stagesPresent = {};
+    var stagesPresent = emptyIndex();
     dashboard.rows.forEach(function (r) { stagesPresent[r.type + '|' + r.stage] = true; });
     var type = dashboard.rows.length ? dashboard.rows[0].type : null;
     (type ? Hub.STAGES[type] : []).forEach(function (s) {
@@ -525,7 +582,7 @@
     renderQueue();
   });
   $('bulkClear').addEventListener('click', function () {
-    queue.selected = {};
+    queue.selected = emptyIndex();
     renderQueue();
   });
 
@@ -563,6 +620,7 @@
     Hub.InboxUI.render(admin ? null : user, {
       rows: queue.allRows,
       openInvoice: openDetailById,
+      
       requireUser: requireUser,
       // Called after a rule is added or removed, so the summary figures above redraw too.
       changed: function () { var current = Access.currentUser(); if (current) renderDashboard(current, true); }
@@ -702,8 +760,16 @@
   function performAction(key) {
     var user = requireUser();
     if (!user) return;
-    var r = queue.allRows.filter(function (x) { return x.id === detail.id; })[0];
+    var r = queue.allRows.find(function (x) { return x.id === detail.id; });
     if (!r) return;
+
+    // Re-check available actions against the latest session and record state.
+    // The workflow engine must independently validate every mutation.
+    if (Hub.Workflow.availableActions(user, r).indexOf(key) === -1) {
+      renderDashboard(user, true);
+      showActionStatus('This action is no longer available. Refresh the invoice and try again.', 'warning');
+      return;
+    }
 
     var rule = Hub.Workflow.ACTIONS[key];
     var note = $('actionNote').value;
@@ -792,12 +858,19 @@
       li.appendChild(el('span', 'lineage-meta', 'From ' + m.from.split(' <')[0] + ' · ' + formatDate(m.receivedOn) + ' · ' + m.folder));
       if (m.to) li.appendChild(el('span', 'lineage-meta', 'To ' + m.to.split('; ').map(function (p) { return p.split(' <')[0]; }).join(', ')));
       if (m.webLink) {
-        hasLink = true;
         var link = el('a', 'lineage-link', 'Open in Outlook');
-        link.href = m.webLink;        // only secure links get this far (see hub-mail.js)
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        li.appendChild(link);
+        // Validate again at the DOM boundary even though hub-mail.js
+        // normally supplies trusted Outlook links.
+        var targetUrl;
+        try { targetUrl = new URL(m.webLink, window.location.href); }
+        catch (error) { targetUrl = null; }
+        if (targetUrl && targetUrl.protocol === 'https:') {
+          hasLink = true;
+          link.href = targetUrl.href;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          li.appendChild(link);
+        }
       }
       list.appendChild(li);
     });
@@ -809,6 +882,9 @@
   lineageDialog.addEventListener('click', function (event) { if (event.target === lineageDialog) lineageDialog.close(); });
 
   /* ---------- bulk actions ---------- */
+
+  // Bulk actions are best-effort: a bill may advance in another session while
+  // this dialog is open. The engine reports per-record failures for review.
 
   var bulkDialog = $('bulkDialog');
   var bulk = { key: null, items: [] };
@@ -850,6 +926,7 @@
     $('bulkConfirm').className = 'button ' + (key === 'reject' ? 'button-danger' : 'button-primary');
     showBulkError('');
     $('bulkForm').hidden = false;
+    
     $('bulkResult').hidden = true;
     if (!bulkDialog.open) bulkDialog.showModal();
   }
@@ -857,6 +934,13 @@
   $('bulkConfirm').addEventListener('click', function () {
     var user = requireUser();
     if (!user) return;
+    // A batch may have become stale since the confirmation dialog opened.
+    // Each mutation must still be authorized and validated by the engine.
+    var currentRows = selectedRows();
+    if (commonActions(currentRows).indexOf(bulk.key) === -1) {
+      showBulkError('These bills no longer share the selected action. Refresh the selection.');
+      return;
+    }
     var rule = Hub.Workflow.ACTIONS[bulk.key];
     var result = Hub.Workflow.actMany(user.email, bulk.items, bulk.key, $('bulkNoteInput').value);
     if (!result.ok) {
@@ -939,9 +1023,10 @@
     queue.allRows = [];
     queue.shown = [];
     queue.user = null;
-    queue.selected = {};
-    queue.lineage = {};
+    queue.selected = emptyIndex();
+    queue.lineage = emptyIndex();
     queue.page = 1;
+    queue.focusKey = null;
     closeBulk();
     lineageDialog.close();
     $('bulkBar').hidden = true;
@@ -969,6 +1054,8 @@
   }
 
   function showSignIn(message) {
+    // Invalidate asynchronous callbacks from any previously visible session.
+    sessionGeneration += 1;
     closeDetail();
     clearPersonalData();
     dashboardView.hidden = true;
@@ -980,16 +1067,35 @@
   }
 
   function showDashboard(user) {
+    // Unknown roles are rejected before building any dashboard content.
+    if (!user || KNOWN_ROLES.indexOf(user.role) === -1) {
+      showSignIn('This account has no supported dashboard role.');
+      return;
+    }
+
+    var generation = ++sessionGeneration;
     signInView.hidden = true;
     dashboardView.hidden = false;
-    // Start reading the person's mail first, so the page can say "loading" while it waits.
+
+    // Start loading mailbox data while displaying the initial dashboard.
+    // Both the generation and the user identity must still match when it ends.
     var loading = user.role === 'admin' ? null : Hub.Mail.load(user);
     renderDashboard(user);
     $('dashboardHeading').focus();
+
     if (loading) {
-      loading.then(function () {
+      Promise.resolve(loading).then(function () {
         var current = Access.currentUser();
-        if (current && current.email === user.email) renderDashboard(current, true); // fill in the mail figures
+        if (generation !== sessionGeneration || !current) return;
+        if (current.email !== user.email || current.role !== user.role) return;
+        renderDashboard(current, true);
+      }).catch(function (error) {
+        if (generation !== sessionGeneration) return;
+        // Preserve the rest of the dashboard when the mailbox is unavailable.
+        // A production implementation should show a dedicated retry control.
+        console.error('Mailbox loading failed:', error);
+        $('pageStatus').textContent = 'Mailbox information could not be loaded. Please try again.';
+        $('pageStatus').hidden = false;
       });
     }
   }
@@ -999,7 +1105,14 @@
   // Re-check on every action so a person removed in another tab loses access at once.
   function requireUser() {
     var user = Access.currentUser();
-    if (!user) showSignIn('Your session ended or your access was removed. Please sign in again.');
+    if (!user) {
+      showSignIn('Your session ended or your access was removed. Please sign in again.');
+      return null;
+    }
+    if (KNOWN_ROLES.indexOf(user.role) === -1) {
+      showSignIn('Your account does not have a supported dashboard role.');
+      return null;
+    }
     return user;
   }
 
@@ -1091,6 +1204,9 @@
 
   /* ---------- initial render ---------- */
 
+  // Keep initialization last: every referenced helper and event handler is
+  // registered before restoring the existing session, if one is present.
+
   function renderSignInHelp() {
     var help = $('demoHelp');
     if (!Hub.SHOW_DEMO_HINTS) return;
@@ -1111,3 +1227,5 @@
   var existing = Access.currentUser();
   if (existing) showDashboard(existing); else showSignIn('');
 })();
+
+
