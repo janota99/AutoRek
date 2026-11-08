@@ -6,6 +6,7 @@ and a database failure never stops or changes a reconciliation. It reads results
 """
 from __future__ import annotations
 
+import time
 from typing import Any, Optional
 
 import pandas as pd
@@ -23,6 +24,31 @@ from .utils import format_central_timestamp
 DB_WAIT_SECONDS = 4          # a history list must never hold the page up
 _SAVED_KEY = "recon_saved_runs"      # run_ref -> run_id, for this browser session
 _NOTICE_KEY = "recon_run_save_notice"
+_LOADED_KEY = "recon_history_loaded"  # the history is read only after someone asks for it
+
+# A database that does not answer costs several seconds per attempt, and a Streamlit page re-runs on every click.
+# After one failed read, reads skip the database for this long instead of making every rerun wait again.
+# Saving a run is never skipped: it is one deliberate action and should always try.
+UNREACHABLE_RETRY_SECONDS = 120
+_unreachable_until = 0.0
+
+
+def _recently_unreachable() -> bool:
+    return time.monotonic() < _unreachable_until
+
+
+def _note_unreachable() -> None:
+    global _unreachable_until
+    _unreachable_until = time.monotonic() + UNREACHABLE_RETRY_SECONDS
+
+
+def _note_reachable() -> None:
+    global _unreachable_until
+    _unreachable_until = 0.0
+
+
+_UNREACHABLE_TEXT = ("the database did not answer; history is paused for a couple of minutes so the page stays fast. "
+                     "Check the [database] block in .streamlit/secrets.toml, or remove it if you are not using history")
 
 
 def _config() -> Optional[DatabaseConfig]:
@@ -73,12 +99,15 @@ def known_input_runs(hashes: tuple[str, ...]) -> dict[str, str]:
 
     Cached for two minutes so the page's many reruns do not each wait on the database."""
     config = _config()
-    if config is None:
+    if config is None or _recently_unreachable():
         return {}
     try:
         with tenant_connection(config, connect_timeout=DB_WAIT_SECONDS) as conn:
-            return run_store.runs_using_hashes(conn, list(hashes))
+            found = run_store.runs_using_hashes(conn, list(hashes))
+        _note_reachable()
+        return found
     except Exception:  # noqa: BLE001 - a missing history only means no "used before" notes
+        _note_unreachable()
         return {}
 
 
@@ -134,11 +163,27 @@ def render_history_panel() -> None:
     config = _config()
     if config is None:
         return
-    with st.expander("Run history", expanded=False):
+    loaded = bool(st.session_state.get(_LOADED_KEY))
+    with st.expander("Run history", expanded=loaded):
+        # Nothing touches the database until someone asks: opening the page never waits on it.
+        if not loaded:
+            st.caption("Saved runs load when you ask, so this page opens without waiting on the database.")
+            if st.button("Load run history", key="recon_history_load"):
+                st.session_state[_LOADED_KEY] = True
+                st.rerun()
+            return
+        if _recently_unreachable():
+            st.caption(f"Run history could not be read right now ({_UNREACHABLE_TEXT}).")
+            if st.button("Try again", key="recon_history_retry"):
+                _note_reachable()
+                st.rerun()
+            return
         try:
             with tenant_connection(config, connect_timeout=DB_WAIT_SECONDS) as conn:
                 runs = run_store.list_runs(conn, limit=100)
+            _note_reachable()
         except Exception as exc:  # noqa: BLE001
+            _note_unreachable()
             st.caption(f"Run history could not be read right now ({_reason(exc)}).")
             return
         if not runs:
