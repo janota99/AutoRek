@@ -7,6 +7,7 @@ import streamlit as st
 from shared import fiscal_session
 
 from .fifo_layer_store import SNAPSHOT_DIR
+from .intake import calendar_applies
 from .user_inputs import OPENING_SEED_FISCAL_YEAR, PERIOD_12_OPENING_LAYERS
 
 
@@ -27,8 +28,16 @@ def render_sidebar(layer_store):
         fiscal_year = int(st.number_input("Fiscal Year", min_value=2000, max_value=2200, step=1,
                                           key="fifo_fiscal_year"))
         current_period = st.selectbox("Select Fiscal Period", range(1, 14), key="fifo_fiscal_period")
-        period_end_date = st.date_input("Fiscal Period End Date", key="fifo_period_end",
-                                        help="Used for reproducible FIFO layer aging.")
+        calendar = fiscal_session.get_calendar()
+        if calendar_applies(calendar, fiscal_year):
+            # The fiscal calendar already says when the period ends; no second date to keep in step.
+            period_end_date = calendar.period_ends[int(current_period) - 1]
+            st.caption(f"Period ends {period_end_date:%b %d, %Y} (from the fiscal calendar on the Workspace page).")
+        else:
+            period_end_date = st.date_input(
+                "Fiscal Period End Date", key="fifo_period_end",
+                help="No fiscal calendar covers this fiscal year, so the end date is entered here. It also "
+                     "dates FIFO layer aging.")
 
         last_closed = st.session_state.get('fifo_last_closed_period')
         saved_snapshots = layer_store.list_snapshot_files()

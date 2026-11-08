@@ -22,7 +22,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from .user_inputs import ENGINE_VERSION, QTY_TOLERANCE, VALUE_TOLERANCE
+from .user_inputs import ENGINE_VERSION, INPUT_PROCESSING_VERSION, QTY_TOLERANCE, VALUE_TOLERANCE
 from .ingestion import _finite_number, _excel_safe_text
 from .excel_export import _parse_layer_date, _check_chronology, _compute_summary_control_status
 from .fifo_layer_store import _canonicalize_layer
@@ -46,6 +46,7 @@ def _dataframe_digest(df, columns=None):
 def _build_run_signature(fiscal_year, period, as_of_date, master_grid, receipts_df):
     payload = {
         'engine_version': ENGINE_VERSION,
+        'input_processing_version': INPUT_PROCESSING_VERSION,
         'fiscal_year': int(fiscal_year),
         'period': int(period),
         'as_of_date': as_of_date.isoformat(),
@@ -396,8 +397,19 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
             if not alias_found:
                 raise ValueError("Product alias was not found in the Master Grid.")
 
-            expected_beg_qty = _finite_number(prod_rows.iloc[0][beginning_col], f"Alias {alias} beginning quantity")
-            ending_qty = _finite_number(prod_rows.iloc[0][ending_col], f"Alias {alias} ending quantity")
+            if beginning_col in master_grid.columns:
+                expected_beg_qty = _finite_number(prod_rows.iloc[0][beginning_col], f"Alias {alias} beginning quantity")
+            else:
+                # No beginning column supplied: the beginning balance is what the last closed period
+                # left in the layers, so there is nothing to disagree with.
+                expected_beg_qty = layer_store.current_qty(alias)
+            raw_ending = prod_rows.iloc[0][ending_col]
+            # A blank ending cell means no count was supplied (carry forward, zero usage). An explicit 0
+            # is a count of zero and depletes the layers. Never the other way round.
+            no_count = raw_ending is None or (isinstance(raw_ending, str) and not raw_ending.strip()) or (
+                not isinstance(raw_ending, str) and pd.isna(raw_ending))
+            if not no_count:
+                ending_qty = _finite_number(raw_ending, f"Alias {alias} ending quantity")
 
             beginning_layers = layer_store.sync_beginning(alias, expected_beg_qty)
             actual_beg_qty = sum(_canonicalize_layer(l)['qty'] for l in beginning_layers)
@@ -409,6 +421,9 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
             product_receipts = (
                 receipts_df[receipts_df['PRODUCT ALIAS'] == alias] if not receipts_df.empty else pd.DataFrame()
             )
+            if no_count:
+                received = sum(_finite_number(q, "Receipt quantity") for q in product_receipts['QUANTITY'])                     if not product_receipts.empty else 0.0
+                ending_qty = actual_beg_qty + received
             on_hand, depleted, raw_receipts, metrics = calculate_fifo(
                 beginning_layers, product_receipts, ending_qty,
                 period=current_period, fiscal_year=fiscal_year, as_of_date=as_of_date,
@@ -418,7 +433,7 @@ def stage_batch_calculation(products, master_grid, receipts_df, layer_store, fis
                 'receivings': raw_receipts, 'depleted': depleted, 'on_hand': on_hand,
                 'beg_variance_qty': beg_variance_qty, 'beg_variance_val': beg_variance_val,
                 'alias_found': alias_found, 'alias_ambiguous': alias_ambiguous,
-                'processing_error': None,
+                'processing_error': None, 'ending_carried_forward': no_count,
             }
             staged_layers[alias] = copy.deepcopy(on_hand)
         except Exception as exc:

@@ -54,3 +54,13 @@ Styling constants (`COLOR_*`, `FONT_*`, `FILL_*`, `FMT_*`) sit at the top of
 `excel_export.py` and are reused by `upload_templates.py`. The navy `#0B3350`
 matches the page styling in `shared/styles/pages/fifo.css`. Excel table `displayName`s must be unique and use only
 valid identifier characters.
+
+
+## Workpaper sheets (slice 2)
+
+With a context, `export_master_excel` (`workpaper.py`) adds, in front of the older sheets: **Checks** (overall status, the
+tie-outs, only genuine exceptions, how the source was read, versions), **Period End Summary** (every material by fiscal period:
+ending quantity and value, purchases, usage, unit cost on hand, with category totals; closed periods use saved figures, this
+period is calculated, unprocessed periods are blank) and **Receipts** (every receipt recognized this period, as reported, late
+ones marked). Order: Checks, Executive Summary, Summary, Period End Summary, Receipts, Input Exceptions, one sheet per material.
+A material with no count says so on its own sheet. Without a context the report is unchanged.

@@ -21,7 +21,7 @@ in-memory working state — disk is the durability layer underneath it.
 import copy
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import streamlit as st
@@ -362,6 +362,16 @@ class FIFOLayerStore:
             rows.append(row)
         return rows
 
+    def last_closed_as_of(self):
+        """The as-of (period end) date of the most recently closed period, or None."""
+        history = st.session_state.get('fifo_period_history', [])
+        if not history:
+            return None
+        try:
+            return datetime.fromisoformat(str(history[-1].get('as_of_date'))).date()
+        except (TypeError, ValueError):
+            return None
+
     @staticmethod
     def period_key(fiscal_year, period):
         return f"FY{int(fiscal_year)}-P{int(period):02d}"
@@ -384,8 +394,42 @@ class FIFOLayerStore:
             return f"The next allowable period is {expected_key}; restore or reopen the latest period before processing another period."
         return None
 
+    # ------------------------------------------------------------------
+    # Receipt register
+    # ------------------------------------------------------------------
+    # Every closed period records the receipts it recognized (``recognized_receipts``), exactly as reported,
+    # including those later consumed in full, so "already processed" never depends on what is left in the
+    # layers. The register is the union over closed periods, so reopening a period releases its receipts
+    # and a snapshot restore restores the register with the history. Periods closed before this existed
+    # carry none; ``receipt_cutoff`` is set by the first period that does.
+
+    def receipt_register(self):
+        entries = []
+        for record in st.session_state.get('fifo_period_history', []):
+            entries.extend(copy.deepcopy(record.get('recognized_receipts') or []))
+        return entries
+
+    def receipt_cutoff(self):
+        """The explicit receipt cutoff: the day the opening layers describe. Set by the first period closed with a
+        register and never changed after; None until then."""
+        for record in st.session_state.get('fifo_period_history', []):
+            if record.get('receipt_cutoff'):
+                try:
+                    return datetime.fromisoformat(str(record['receipt_cutoff'])).date()
+                except ValueError:
+                    continue
+        return None
+
+    def cutoff_layers(self):
+        """The opening layers at the cutoff: the beginning layers of the first period closed with a register,
+        else the layers as they are now (nothing has been closed with one yet)."""
+        for record in st.session_state.get('fifo_period_history', []):
+            if record.get('receipt_cutoff'):
+                return {int(k): copy.deepcopy(v) for k, v in (record.get('beginning_layers') or {}).items()}
+        return self.all_layers()
+
     def commit_period(self, fiscal_year, period, staged_layers, run_signature, control_counts, as_of_date,
-                       product_period_summary=None):
+                       product_period_summary=None, recognized_receipts=None, receipt_cutoff=None):
         """`product_period_summary`, if provided, is a per-alias dict of this
         period's roll-forward figures (beginning/purchases/usage/ending qty
         and value) as computed by the staged preview at commit time. It is
@@ -427,6 +471,11 @@ class FIFOLayerStore:
             'value_variance': self.all_value_variances(),
             'product_period_summary': copy.deepcopy(product_period_summary) if product_period_summary else {},
         }
+        if recognized_receipts is not None:
+            record['recognized_receipts'] = copy.deepcopy(recognized_receipts)
+            existing = self.receipt_cutoff()
+            used = existing or receipt_cutoff
+            record['receipt_cutoff'] = used.isoformat() if used else None
 
         st.session_state['inventory_layers'] = after
         history = copy.deepcopy(st.session_state.get('fifo_period_history', []))

@@ -1,7 +1,10 @@
 # user_inputs.py
 
 ENGINE_VERSION = "2.2.0"
-SNAPSHOT_SCHEMA_VERSION = 2
+# Which rows and quantities reach the engine (names, fiscal-date assignment, how beginning is derived).
+# Part of the run signature, not of snapshots. 1.0.0 was the unnumbered alias/period-column intake.
+INPUT_PROCESSING_VERSION = "2.5.0"
+SNAPSHOT_SCHEMA_VERSION = 3   # 3: closed-period records carry the receipt register
 OPENING_SEED_FISCAL_YEAR = 2026
 QTY_TOLERANCE = 0.0001
 VALUE_TOLERANCE = 0.01

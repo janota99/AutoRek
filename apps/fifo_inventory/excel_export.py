@@ -183,6 +183,14 @@ def _write_row(ws, row, values, col_start=1, fill=None, font=None, aligns=None, 
         if border: c.border = BORDER_THIN
     return row
 
+def _wrap_header(ws, row, ncols, height=34):
+    """Long column headings wrap inside their cell instead of being cut off by the next column or a filter button."""
+    for col in range(1, ncols + 1):
+        cell = ws.cell(row=row, column=col)
+        cell.alignment = Alignment(horizontal=cell.alignment.horizontal or "left", vertical="center", wrap_text=True)
+    ws.row_dimensions[row].height = height
+
+
 def _write_table_section(ws, start_row, title, headers, rows, col_formats, col_aligns,
                          table_name, total_row_builder=None, outline_detail=True):
     ncols = len(headers)
@@ -194,7 +202,7 @@ def _write_table_section(ws, start_row, title, headers, rows, col_formats, col_a
 
     header_row = r
     _write_row(ws, r, headers, fill=FILL_HEADER, font=FONT_COLHDR, aligns=col_aligns, border=True)
-    ws.row_dimensions[r].height = HEADER_ROW_HEIGHT
+    _wrap_header(ws, r, ncols)
     r += 1
 
     first_data_row = r
@@ -222,7 +230,7 @@ def _write_table_section(ws, start_row, title, headers, rows, col_formats, col_a
 
     if total_row_builder:
         total_vals = total_row_builder(ncols)
-        _write_row(ws, r, total_vals, fill=FILL_NAVY, font=FONT_TOTAL, aligns=col_aligns,
+        _write_row(ws, r, total_vals, fill=FILL_NAVY, font=FONT_TOTAL, aligns=[ALIGN_LEFT] + list(col_aligns[1:]),
                    formats=col_formats, border=True)
         ws.row_dimensions[r].height = ROW_HEIGHT
         r += 1
@@ -344,13 +352,15 @@ def _status_style(status):
 
 def _build_metrics_box(ws, start_row, metrics):
     r = start_row
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
     c = ws.cell(row=r, column=1, value="Current Inventory Metrics")
     c.fill, c.font, c.alignment = FILL_SLATE, FONT_SECTION_LARGE, ALIGN_LEFT
     ws.row_dimensions[r].height = 22
     r += 1
 
-    _write_row(ws, r, ["Metric", "Quantity", "Value"], fill=FILL_HEADER, font=FONT_COLHDR, aligns=[ALIGN_LEFT, ALIGN_RIGHT, ALIGN_RIGHT], border=True)
+    _write_row(ws, r, ["Metric", "", "Quantity", "Value"], fill=FILL_HEADER, font=FONT_COLHDR,
+               aligns=[ALIGN_LEFT, ALIGN_LEFT, ALIGN_RIGHT, ALIGN_RIGHT], border=True)
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=2)
     ws.row_dimensions[r].height = HEADER_ROW_HEIGHT
     r += 1
 
@@ -371,7 +381,9 @@ def _build_metrics_box(ws, start_row, metrics):
         if kind == 'usage': qfmt, vfmt = FMT_QTY_PAREN, FMT_USD_PAREN
         if kind == 'subtotal': font, fill = FONT_LABEL, FILL_HEADER
         if kind == 'final': fill, font = FILL_NAVY, FONT_TOTAL
-        _write_row(ws, r, [label, qty, val], fill=fill, font=font, aligns=[ALIGN_LEFT, ALIGN_RIGHT, ALIGN_RIGHT], formats=[None, qfmt, vfmt], border=True)
+        _write_row(ws, r, [label, "", qty, val], fill=fill, font=font,
+                   aligns=[ALIGN_LEFT, ALIGN_LEFT, ALIGN_RIGHT, ALIGN_RIGHT], formats=[None, None, qfmt, vfmt], border=True)
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=2)
         ws.row_dimensions[r].height = ROW_HEIGHT
         r += 1
     return r + 1
@@ -430,7 +442,7 @@ def _build_product_sheet(wb, res, period, alias_seq, fiscal_year=None, tolerance
     sheet_name = _product_sheet_name(res['alias'], res['prod_name'])
     ws = wb.create_sheet(sheet_name)
 
-    widths = [8, 30, 14, 14, 14, 14, 14, 14, 15, 16, 12, 16, 16]
+    widths = [12, 30, 14, 14, 14, 14, 14, 14, 15, 16, 12, 16, 16]
     for i, w in enumerate(widths, 1): ws.column_dimensions[get_column_letter(i)].width = w
 
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=13)
@@ -444,6 +456,9 @@ def _build_product_sheet(wb, res, period, alias_seq, fiscal_year=None, tolerance
     back_cell.font = FONT_HYPERLINK
     back_cell.alignment = ALIGN_LEFT
     ws.row_dimensions[2].height = ROW_HEIGHT
+    if res.get('ending_carried_forward'):
+        note = ws.cell(row=2, column=4, value="No ending count supplied: layers carried forward, usage zero.")
+        note.font = FONT_AMBER
 
     r = 4
     r = _build_metrics_box(ws, r, metrics)
@@ -511,7 +526,7 @@ def _build_product_sheet(wb, res, period, alias_seq, fiscal_year=None, tolerance
 
 def _build_executive_summary_sheet(wb, all_results, period, fiscal_year=None, tolerances=None):
     ws = wb.create_sheet("Executive Summary", 0)
-    widths = [8, 34, 16, 20, 20, 18, 18, 18, 55]
+    widths = [8, 38, 16, 22, 22, 20, 20, 18, 55]
     for i, w in enumerate(widths, 1): ws.column_dimensions[get_column_letter(i)].width = w
 
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=9)
@@ -524,7 +539,7 @@ def _build_executive_summary_sheet(wb, all_results, period, fiscal_year=None, to
     aligns = [ALIGN_RIGHT, ALIGN_LEFT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_LEFT, ALIGN_LEFT]
     header_row = 3
     _write_row(ws, header_row, headers, fill=FILL_HEADER, font=FONT_COLHDR, aligns=aligns, border=True)
-    ws.row_dimensions[header_row].height = HEADER_ROW_HEIGHT
+    _wrap_header(ws, header_row, len(headers))
     r = header_row + 1
     first_data_row = r
 
@@ -609,7 +624,7 @@ def _build_summary_sheet(wb, all_results, period, fiscal_year=None, tolerances=N
     aligns = [ALIGN_RIGHT, ALIGN_LEFT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_RIGHT, ALIGN_LEFT, ALIGN_LEFT, ALIGN_LEFT, ALIGN_LEFT]
     header_row = r
     _write_row(ws, r, headers, fill=FILL_HEADER, font=FONT_COLHDR, aligns=aligns, border=True)
-    ws.row_dimensions[header_row].height = HEADER_ROW_HEIGHT
+    _wrap_header(ws, header_row, len(headers))
     r += 1
     first_data_row = r
 
@@ -683,7 +698,7 @@ def _build_run_issues_sheet(wb, run_issues):
     ws.freeze_panes = 'A4'
     return ws
 
-def export_master_excel(all_results, period, fiscal_year=None, run_issues=None, tolerances=None):
+def export_master_excel(all_results, period, fiscal_year=None, run_issues=None, tolerances=None, context=None):
     output = io.BytesIO()
     wb = Workbook()
     wb.remove(wb.active)
@@ -700,6 +715,15 @@ def export_master_excel(all_results, period, fiscal_year=None, run_issues=None, 
     # Modern, decluttered look across every sheet in the workbook: no default
     # Excel gridlines competing with the shaded header/total rows and borders
     # already drawn in by _write_row / BORDER_THIN.
+    if context is not None:
+        # Added last so each can be placed in front: Checks, Period End Summary, Receipts, then the rest.
+        from .workpaper import add_checks_sheet, add_period_end_summary, add_receipts_sheet
+        add_receipts_sheet(wb, context.get('receipts'), period, fiscal_year)
+        add_period_end_summary(wb, ordered_results, period, fiscal_year, context.get('history'))
+        add_checks_sheet(wb, ordered_results, period, fiscal_year, context, run_issues=run_issues)
+        order = ["Checks", "Executive Summary", "Summary", "Period End Summary", "Receipts", "Input Exceptions"]
+        wb._sheets.sort(key=lambda sheet: order.index(sheet.title) if sheet.title in order else len(order))
+
     for sheet in wb.worksheets:
         sheet.sheet_view.showGridLines = False
 

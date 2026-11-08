@@ -39,6 +39,15 @@ uploads + grid ──► [Calculate Preview] ──► staged_fifo_run (nothing 
 - **`reopen_latest`** pops the last record, restores its `beginning_layers` and `value_variance_before`, and writes a snapshot named after the new latest period (or `<key>-REOPENED` if history is now empty).
 - **Reset** (`reset_all`) wipes everything in memory. It does not delete files on disk.
 
+## Receipt register
+
+Each history record may carry `recognized_receipts` (the receipts that period recognized, as reported, with `recognized_in`,
+a `status` of `recognized` or `in opening layers`, and a `late` flag) and `receipt_cutoff`. The register is the union over closed
+periods, so `reopen_latest` releases a period's receipts and a restored snapshot restores them with the history.
+`receipt_cutoff()` is set by the first period that carries one (and `cutoff_layers()` is that period's beginning layers: the
+opening position); records closed earlier carry none. Snapshot schema 3 added these fields; schema 1-2 files still load
+(no register).
+
 ## Snapshots
 
 - **Location:** `apps/fifo_inventory/fifo_snapshots/`, next to the module rather than the working directory (override with the `FIFO_SNAPSHOT_DIR` env var); one file per period key, and each file is a **full** snapshot (all history).
