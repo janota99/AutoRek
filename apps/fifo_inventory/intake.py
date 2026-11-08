@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Optional
 
+import json
 import re
 
 import pandas as pd
@@ -323,16 +324,40 @@ def _label_year(text) -> Optional[int]:
     return 2000 + int(two[-1]) if two and 'FYE' in text.upper() else None
 
 
-def opening_layer_evidence(alias: int, delivered: date, qty: float, total: float, layers_by_alias: dict) -> tuple[str, str]:
+def _layer_lineage(layer: dict) -> list[dict]:
+    raw = layer.get('source_receipts')
+    try:
+        entries = json.loads(raw) if isinstance(raw, str) and raw else (raw or [])
+    except ValueError:
+        return []
+    return [e for e in entries if isinstance(e, dict)]
+
+
+def opening_layer_evidence(alias: int, delivered: date, qty: float, total: float, layers_by_alias: dict,
+                           po=None, invoice=None) -> tuple[str, str]:
     """Whether the opening layers show a receipt was already included: ('included' | 'not_included' | 'unclear', why).
 
-    Included: an opening layer dated that day at the same unit cost (or the same quantity). Unclear: a layer that
-    day at a different cost and quantity, a consolidated layer spanning the date, or a layer with no readable date
-    (it could hold anything). Otherwise nothing in the opening layers could be this receipt.
+    Included only on proof: a layer's own recorded receipts (the lineage this app writes into every layer it builds)
+    name this receipt by date, quantity and PO or invoice. A layer that merely shares its date, quantity or unit cost
+    proves nothing (two trucks can deliver the same load at the same price on one day), so that is *unclear*, as is a
+    consolidated layer spanning the date or a layer with no readable date (it could hold anything). Otherwise nothing
+    in the opening layers could be this receipt.
     """
     unit = total / qty if qty else None
+    want_po = normalize_name(po) if not _is_blank(po) else ""
+    want_invoice = normalize_name(invoice) if not _is_blank(invoice) else ""
     unclear: list[str] = []
     for layer in layers_by_alias.get(int(alias), []):
+        for entry in _layer_lineage(layer):
+            same_po = want_po and normalize_name(entry.get('po') or "") == want_po
+            same_invoice = want_invoice and normalize_name(entry.get('invoice') or "") == want_invoice
+            try:
+                same_day = pd.to_datetime(entry.get('date')).date() == delivered
+                same_qty = abs(float(entry.get('qty')) - qty) <= 0.5
+            except (TypeError, ValueError):
+                continue
+            if same_day and same_qty and (same_po or same_invoice):
+                return 'included', f"an opening layer records this receipt (PO {entry.get('po')!s}, invoice {entry.get('invoice')!s})"
         _period, start, end = _layer_period_and_dates(layer)
         layer_qty = float(layer.get('qty') or 0.0)
         layer_unit = layer.get('unit_cost')
@@ -343,8 +368,10 @@ def opening_layer_evidence(alias: int, delivered: date, qty: float, total: float
         elif start == end == delivered:
             close_cost = unit and layer_unit and abs(layer_unit - unit) <= 0.005 * unit
             if close_cost or abs(layer_qty - qty) <= 0.5:
-                return 'included', f"an opening layer dated {delivered} matches its cost or quantity"
-            unclear.append(f"an opening layer dated {delivered} has a different cost and quantity")
+                unclear.append(f"an opening layer dated {delivered} shares its date and cost or quantity, but nothing "
+                               "records that it is this receipt")
+            else:
+                unclear.append(f"an opening layer dated {delivered} has a different cost and quantity")
         elif start <= delivered <= end:
             unclear.append(f"an opening layer spans {start} to {end}")
     if unclear:
@@ -682,7 +709,9 @@ def prepare_period_receipts(df_upload: pd.DataFrame, matcher: MaterialMatcher, w
             evidence, why = 'unclear', (f"column K says {k_text[index]!r} but the heading above it says {s_text[index]!r}")
         elif row['_CROSSING']:
             evidence, why = opening_layer_evidence(alias, row['_DATE'].date(), float(row['_QTY']), float(row['_PRICE']),
-                                                   cutoff_layers if cutoff_layers is not None else {})
+                                                   cutoff_layers if cutoff_layers is not None else {},
+                                                   po=row.get('PO #') if 'PO #' in row.index else None,
+                                                   invoice=row.get('INVOICE #') if 'INVOICE #' in row.index else None)
         else:
             evidence = 'not_included'
         decision = (decisions or {}).get(key)

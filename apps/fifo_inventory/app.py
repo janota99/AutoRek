@@ -314,7 +314,8 @@ with tab_processing:
             ops = read_operations_workbook(
                 ops_upload.getvalue(), fiscal_year, current_period, matcher, window, known_receipts=known_receipts,
                 cutoff=receipt_cutoff, cutoff_period=cutoff_period, cutoff_layers=cutoff_layers,
-                decisions=receipt_decisions, received_sheet=ops_received_override,
+                decisions=receipt_decisions, calendar=fiscal_session.get_calendar(),
+                received_sheet=ops_received_override,
                 period_end_sheet=ops_period_end_override)
             ending, receipts_data = ops.ending, ops.receipts
             receipt_errors, receipt_warnings, receipt_debug = ops.receipt_errors, ops.receipt_warnings, ops.receipt_debug
@@ -376,7 +377,8 @@ with tab_processing:
         if receipts_source_present and not receipts_data.empty:
             parts.append(f"{len(receipts_data)} receipt(s) in this period")
         elif receipts_source_present and not receipt_errors:
-            parts.append("no receipts dated in this period")
+            parts.append("this period's receipts are already recognized in the register" if already_closed
+                         else "no receipts dated in this period")
         return " · ".join(parts)
 
     with st.container(border=True):

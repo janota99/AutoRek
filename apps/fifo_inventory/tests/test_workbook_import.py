@@ -391,3 +391,67 @@ def test_the_real_log_over_consecutive_periods_omits_nothing_and_duplicates_noth
             expected.add(number)
     assert set(recognized_rows) == expected, f"omitted {sorted(expected - set(recognized_rows))}, extra {sorted(set(recognized_rows) - expected)}"
     assert len(expected) >= 15
+
+
+# --- the fiscal calendar against the workbook's own period-end dates ----------------------------------------------
+
+from datetime import timedelta  # noqa: E402
+from shared.fiscal_calendar import locate, validate  # noqa: E402
+
+
+def _calendar_for(year, start, ends):
+    return FiscalCalendar(year, start, tuple(date.fromisoformat(d) for d in ends))
+
+
+FY2027 = _calendar_for(2027, date(2026, 10, 4), [
+    "2026-10-31", "2026-11-28", "2026-12-26", "2027-01-23", "2027-02-20", "2027-03-20", "2027-04-17",
+    "2027-05-15", "2027-06-12", "2027-07-10", "2027-08-07", "2027-09-04", "2027-10-02"])
+
+
+def test_the_fiscal_calendars_are_valid_and_contiguous():
+    assert validate(CALENDAR) is None and validate(FY2027) is None
+    for calendar in (CALENDAR, FY2027):
+        starts = [calendar.start] + [e + timedelta(days=1) for e in calendar.period_ends[:-1]]
+        gaps = [(e - s).days + 1 for s, e in zip(starts, calendar.period_ends)]
+        assert gaps[:12] == [28] * 12                                  # thirteen four-week periods...
+    assert [(e - s).days + 1 for s, e in zip([CALENDAR.start] + [e + timedelta(days=1) for e in CALENDAR.period_ends[:-1]],
+                                              CALENDAR.period_ends)][12] == 35      # ...FY2026's last runs five weeks
+    assert [(e - s).days + 1 for s, e in zip([FY2027.start] + [e + timedelta(days=1) for e in FY2027.period_ends[:-1]],
+                                              FY2027.period_ends)][12] == 28
+    assert CALENDAR.period_ends[-1] + timedelta(days=1) == FY2027.start      # FY2026 ends the day before FY2027 starts
+    assert locate(CALENDAR, date(2026, 8, 29)) == 12 and locate(FY2027, date(2026, 10, 4)) == 1
+
+
+def test_a_year_typo_in_the_workbook_is_noted_and_the_calendar_is_used():
+    # FY2026 Period 1 in operations' sheet reads 10/25/2026; every other date and the calendar say 10/25/2025.
+    from openpyxl import load_workbook
+    wb = load_workbook(io.BytesIO(_workbook(GOOD_ROWS, COUNTS)))
+    sheet = wb["PERIOD END 2026"]
+    for column, end in enumerate(CALENDAR.period_ends, start=5):
+        sheet.cell(row=1, column=column, value=datetime(end.year, end.month, end.day))
+    sheet.cell(row=1, column=5, value=datetime(2026, 10, 25))          # the typo: should be 2025-10-25
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    data = buffer.getvalue()
+    window = period_window(FY, 1, CALENDAR, CALENDAR.period_ends[0])
+    p1 = read_operations_workbook(data, FY, 1, MaterialMatcher(PRODUCTS, {}), window, calendar=CALENDAR)
+    assert not any("disagree" in e for e in p1.ending.errors)
+    assert any("year typo in the workbook" in n for n in p1.ending.notes)
+    p12 = read_operations_workbook(data, FY, PERIOD, MaterialMatcher(PRODUCTS, {}), WINDOW, calendar=CALENDAR)
+    assert p12.ending.errors == [] and p12.ending.warnings == [] and not any("typo" in n for n in p12.ending.notes)
+
+
+def test_a_calendar_that_disagrees_with_the_workbook_blocks_the_period_it_would_misplace():
+    from shared.fiscal_calendar import default_calendar
+    wrong = default_calendar(2026, date(2026, 1, 1))                   # what the app starts with before a calendar is set
+    from openpyxl import load_workbook
+    wb = load_workbook(io.BytesIO(_workbook(GOOD_ROWS, COUNTS)))
+    sheet = wb["PERIOD END 2026"]
+    for column, end in enumerate(CALENDAR.period_ends, start=5):
+        sheet.cell(row=1, column=column, value=datetime(end.year, end.month, end.day))
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    window = period_window(FY, PERIOD, wrong, wrong.period_ends[11])
+    result = read_operations_workbook(buffer.getvalue(), FY, PERIOD, MaterialMatcher(PRODUCTS, {}), window, calendar=wrong)
+    assert any("disagree about Period 12" in e for e in result.ending.errors)
+    assert "Workspace" in result.ending.errors[0]

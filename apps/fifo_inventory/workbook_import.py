@@ -208,8 +208,53 @@ def _section_headings(table: pd.DataFrame, keys: list) -> list:
 # PERIOD END
 # ------------------------------------------------------------------
 
+def _sheet_date(value):
+    try:
+        return pd.to_datetime(value).date() if not pd.isna(value) else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _calendar_findings(raw: pd.DataFrame, header_row: int, columns: dict, calendar, period: int, sheet: str):
+    """Compare the sheet's period-end dates with the fiscal calendar: (errors, warnings, notes).
+
+    A date that is exactly a year away from the calendar's, while its neighbours agree, is a typo in the workbook:
+    the calendar is used and it is noted when it concerns the selected period. A real disagreement about the
+    selected period is blocking, because the calendar decides which receipts belong to it."""
+    if header_row < 1 or calendar is None:
+        return [], [], []
+    mismatch, typo = {}, set()
+    for p, cols in columns.items():
+        if not 1 <= p <= len(calendar.period_ends) or len(cols) != 1:
+            continue
+        shown = _sheet_date(raw.iloc[header_row - 1, cols[0]])
+        wanted = calendar.period_ends[p - 1]
+        if shown is None or shown == wanted:
+            continue
+        mismatch[p] = (shown, wanted)
+        if abs((shown - wanted).days) in (365, 366):
+            typo.add(p)
+    real = {p: v for p, v in mismatch.items() if p not in typo}
+    errors, warnings, notes = [], [], []
+    if period in real:
+        shown, wanted = real[period]
+        errors.append(
+            f"The fiscal calendar and '{sheet}' disagree about Period {period}: the sheet says it ends "
+            f"{shown:%b %d, %Y}, the calendar says {wanted:%b %d, %Y} ({len(real)} of {len(columns)} periods disagree). "
+            "The calendar decides which receipts belong to the period, so correct the calendar on the Workspace page "
+            "(or the sheet) first.")
+    elif real:
+        warnings.append(f"'{sheet}' and the fiscal calendar disagree about period(s) "
+                        + ", ".join(str(p) for p in sorted(real)) + "; the selected period is not affected.")
+    if period in typo:
+        shown, wanted = mismatch[period]
+        notes.append(f"'{sheet}' dates Period {period} as ending {shown:%b %d, %Y}, exactly a year from the calendar's "
+                     f"{wanted:%b %d, %Y}. That is a year typo in the workbook; the calendar's date was used.")
+    return errors, warnings, notes
+
+
 def read_period_end(data: bytes, sheet: str, matcher: MaterialMatcher, period: int,
-                    window: Optional[PeriodWindow] = None) -> EndingReport:
+                    window: Optional[PeriodWindow] = None, calendar=None) -> EndingReport:
     raw = _read_raw(data, sheet, _PERIOD_END_COLUMNS)
     header_row, columns = None, {}
     for i in range(min(10, len(raw))):
@@ -260,8 +305,13 @@ def read_period_end(data: bytes, sheet: str, matcher: MaterialMatcher, period: i
     if ended_at is not None:
         report.notes.append(f"Only the first table of '{sheet}' was read (it ends at row {ended_at - 1}); the "
                             "tables below it are not inventory.")
+    cal_errors, cal_warnings, cal_notes = _calendar_findings(raw, header_row, columns, calendar, int(period), sheet)
+    report.structural += cal_errors
+    report.errors += cal_errors
+    report.warnings += cal_warnings
+    report.notes += cal_notes
     stamped = raw.iloc[header_row - 1, qty_col] if header_row >= 1 else None
-    if window is not None and window.source == "calendar" and stamped is not None and not pd.isna(stamped):
+    if calendar is None and window is not None and window.source == "calendar" and stamped is not None and not pd.isna(stamped):
         try:
             sheet_end = pd.to_datetime(stamped).date()
             if sheet_end != window.end:
@@ -297,7 +347,7 @@ def read_operations_workbook(data: bytes, fiscal_year: int, period: int, matcher
                              window: PeriodWindow, known_receipts: Optional[dict] = None,
                              cutoff=None, cutoff_period=None, cutoff_layers=None, decisions=None,
                              received_sheet: Optional[str] = None,
-                             period_end_sheet: Optional[str] = None) -> OperationsImport:
+                             period_end_sheet: Optional[str] = None, calendar=None) -> OperationsImport:
     plan = plan_sheets(list_sheets(data), fiscal_year, received_sheet, period_end_sheet)
     result = OperationsImport(plan=plan, notes=list(plan.notes), problems=list(plan.problems))
 
@@ -315,6 +365,9 @@ def read_operations_workbook(data: bytes, fiscal_year: int, period: int, matcher
                 cutoff_layers=cutoff_layers, decisions=decisions)
             result.notes += result.receipt_debug.get('notes', [])
     if plan.period_end:
-        result.ending = read_period_end(data, plan.period_end, matcher, period, window)
+        from .intake import calendar_applies
+        result.ending = read_period_end(
+            data, plan.period_end, matcher, period, window,
+            calendar=calendar if calendar_applies(calendar, fiscal_year) else None)
         result.notes += result.ending.notes
     return result

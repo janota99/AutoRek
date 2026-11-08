@@ -21,9 +21,9 @@ def _status(preview=None, **kw):
     return period_status(**{**args, **kw}, preview=preview)
 
 
-def test_nothing_loaded_asks_for_the_ending_inventory():
+def test_nothing_loaded_asks_for_the_operations_workbook():
     s = _status(has_grid_data=False)
-    assert s["step"] == UPLOAD and s["ready"] == "" and "ending inventory" in s["blockers"][0]
+    assert s["step"] == UPLOAD and s["ready"] == "" and "operations workbook" in s["blockers"][0]
 
 
 def test_input_problems_are_listed_and_capped():

@@ -124,12 +124,41 @@ def test_the_three_dates_stay_distinct_delivered_reported_and_recognized():
     assert entry["late"] is True
 
 
-def test_a_crossing_receipt_the_opening_layers_already_hold_is_not_imported_again():
-    held = {4: OPENING[4] + [layer("2026-07-31", 9_000_000, 65_520.0)]}
+def _layer_recording(po, invoice, day="2026-07-31", qty=9_000_000, total=65_520.0):
+    """An opening layer as this app builds them: with the receipts it was made from recorded in its lineage."""
+    built = layer(day, qty, total)
+    built["source_receipts"] = json.dumps([{"date": day, "qty": qty, "total_value": total, "po": po, "invoice": invoice}])
+    return built
+
+
+def test_a_crossing_receipt_a_layer_records_having_included_is_not_imported_again():
+    held = {4: OPENING[4] + [_layer_recording("2", "Inv#2")]}
     valid, errors, _w, debug = _prepare([IN_P12, CSI_731], layers=held)
     assert errors == [] and valid["PRODUCT ALIAS"].tolist() == [2]
     assert any("already included in the opening layers" in n for n in debug["notes"])
     assert len(debug["opening_rows"]) == 1 and debug["review_rows"].empty
+
+
+def test_sharing_a_date_quantity_and_cost_with_an_opening_layer_never_excludes_a_receipt_by_itself():
+    # A layer the same day, the same load, the same price, but nothing says it is *this* delivery (no lineage, or a
+    # different PO and invoice): that is a legitimate-looking second truck, so it goes to a person, never silently dropped.
+    twin_layer = {4: [layer("2026-07-31", 9_000_000, 65_520.0)]}
+    valid, errors, _w, debug = _prepare([CSI_731], layers=twin_layer)
+    assert valid.empty and len(debug["review_rows"]) == 1
+    assert "nothing records that it is this receipt" in debug["review_rows"].iloc[0]["WHY"]
+    other_truck = {4: [_layer_recording("999", "Inv#999")]}
+    valid2, _e2, _w2, debug2 = _prepare([CSI_731], layers=other_truck)
+    assert valid2.empty and len(debug2["review_rows"]) == 1                  # same load and price, different PO/invoice
+    key = debug["review_rows"].iloc[0]["_KEY"]
+    included, errors3, *_ = _prepare([CSI_731], layers=twin_layer, decisions={key: "include"})
+    assert included["PRODUCT ALIAS"].tolist() == [4] and errors3 == []        # the person can recognize it
+
+
+def test_a_receipt_after_the_cutoff_is_never_compared_with_opening_layers_at_all():
+    twin = {4: [layer("2026-08-05", 9_000_000, 65_520.0)]}
+    in_period = _log_row("CLOSURES", datetime(2026, 8, 5), 9_000_000, 65_520.0, invoice="Inv#x", po="x", vendor="CSI")
+    valid, errors, *_ = _prepare([in_period], layers=twin)
+    assert valid["PRODUCT ALIAS"].tolist() == [4] and errors == []
 
 
 @pytest.mark.parametrize("layers, why", [
@@ -194,8 +223,11 @@ def test_a_heading_in_force_covers_the_rows_below_it_until_the_next_heading():
 
 def test_opening_layer_evidence_directly():
     assert opening_layer_evidence(4, date(2026, 7, 31), 9e6, 65_520.0, OPENING)[0] == "not_included"
-    held = {4: [layer("2026-07-31", 9_000_000, 65_520.0)]}
-    assert opening_layer_evidence(4, date(2026, 7, 31), 9e6, 65_520.0, held)[0] == "included"
+    twin = {4: [layer("2026-07-31", 9_000_000, 65_520.0)]}
+    assert opening_layer_evidence(4, date(2026, 7, 31), 9e6, 65_520.0, twin)[0] == "unclear"        # shares date/qty/cost only
+    recorded = {4: [_layer_recording("2", "Inv#2")]}
+    assert opening_layer_evidence(4, date(2026, 7, 31), 9e6, 65_520.0, recorded, po="2", invoice="Inv#2")[0] == "included"
+    assert opening_layer_evidence(4, date(2026, 7, 31), 9e6, 65_520.0, recorded, po="7", invoice="Inv#7")[0] == "unclear"
     assert opening_layer_evidence(2, date(2026, 7, 20), 1000, 50.0, OPENING)[0] == "unclear"      # inside a range layer
     assert opening_layer_evidence(9, date(2026, 7, 31), 1000, 50.0, OPENING)[0] == "not_included"  # no layers at all
 

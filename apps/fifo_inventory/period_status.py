@@ -40,7 +40,7 @@ def period_status(*, period_key: str, has_grid_data: bool, input_errors: list[st
     ``warnings`` (receipt warnings), ``processing_errors`` and ``receipt_errors`` (counts),
     ``review_ack`` (bool) and ``demo`` (bool, sample files loaded).
     """
-    details = ["Ending inventory loaded" if has_grid_data else "Waiting for ending inventory",
+    details = ["Operations workbook loaded" if has_grid_data else "Waiting for the operations workbook",
                "After upload", "Not calculated", "Locked"]
 
     if already_closed:
@@ -65,7 +65,7 @@ def period_status(*, period_key: str, has_grid_data: bool, input_errors: list[st
                     "tone": "blocked", "ready": "", "next_step": ""}
         if not has_grid_data:
             return {"step": UPLOAD, "details": details, "tone": "blocked", "ready": "", "next_step": "",
-                    "blockers": ["Add the ending inventory (upload a file, use sample data, or enter it manually)."]}
+                    "blockers": ["Upload the operations workbook (or the two reports separately, or use sample data)."]}
         return {"step": PREVIEW, "details": details, "blockers": [], "tone": "blocked",
                 "ready": "Ready to calculate a preview.",
                 "next_step": "A preview changes nothing; official layers change only when you close the period."}
