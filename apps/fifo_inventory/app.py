@@ -50,6 +50,7 @@ from shared.messages import friendly_error
 from shared.sample_data import sample_downloads, sample_uploader
 from apps.fifo_inventory.period_status import STEPS, period_status
 from shared import fiscal_session, workflow
+from shared.layout import DASHBOARD_SCRIPT
 from shared.status import status_styler, status_tile
 from shared.styles import inject_page
 
@@ -387,7 +388,8 @@ with tab_processing:
             st.info("Upload the operations workbook (or the two reports separately). Every material "
                     "carries its saved layers forward; receipts are added to the materials they name, and an ending "
                     "quantity depletes the oldest layers first.")
-        else:
+        elif not (ending is not None and ending.calendar_mismatch):
+            # (while the calendar disagrees with the workbook, counts built on the wrong window would only mislead)
             st.caption(_status_line())
             if not receipts_source_present:
                 st.caption("No receipts source was used: no receipts are added this period.")
@@ -401,6 +403,30 @@ with tab_processing:
                 with st.expander(f"What was read ({len(source_notes)} note(s))", expanded=False):
                     for note in source_notes:
                         st.markdown(f"- {note}")
+        _mismatch = ending.calendar_mismatch if ending is not None else None
+        if _mismatch:
+            with st.container(border=True):
+                st.error("**Fiscal Period Mismatch — Action Required**\n\n"
+                         "The selected fiscal period's dates do not match the reporting dates in the uploaded operations workbook.",
+                         icon=":material/event_busy:")
+                st.markdown(
+                    "| Selected fiscal year | Selected period | Workbook period-end date | Workspace calendar period-end date |\n"
+                    "|---|---|---|---|\n"
+                    f"| FY{_mismatch['fiscal_year']} | Period {_mismatch['period']:02d} | "
+                    f"**{_mismatch['workbook_date']:%b %d, %Y}** (sheet '{_mismatch['sheet']}') | "
+                    f"**{_mismatch['calendar_date']:%b %d, %Y}** |")
+                st.markdown(
+                    "Update the fiscal calendar in Workspace to resolve this discrepancy. FIFO calculations and Excel "
+                    "downloads will become available once the dates match.")
+                if _mismatch['periods_differing'] > 1:
+                    st.caption(f"{_mismatch['periods_differing']} of {_mismatch['periods_compared']} periods in the workbook "
+                               "disagree with the saved calendar, which usually means the calendar for this fiscal year "
+                               "has not been entered yet.")
+                try:
+                    st.page_link(DASHBOARD_SCRIPT, label="Open Workspace to update the fiscal calendar",
+                                 icon=":material/calendar_month:")
+                except Exception:   # a page run on its own, outside the suite's navigation, has no Workspace to link to
+                    st.markdown("[Open Workspace to update the fiscal calendar](/workspace)")
         if no_layers_error and have_input:
             st.error(no_layers_error)
         if sequence_error and not already_closed:
@@ -418,7 +444,7 @@ with tab_processing:
                                   if isinstance(f, pd.DataFrame) and not f.empty], ignore_index=True) \
             if any(isinstance(f, pd.DataFrame) and not f.empty
                    for f in (receipt_debug.get('review_rows'), receipt_debug.get('decided_rows'))) else pd.DataFrame()
-        if not review_frame.empty:
+        if not review_frame.empty and not _mismatch:
             def _decide(widget_key, receipt_key):
                 choice = st.session_state.get(widget_key)
                 mapped = {"Include in this period": 'include', "Already in the opening layers": 'opening'}.get(choice)
@@ -440,7 +466,7 @@ with tab_processing:
                         _choices, index={None: 0, 'include': 1, 'opening': 2}[current],
                         key=f"rv::{row['KEY']}", on_change=_decide, args=(f"rv::{row['KEY']}", row['_KEY']))
         late_rows = receipt_debug.get('late_rows')
-        if isinstance(late_rows, pd.DataFrame) and not late_rows.empty:
+        if isinstance(late_rows, pd.DataFrame) and not late_rows.empty and not _mismatch:
             with st.expander(f"Late receipts picked up ({len(late_rows)})", expanded=True):
                 st.caption("These deliveries are dated before this period but were never processed in an earlier one, "
                            f"so they are recognized in {selected_key}. Delivery date and reported period are kept.")

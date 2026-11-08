@@ -74,6 +74,10 @@ When changing the snapshot shape: bump `SNAPSHOT_SCHEMA_VERSION` in `user_inputs
 2. **The workbook's own dates are a check, not a source:** `PERIOD END <year>` row 1 is compared with the saved calendar. A date
    exactly one year off (FY2026's Period 1 reads 10/25/2026, should be 2025) is noted as a workbook typo; a real disagreement about the
    selected period blocks it, so a missing or wrong calendar cannot silently misplace receipts.
+   When the calendar and the workbook disagree about the selected period the page shows **Fiscal Period Mismatch — Action Required**:
+   the selected fiscal year and period, the workbook's period-end date, the Workspace calendar's date, the instruction to update the
+   calendar in Workspace, and a link there. Nothing is calculated, downloaded or closed until the dates match; the counts and lists that
+   depend on the receipt window are hidden meanwhile so they cannot mislead.
 3. **Receipt cutoff:** before the first close the page shows, next to the Close button, *"First close: this fixes the receipt cutoff
    at <date>"* with the beginning value that becomes the permanent opening position. The date defaults to the day before the first
    period processed and can be changed under *Receipt cutoff* until then. After the close it is fixed (`receipt_cutoff()` ignores any

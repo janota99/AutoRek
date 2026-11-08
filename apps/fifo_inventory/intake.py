@@ -148,6 +148,7 @@ class EndingReport:
     invalid: list = field(default_factory=list)       # [{'row', 'name', 'value', 'problem'}]
     unmapped: list = field(default_factory=list)      # [{'row', 'name', 'quantity', 'problem', 'suggestion'}]
     matched: int = 0                                  # materials with a supplied count
+    calendar_mismatch: Optional[dict] = None          # set when the Workspace calendar and the workbook disagree
     notes: list = field(default_factory=list)         # facts worth a line, never an exception
     ignored: list = field(default_factory=list)       # non-inventory lines skipped
     layout: str = ""

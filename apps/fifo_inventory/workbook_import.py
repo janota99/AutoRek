@@ -222,7 +222,7 @@ def _calendar_findings(raw: pd.DataFrame, header_row: int, columns: dict, calend
     the calendar is used and it is noted when it concerns the selected period. A real disagreement about the
     selected period is blocking, because the calendar decides which receipts belong to it."""
     if header_row < 1 or calendar is None:
-        return [], [], []
+        return [], [], [], None
     mismatch, typo = {}, set()
     for p, cols in columns.items():
         if not 1 <= p <= len(calendar.period_ends) or len(cols) != 1:
@@ -235,9 +235,12 @@ def _calendar_findings(raw: pd.DataFrame, header_row: int, columns: dict, calend
         if abs((shown - wanted).days) in (365, 366):
             typo.add(p)
     real = {p: v for p, v in mismatch.items() if p not in typo}
-    errors, warnings, notes = [], [], []
+    errors, warnings, notes, info = [], [], [], None
     if period in real:
         shown, wanted = real[period]
+        # What the page shows next to the blocking message; the message itself and the rule are unchanged.
+        info = {"sheet": sheet, "fiscal_year": int(calendar.year), "period": int(period), "workbook_date": shown,
+                "calendar_date": wanted, "periods_differing": len(real), "periods_compared": len(columns)}
         errors.append(
             f"The fiscal calendar and '{sheet}' disagree about Period {period}: the sheet says it ends "
             f"{shown:%b %d, %Y}, the calendar says {wanted:%b %d, %Y} ({len(real)} of {len(columns)} periods disagree). "
@@ -250,7 +253,7 @@ def _calendar_findings(raw: pd.DataFrame, header_row: int, columns: dict, calend
         shown, wanted = mismatch[period]
         notes.append(f"'{sheet}' dates Period {period} as ending {shown:%b %d, %Y}, exactly a year from the calendar's "
                      f"{wanted:%b %d, %Y}. That is a year typo in the workbook; the calendar's date was used.")
-    return errors, warnings, notes
+    return errors, warnings, notes, info
 
 
 def read_period_end(data: bytes, sheet: str, matcher: MaterialMatcher, period: int,
@@ -305,7 +308,8 @@ def read_period_end(data: bytes, sheet: str, matcher: MaterialMatcher, period: i
     if ended_at is not None:
         report.notes.append(f"Only the first table of '{sheet}' was read (it ends at row {ended_at - 1}); the "
                             "tables below it are not inventory.")
-    cal_errors, cal_warnings, cal_notes = _calendar_findings(raw, header_row, columns, calendar, int(period), sheet)
+    cal_errors, cal_warnings, cal_notes, cal_info = _calendar_findings(raw, header_row, columns, calendar, int(period), sheet)
+    report.calendar_mismatch = cal_info
     report.structural += cal_errors
     report.errors += cal_errors
     report.warnings += cal_warnings
