@@ -183,6 +183,14 @@ def _calendar_editor(calendar: FiscalCalendar) -> None:
     the year or the start date rebuilds the 13 end dates from it; edit the table to set them by hand.
     """
     resets = st.session_state.get("pp-fiscal-resets", 0)
+    years = fiscal_session.saved_years()
+    if len(years) > 1:
+        chosen = st.selectbox("Saved fiscal years", years, index=years.index(calendar.year) if calendar.year in years else 0,
+                              key=f"pp-fiscal-saved-{resets}",
+                              help="Each year's calendar is kept. Choosing one shows it here; nothing is changed or lost.")
+        if chosen != calendar.year and fiscal_session.use_calendar(chosen):
+            st.session_state["pp-fiscal-resets"] = resets + 1
+            st.rerun()
     with st.form("pp-fiscal-form", border=False):
         year_col, start_col = st.columns(2)
         year = int(year_col.number_input("Fiscal year", 1900, 2199, calendar.year, 1, key=f"pp-fiscal-year-{resets}"))
@@ -197,12 +205,9 @@ def _calendar_editor(calendar: FiscalCalendar) -> None:
         saved = st.form_submit_button("Save calendar", type="primary", icon=":material/save:")
     if saved:
         ends = tuple(d.date() if hasattr(d, "date") else d for d in edited["Ends"])
-        if ends == calendar.period_ends and (year, start) != (calendar.year, calendar.start):
-            # Only the year or start date changed and the table was left alone: move the whole year with it
-            # (13 four-week periods) rather than keep end dates that no longer fit.
-            new_calendar = default_calendar(year, start)
-        else:
-            new_calendar = FiscalCalendar(year, start, ends)
+        # An edited table is taken as typed. Only the year or start changed: that year's saved calendar if it has one with this
+        # start, else thirteen four-week periods from the start rather than end dates that no longer fit.
+        new_calendar = fiscal_session.calendar_from_edit(year, start, ends)
         problem = validate(new_calendar)
         if problem:
             st.error(problem + " Nothing was saved. Fix the period end dates in the table.")

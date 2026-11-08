@@ -64,9 +64,13 @@ When changing the snapshot shape: bump `SNAPSHOT_SCHEMA_VERSION` in `user_inputs
 1. **Fiscal calendar (Workspace page, Fiscal calendar):** enter the fiscal year and the first day of Period 1, then **Save
    calendar**. That rebuilds thirteen four-week periods, which is exactly right for FY2027 (Period 1 starts 10/4/2026, Period 13
    ends 10/2/2027). A year whose last period runs longer, such as FY2026 (Period 1 starts 9/28/2025; Period 13 ends 10/3/2026, five
-   weeks), needs one more step: edit the Period 13 end date in the table and save again. Only **one** fiscal year's calendar is stored
-   at a time (`shared/fiscal_settings.json`, gitignored); saving FY2027 replaces FY2026. For a fiscal year the saved calendar does not
-   cover, the FIFO page asks for the period end date and takes the receipt window from the day after the last closed period.
+   weeks), needs one more step: edit the Period 13 end date in the table and save again. **Every fiscal year's calendar is kept**
+   (`shared/fiscal_settings.json`, gitignored; `calendars` map, with the active year also at the top level so an older single-year
+   file loads unchanged). Saving FY2027 leaves FY2026 as it was, including its five-week Period 13; the *Saved fiscal years* list in the
+   calendar popover switches which one the editor shows; typing a saved year and its start with the table untouched brings back the saved
+   calendar rather than rebuilding it. The FIFO page uses the calendar of the fiscal year it is processing (`calendar_for_year`), and the
+   Workspace period-end date resolves against whichever saved year contains it. For a fiscal year with no saved calendar, the FIFO page asks
+   for the period end date and takes the receipt window from the day after the last closed period.
 2. **The workbook's own dates are a check, not a source:** `PERIOD END <year>` row 1 is compared with the saved calendar. A date
    exactly one year off (FY2026's Period 1 reads 10/25/2026, should be 2025) is noted as a workbook typo; a real disagreement about the
    selected period blocks it, so a missing or wrong calendar cannot silently misplace receipts.

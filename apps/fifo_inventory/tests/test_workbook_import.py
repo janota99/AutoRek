@@ -471,3 +471,19 @@ def test_the_real_workbook_lists_ten_old_rows_with_unreadable_dates_and_none_nam
     assert sorted(review["SOURCE ROW"]) == [27, 74, 94, 357, 358, 359, 360, 361, 426, 494]
     assert not review["PERIOD LABEL"].str.contains("2026").any()          # none claims this fiscal year
     from apps.fifo_inventory.excel_export import export_master_excel  # noqa: F401  (Checks lists them too; see test_workpaper)
+
+
+def test_fifo_uses_the_calendar_of_the_fiscal_year_it_processes_even_when_another_year_is_active(tmp_path, monkeypatch):
+    from apps.fifo_inventory.intake import calendar_applies
+    from shared import fiscal_session
+    monkeypatch.setenv("FISCAL_SETTINGS_PATH", str(tmp_path / "fiscal.json"))
+    monkeypatch.setattr(fiscal_session.st, "session_state", {})
+    fiscal_session.set_calendar(CALENDAR)
+    fiscal_session.set_calendar(FY2027)                                  # FY2027 is the active calendar
+    chosen = fiscal_session.calendar_for_year(2026)
+    assert calendar_applies(chosen, 2026) and not calendar_applies(fiscal_session.get_calendar(), 2026)
+    window = period_window(2026, 12, chosen, chosen.period_ends[11])
+    assert (window.start, window.end, window.source) == (date(2026, 8, 2), date(2026, 8, 29), "calendar")
+    assert period_window(2026, 13, chosen, chosen.period_ends[12]).end == date(2026, 10, 3)       # the five-week period
+    nxt = fiscal_session.calendar_for_year(2027)
+    assert period_window(2027, 1, nxt, nxt.period_ends[0]).start == date(2026, 10, 4)

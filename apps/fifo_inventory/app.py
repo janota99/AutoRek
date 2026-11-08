@@ -165,7 +165,7 @@ with tab_processing:
     flow_slot = st.empty()
 
     matcher = current_matcher()
-    window = period_window(fiscal_year, current_period, fiscal_session.get_calendar(), period_end_date,
+    window = period_window(fiscal_year, current_period, fiscal_session.calendar_for_year(fiscal_year), period_end_date,
                            layer_store.last_closed_as_of())
 
     stored_cutoff = layer_store.receipt_cutoff()
@@ -298,7 +298,7 @@ with tab_processing:
     cutoff_layers = layer_store.cutoff_layers()
     cutoff_period = None
     if receipt_cutoff is not None:
-        _calendar = fiscal_session.get_calendar()
+        _calendar = fiscal_session.calendar_for_year(fiscal_year)
         if calendar_applies(_calendar, fiscal_year):
             cutoff_period = locate(_calendar, receipt_cutoff) or 0
         elif receipt_cutoff == default_cutoff:
@@ -314,7 +314,7 @@ with tab_processing:
             ops = read_operations_workbook(
                 ops_upload.getvalue(), fiscal_year, current_period, matcher, window, known_receipts=known_receipts,
                 cutoff=receipt_cutoff, cutoff_period=cutoff_period, cutoff_layers=cutoff_layers,
-                decisions=receipt_decisions, calendar=fiscal_session.get_calendar(),
+                decisions=receipt_decisions, calendar=fiscal_session.calendar_for_year(fiscal_year),
                 received_sheet=ops_received_override,
                 period_end_sheet=ops_period_end_override)
             ending, receipts_data = ops.ending, ops.receipts
