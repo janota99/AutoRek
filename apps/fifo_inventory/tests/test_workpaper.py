@@ -127,3 +127,19 @@ def test_without_a_context_the_report_is_what_it_was():
     data = export_master_excel([_result([make_layer("2026-01-01", 100, 100.0)], [], 90, alias=2)], 3, fiscal_year=2026)
     names = load_workbook(io.BytesIO(data)).sheetnames
     assert "Checks" not in names and "Period End Summary" not in names
+
+
+def test_checks_lists_the_unreadable_date_rows_for_a_person_to_scan(make_store):
+    rows = [IN_P12, ["x", "Preforms", "AMCOR", "7/21/230", 1, "BOL", "SEAL", "628", 1_102_244, 37_277.89, None, None]]
+    store = make_store(PRODUCTS)
+    receipts, _e, _w, debug = prepare_period_receipts(
+        _table(rows), MaterialMatcher(PRODUCTS, {}), P12, 12, material_columns=["ITEMS"], fiscal_year=2026,
+        cutoff=CUTOFF, cutoff_period=11, cutoff_layers={})
+    ending = pd.DataFrame({"PRODUCT ALIAS": list(PRODUCTS), "12": [float("nan")] * PRODUCT_COUNT})
+    results, _s, _errs = stage_batch_calculation(PRODUCTS, ending, receipts, store, 2026, 12, date(2026, 8, 29))
+    context = {"receipts": receipts, "receipt_debug": debug, "control_counts": summarize_control_counts(results),
+               "ending_supplied": 0, "exceptions": [], "notes": [], "history": [], "run_signature": "x"}
+    wb = load_workbook(io.BytesIO(export_master_excel(results, 12, fiscal_year=2026, context=context)))
+    text = " | ".join(_strings(wb["Checks"]))
+    assert "Old rows with unreadable dates, not used (1)" in text and "date as written '7/21/230'" in text
+    assert "PO 628" in text and "cost 37277.89" in text

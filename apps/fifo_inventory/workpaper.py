@@ -175,6 +175,18 @@ def add_checks_sheet(wb, all_results: list, period: int, fiscal_year, context: d
             ws.row_dimensions[r].height = 30
             r += 1
 
+    unplaced = (context.get('receipt_debug') or {}).get('unplaced_review')
+    if isinstance(unplaced, pd.DataFrame) and not unplaced.empty:
+        r += 1
+        r = _section(ws, r, f"Old rows with unreadable dates, not used ({len(unplaced)})", 4)
+        for _, row in unplaced.head(25).iterrows():
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+            ws.cell(row=r, column=1, value=(
+                f"Row {row['SOURCE ROW']}: {row['MATERIAL']} ({row['VENDOR']}), date as written '{row['DATE AS WRITTEN']}', "
+                f"PO {row['PO #'] or '-'}, qty {row['QUANTITY'] or '-'}, cost {row['COST'] or '-'}, "
+                f"label {row['PERIOD LABEL'] or '-'}")).font = FONT_NORMAL
+            r += 1
+
     notes = list(context.get('notes') or [])
     if notes:
         r += 1

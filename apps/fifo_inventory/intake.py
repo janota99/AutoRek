@@ -309,6 +309,7 @@ def _empty_receipts_debug(**extra) -> dict:
             'notes': [], 'unmapped': [], 'other_period_rows': 0, 'structural': [],
             'unplaced_rows': pd.DataFrame(), 'mislabelled_rows': pd.DataFrame(), 'late_rows': pd.DataFrame(),
             'review_rows': pd.DataFrame(), 'decided_rows': pd.DataFrame(), 'opening_rows': pd.DataFrame(),
+            'unplaced_review': pd.DataFrame(),
             'presumed_count': 0}
     base.update(extra)
     return base
@@ -625,6 +626,19 @@ def prepare_period_receipts(df_upload: pd.DataFrame, matcher: MaterialMatcher, w
         notes.append(f"{len(unplaced)} row(s) have no readable delivery date and no period label for this period, "
                      "so they cannot be placed and were not used (listed under Input details).")
         debug['unplaced_rows'] = debug_unplaced
+        debug['unplaced_review'] = pd.DataFrame({
+            'SOURCE ROW': unplaced['_SOURCE_ROW'].astype(int),
+            'MATERIAL': unplaced[id_columns[0]].map(lambda v: '' if _is_blank(v) else str(v).strip()),
+            'VENDOR': unplaced[vendor_col_name].map(lambda v: '' if _is_blank(v) else str(v).strip())
+            if vendor_col_name else '',
+            'DATE AS WRITTEN': unplaced[date_col].map(lambda v: '' if _is_blank(v) else str(v).strip()),
+            'PO #': unplaced['PO #'].map(lambda v: '' if _is_blank(v) else str(v).strip()) if 'PO #' in unplaced.columns else '',
+            'INVOICE #': unplaced['INVOICE #'].map(lambda v: '' if _is_blank(v) else str(v).strip())
+            if 'INVOICE #' in unplaced.columns else '',
+            'QUANTITY': unplaced[qty_col].map(lambda v: '' if _is_blank(v) else str(v).strip()),
+            'COST': unplaced[price_col].map(lambda v: '' if _is_blank(v) else str(v).strip()),
+            'PERIOD LABEL': unplaced['_LABEL'],
+        }).reset_index(drop=True)
     debug['notes'] = notes
     debug['other_period_rows'] = len(others)
 

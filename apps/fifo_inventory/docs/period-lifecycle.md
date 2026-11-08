@@ -57,3 +57,23 @@ opening position); records closed earlier carry none. Snapshot schema 3 added th
 - **Manual paths** (all in `sidebar.py`): sidebar download ("Save Current Layers Snapshot"), upload restore, and "Restore a specific saved snapshot from disk".
 
 When changing the snapshot shape: bump `SNAPSHOT_SCHEMA_VERSION` in `user_inputs.py`, keep older files loadable in `from_json`, and treat missing new fields as "not available" (the pattern already used for `product_period_summary` and `value_variance_before`).
+
+
+## First use: calendar, cutoff, and what protects the opening position
+
+1. **Fiscal calendar (Workspace page, Fiscal calendar):** enter the fiscal year and the first day of Period 1, then **Save
+   calendar**. That rebuilds thirteen four-week periods, which is exactly right for FY2027 (Period 1 starts 10/4/2026, Period 13
+   ends 10/2/2027). A year whose last period runs longer, such as FY2026 (Period 1 starts 9/28/2025; Period 13 ends 10/3/2026, five
+   weeks), needs one more step: edit the Period 13 end date in the table and save again. Only **one** fiscal year's calendar is stored
+   at a time (`shared/fiscal_settings.json`, gitignored); saving FY2027 replaces FY2026. For a fiscal year the saved calendar does not
+   cover, the FIFO page asks for the period end date and takes the receipt window from the day after the last closed period.
+2. **The workbook's own dates are a check, not a source:** `PERIOD END <year>` row 1 is compared with the saved calendar. A date
+   exactly one year off (FY2026's Period 1 reads 10/25/2026, should be 2025) is noted as a workbook typo; a real disagreement about the
+   selected period blocks it, so a missing or wrong calendar cannot silently misplace receipts.
+3. **Receipt cutoff:** before the first close the page shows, next to the Close button, *"First close: this fixes the receipt cutoff
+   at <date>"* with the beginning value that becomes the permanent opening position. The date defaults to the day before the first
+   period processed and can be changed under *Receipt cutoff* until then. After the close it is fixed (`receipt_cutoff()` ignores any
+   later value) and shown as such.
+4. **Guards:** *Re-Seed Period 12 Opening Layers* is unavailable while any period is closed; *Reset All FIFO Layers* says it also clears the
+   register and cutoff and needs its confirmation box; *Reopen* warns when the period is the first one closed with a register, because
+   reopening it releases the cutoff and the opening position. Closing the second and later periods never touches the opening position.

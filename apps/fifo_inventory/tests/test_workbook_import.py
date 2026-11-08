@@ -198,6 +198,12 @@ def test_a_row_with_an_unreadable_date_is_history_unless_its_label_names_this_pe
     result = _read(_workbook(rows, COUNTS))
     assert any("no readable delivery date" in n for n in result.notes)
     assert len(result.receipt_debug["unplaced_rows"]) == 1
+    review = result.receipt_debug["unplaced_review"]                     # the concise table a person reads
+    assert list(review.columns) == ["SOURCE ROW", "MATERIAL", "VENDOR", "DATE AS WRITTEN", "PO #", "INVOICE #",
+                                    "QUANTITY", "COST", "PERIOD LABEL"]
+    row = review.iloc[0]
+    assert row["MATERIAL"] == "Preforms" and row["DATE AS WRITTEN"] == "6/28/222" and row["QUANTITY"] == "58"
+    assert row["SOURCE ROW"] >= 2 and row["PO #"] == "PO1" and row["COST"] == ""
     assert any("Delivery date is missing" in r for r in result.receipt_debug["rejected_rows"]["REASON"])
 
 
@@ -455,3 +461,13 @@ def test_a_calendar_that_disagrees_with_the_workbook_blocks_the_period_it_would_
     result = read_operations_workbook(buffer.getvalue(), FY, PERIOD, MaterialMatcher(PRODUCTS, {}), window, calendar=wrong)
     assert any("disagree about Period 12" in e for e in result.ending.errors)
     assert "Workspace" in result.ending.errors[0]
+
+
+@pytest.mark.skipif(not REAL.exists(), reason="operations' workbook is not on this machine")
+def test_the_real_workbook_lists_ten_old_rows_with_unreadable_dates_and_none_names_fy2026():
+    result = _read(REAL.read_bytes())
+    review = result.receipt_debug["unplaced_review"]
+    assert len(review) == 10
+    assert sorted(review["SOURCE ROW"]) == [27, 74, 94, 357, 358, 359, 360, 361, 426, 494]
+    assert not review["PERIOD LABEL"].str.contains("2026").any()          # none claims this fiscal year
+    from apps.fifo_inventory.excel_export import export_master_excel  # noqa: F401  (Checks lists them too; see test_workpaper)

@@ -53,6 +53,9 @@
 > - Sheets: a hidden duplicate beside exactly one visible sheet (`RECEIVED` beside `RECEIVED LOG`, `PERIOD END 20261`) is skipped with a
 >   note. No match, or several visible candidates, is a problem the page asks you to resolve; a `PERIOD END` sheet for another year is
 >   never used. A duplicated or missing required header is an error naming the columns.
+> - **Old rows with unreadable dates** are shown in one concise table (source row, material, vendor, date as written, PO, invoice,
+>   quantity, cost, period label) under *Old rows with unreadable dates, not used* on the page and in the workpaper's Checks sheet, so you can
+>   confirm none belongs to the period. They are never exceptions.
 > - A row with an unreadable date is old junk (a note and a list under Input details) unless its PERIOD label names this period and
 >   fiscal year, in which case it is a rejected row to fix. Separate uploads remain as a fallback.
 > The sections below describe the older alias/period-column parsers in `ingestion.py`, still used by the templates.

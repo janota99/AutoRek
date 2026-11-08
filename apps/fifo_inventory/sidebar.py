@@ -147,6 +147,9 @@ def render_history(layer_store, fiscal_year, current_period, selected_key):
                    "most recently closed period can be reopened - repeat this one period at a time, most-recent "
                    "first, to remove several - because every later period's beginning balance depends on the one "
                    "before it, and deleting one out of order would silently break that chain.")
+        if layer_store.receipt_cutoff() is not None and len(period_history) == 1:
+            st.warning(f"This is the first period closed with a receipt register. Reopening it also releases the receipt "
+                       f"cutoff ({layer_store.receipt_cutoff():%b %d, %Y}) and the opening position, and frees its receipts.")
         confirm_reopen = st.checkbox(f"Confirm reopening {selected_key}", key="confirm_reopen")
         if st.button("Reopen Latest Closed Period (Remove From Memory)", disabled=not confirm_reopen):
             try:
@@ -156,6 +159,7 @@ def render_history(layer_store, fiscal_year, current_period, selected_key):
             except Exception as exc:
                 st.error(str(exc))
 
+    st.caption("Resetting clears every layer, the closed-period history, the receipt register and the receipt cutoff.")
     confirm_reset = st.checkbox("Confirm complete layer-history reset", key="confirm_layer_reset")
     if st.button("Reset All FIFO Layers", disabled=not confirm_reset):
         layer_store.reset_all()
@@ -166,7 +170,10 @@ def render_history(layer_store, fiscal_year, current_period, selected_key):
     st.divider()
     st.subheader("Period 12 Opening Layers")
     st.caption(f"The embedded opening seed belongs to FY{OPENING_SEED_FISCAL_YEAR} Period 12 only.")
-    if fiscal_year == OPENING_SEED_FISCAL_YEAR and current_period == 12:
+    if period_history:
+        st.caption("Re-seeding is unavailable while any period is closed: it would replace the saved layers with the "
+                   "opening seed and break the chain. Reopen the closed periods first if you really need it.")
+    elif fiscal_year == OPENING_SEED_FISCAL_YEAR and current_period == 12:
         confirm_seed = st.checkbox("Confirm opening-layer re-seed", key="confirm_seed")
         if st.button("Re-Seed Period 12 Opening Layers", disabled=not confirm_seed):
             overwritten = layer_store.seed_opening_layers(PERIOD_12_OPENING_LAYERS)

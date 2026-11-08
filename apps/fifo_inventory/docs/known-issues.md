@@ -11,6 +11,10 @@ Confirm with the user before changing behavior — some of it may be intentional
 4. **The receipt fiscal year isn't checked.** `extract_period` only reads the period number, so a `P12 FYE 2025` row is accepted in FY2026 P12.
 5. **`sync_beginning` creates $0 layers.** A product with no layers but a nonzero beginning qty gets an unpriced carryover layer, which shows up only as a REVIEW, not a FAIL.
 
+6. **One fiscal calendar is stored at a time.** The Workspace page saves a single fiscal year's calendar; FY2027 replaces FY2026.
+   Enter the next year's calendar when you start it (see period-lifecycle.md, "First use"). The default four-week pattern cannot express a
+   five-week Period 13 such as FY2026's, which is edited by hand.
+
 ## Documentation
 
 FIFO's old standalone `README.md` predated the current code and was retired when the

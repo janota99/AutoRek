@@ -391,6 +391,12 @@ with tab_processing:
             st.caption(_status_line())
             if not receipts_source_present:
                 st.caption("No receipts source was used: no receipts are added this period.")
+            _unplaced = receipt_debug.get('unplaced_review')
+            if isinstance(_unplaced, pd.DataFrame) and not _unplaced.empty:
+                with st.expander(f"Old rows with unreadable dates, not used ({len(_unplaced)})", expanded=False):
+                    st.caption("The delivery date could not be read and no period label names this fiscal year, so these "
+                               "cannot be placed. They are listed only so you can check none belongs to this period.")
+                    st.dataframe(_unplaced, width="stretch", hide_index=True)
             if source_notes:
                 with st.expander(f"What was read ({len(source_notes)} note(s))", expanded=False):
                     for note in source_notes:
@@ -586,6 +592,21 @@ with tab_processing:
             elif accepted:
                 st.caption(f"Closing accepts the {counts['REVIEW']} review item(s) and "
                            f"{len(staged['input_warnings'])} warning(s) shown above.")
+            if not commit_blocked and not already_closed:
+                _opening_value = sum(r['metrics']['beg_val'] for r in all_results)
+                if stored_cutoff is None and receipt_cutoff is not None:
+                    st.warning(
+                        f"**First close: this fixes the receipt cutoff at {receipt_cutoff:%b %d, %Y}.** The beginning "
+                        f"layers above (${_opening_value:,.2f}) become the permanent opening inventory position; "
+                        f"receipts dated on or before {receipt_cutoff:%b %d, %Y} are presumed already included in them. "
+                        "To use a different day, change it under Receipt cutoff before closing. It cannot be changed "
+                        "afterwards (only reopening this first period releases it).", icon=":material/lock_clock:")
+                elif stored_cutoff is None:
+                    st.warning("First close: no receipt cutoff applies (no fiscal calendar or closed period dates this "
+                               "period).")
+                else:
+                    st.caption(f"Receipt cutoff {stored_cutoff:%b %d, %Y} (fixed). Closing adds this period's receipts to "
+                               "the register; the opening position is not touched.")
             commit_col, discard_col = st.columns(2)
             with commit_col:
                 if st.button(f"Close {selected_key} & save ending layers", disabled=commit_blocked, type="primary",
