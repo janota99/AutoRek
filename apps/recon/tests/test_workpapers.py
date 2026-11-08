@@ -2408,3 +2408,33 @@ def test_ac001_je_amount_bridges_engine_released_and_excluded(qb_mapping, inf_ma
     )
     assert "ReviewHolds[Amount]" in debit_formula and '"Release to JE"' in debit_formula
     assert "QuickBooksExceptions[Amount]" in debit_formula and '"Exclude"' in debit_formula
+
+
+def test_aggregates_name_the_period_mismatch_when_every_column_is_mapped_but_no_row_is_in_the_selected_period(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    """Empty tables used to say the columns were "not mapped" even when they were: the selected period simply held no
+    QuickBooks rows. The totals stay empty (the period scope is unchanged); the caption now says why."""
+    qb_rows = [{"PO": "PO1", "Invoice": "INV1", "Amount": 100.00, "Qty": 3, "Period": "1",
+                "Customer": "Acme", "Date": "2026-01-05", "Description": "ALLSUPS 24"}]
+    inf_rows = [{"PO": "PO1", "Invoice": "INV1", "Amount": 100.00, "Period": "1", "Customer": "Acme",
+                 "Date": "2026-01-05"}]
+    result = build_reconciliation(
+        pd.DataFrame(qb_rows), pd.DataFrame(inf_rows), {**qb_mapping, "product": "Description"}, inf_mapping,
+        make_metadata(fiscal_period=5), 2026,
+    )
+    assert result.product_summary.empty and result.customer_summary.empty
+    ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Aggregates"]
+    text = " ".join(str(c.value) for row in ws.iter_rows() for c in row if c.value)
+    assert text.count("selected period (P05-2026)") == 2          # product and customer tables
+    assert "this file's rows are in P01-2026" in text
+    assert "not all mapped" not in text
+
+
+def test_aggregates_still_say_not_mapped_when_a_column_really_is_not_mapped(
+    qb_mapping, inf_mapping, make_metadata,
+):
+    result = _reference_result(qb_mapping, inf_mapping, make_metadata)          # no product column mapped
+    ws = load_workbook(io.BytesIO(build_primary_workbook(result)))["Aggregates"]
+    text = " ".join(str(c.value) for row in ws.iter_rows() for c in row if c.value)
+    assert "product description column are not all mapped" in text

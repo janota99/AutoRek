@@ -42,6 +42,7 @@ from ..excel_styles import (
     fix_row_height,
 )
 from ..matching import parse_fiscal_period, ReconciliationResult
+from ..matching.core import FISCAL_LABEL
 from ..matching.review_decisions import adjusted_je_amount
 from .tables import (
     _decisions_missing_support_expr,
@@ -167,6 +168,23 @@ def _customer_bottle_note(result: ReconciliationResult) -> str:
     )
 
 
+def _empty_aggregate_caption(result: ReconciliationResult, needed: tuple[str, ...], not_mapped: str) -> str:
+    """Why an aggregate table is empty. A table is also empty when every column is mapped but no primary QuickBooks
+    row falls in the selected fiscal period, and saying "not mapped" then sends the reviewer to the wrong place."""
+    selected = result.metadata.get("fiscal_period")
+    if selected is None or not all(result.qb_mapping.get(field) for field in needed):
+        return not_mapped
+    labels = result.qb_work[FISCAL_LABEL] if FISCAL_LABEL in result.qb_work.columns else pd.Series(dtype=object)
+    present = sorted({str(label) for label in labels.dropna() if str(label) and str(label) != "Unspecified"})
+    year = int(result.metadata.get("fiscal_year") or 0)
+    chosen = f"P{int(selected):02d}-{year}"
+    if not present:
+        return f"No primary QuickBooks rows could be placed in the selected period ({chosen}), so there is nothing to total."
+    shown = ", ".join(present[:5]) + (f" and {len(present) - 5} more" if len(present) > 5 else "")
+    return (f"No primary QuickBooks rows are in the selected period ({chosen}); this file's rows are in {shown}. "
+            "Choose the period the data belongs to and run again to fill this table. Nothing was left out by mapping.")
+
+
 def build_aggregates_sheet(
     wb: Workbook, result: ReconciliationResult, *, sheet_title: str = "Product Aggregate Summary",
 ) -> None:
@@ -191,8 +209,10 @@ def build_aggregates_sheet(
         populated_caption="Cases, bottles, and value by product, for bottle-count reconciliation. "
         "QuickBooks QTY is a case count; Bottle Count = Bottles per Case × Case Quantity. "
         f"{period_scope}",
-        empty_caption="A QuickBooks quantity column, an amount column, and a product description "
-        "column are not all mapped, so no product breakdown is available.",
+        empty_caption=_empty_aggregate_caption(
+            result, ("quantity", "amount", "product"),
+            "A QuickBooks quantity column, an amount column, and a product description "
+            "column are not all mapped, so no product breakdown is available."),
         color=NAVY, value_header="Product Value", bottle_formula=True,
     )
     if len(result.product_summary):
@@ -202,8 +222,10 @@ def build_aggregates_sheet(
         title="CUSTOMER AGGREGATE SUMMARY",
         populated_caption=f"Cases, bottles, and value by QuickBooks Customer. {period_scope}"
         + _customer_bottle_note(result),
-        empty_caption="A QuickBooks quantity column, an amount column, and a Customer column are "
-        "not all mapped, so no customer breakdown is available.",
+        empty_caption=_empty_aggregate_caption(
+            result, ("quantity", "amount", "customer"),
+            "A QuickBooks quantity column, an amount column, and a Customer column are "
+            "not all mapped, so no customer breakdown is available."),
         color=TEAL, value_header="Customer Value",
     )
     ws.freeze_panes = "A4"
