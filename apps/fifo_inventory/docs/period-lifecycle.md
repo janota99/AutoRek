@@ -71,13 +71,14 @@ When changing the snapshot shape: bump `SNAPSHOT_SCHEMA_VERSION` in `user_inputs
    calendar rather than rebuilding it. The FIFO page uses the calendar of the fiscal year it is processing (`calendar_for_year`), and the
    Workspace period-end date resolves against whichever saved year contains it. For a fiscal year with no saved calendar, the FIFO page asks
    for the period end date and takes the receipt window from the day after the last closed period.
-2. **The workbook's own dates are a check, not a source:** `PERIOD END <year>` row 1 is compared with the saved calendar. A date
-   exactly one year off (FY2026's Period 1 reads 10/25/2026, should be 2025) is noted as a workbook typo; a real disagreement about the
-   selected period blocks it, so a missing or wrong calendar cannot silently misplace receipts.
-   When the calendar and the workbook disagree about the selected period the page shows **Fiscal Period Mismatch — Action Required**:
-   the selected fiscal year and period, the workbook's period-end date, the Workspace calendar's date, the instruction to update the
-   calendar in Workspace, and a link there. Nothing is calculated, downloaded or closed until the dates match; the counts and lists that
-   depend on the receipt window are hidden meanwhile so they cannot mislead.
+2. **The saved Workspace calendar is the authority; the workbook's dates are only a check.** Only a calendar a person saved
+   counts (`fiscal_session.verified_calendar`): the placeholder the Workspace shows before any calendar is entered is never used.
+   With the operations workbook uploaded, a missing, other-year or internally inconsistent calendar **blocks** processing
+   (*Fiscal Calendar Required: Action Required*, with a link to Workspace); nothing is read and no default is substituted
+   (`intake.calendar_problem`). When `PERIOD END <year>` row 1 disagrees with the calendar for the selected period, the page
+   **warns**, naming both dates, and carries on using the calendar; it does not block. A date exactly a year off is noted as a typo.
+   The warning joins the other input warnings (acknowledged with the close checkbox like any other). The separate-upload path, which
+   has no workbook dates, still falls back to the entered period end date and the last close.
 3. **Receipt cutoff:** before the first close the page shows, next to the Close button, *"First close: this fixes the receipt cutoff
    at <date>"* with the beginning value that becomes the permanent opening position. The date defaults to the day before the first
    period processed and can be changed under *Receipt cutoff* until then. After the close it is fixed (`receipt_cutoff()` ignores any

@@ -18,7 +18,7 @@
 > - `RECEIVED LOG` (header row; found by header names, with a note if columns moved): material = **ITEMS** (B; DESCRIPTION holds a
 >   vendor and never decides it), date = DATE DELIVERED (D), PO # (H), QUANTITY (I), **PRICE (J) = the receipt's total cost**, PERIOD (K),
 >   INVOICE # (L). Unit cost is PRICE / QUANTITY. Only rows dated inside the selected period (calendar window) are evaluated; the rest
->   of the history is counted, not examined. A row already inside the saved layers' lineage (same material, date, quantity, total, PO,
+>   of the history is counted, not examined. A receipt that matches a registered one on material, quantity, cost and PO/invoice but not the delivery date is recognized and warned about, never dropped on a guess. A row already inside the saved layers' lineage (same material, date, quantity, total, PO,
 >   invoice) is not added again. Column K is a cross-check, never the filter: a label that disagrees with the date warns (the date
 >   wins), and a row labelled for this period and fiscal year but dated outside it is listed as not used.
 > - **Every valid receipt is recognized exactly once, around an explicit receipt cutoff.** The opening FIFO layers are the

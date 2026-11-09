@@ -73,6 +73,24 @@ def calendar_applies(calendar, fiscal_year: int) -> bool:
     return calendar is not None and int(calendar.year) == int(fiscal_year) and validate(calendar) is None
 
 
+def calendar_problem(calendar, fiscal_year: int) -> Optional[str]:
+    """Why the saved Workspace calendar cannot be the authority for this fiscal year, or None when it can.
+
+    ``calendar`` is the verified (saved) calendar for the year, or None when there is none. A missing, mismatched or
+    internally inconsistent calendar blocks processing; no default calendar is ever substituted."""
+    from shared.fiscal_calendar import validate
+    if calendar is None:
+        return (f"No saved fiscal calendar exists for FY{int(fiscal_year)}. The Workspace calendar decides which period each "
+                "receipt belongs to, so enter and save it on the Workspace page first.")
+    if int(calendar.year) != int(fiscal_year):
+        return (f"The Workspace calendar is for FY{int(calendar.year)}, not FY{int(fiscal_year)}. Save the FY{int(fiscal_year)} "
+                "calendar on the Workspace page first.")
+    problem = validate(calendar)
+    if problem:
+        return f"The Workspace calendar for FY{int(fiscal_year)} is not usable: {problem} Correct it on the Workspace page."
+    return None
+
+
 def period_window(fiscal_year: int, period: int, calendar, period_end: date,
                   last_close_end: Optional[date] = None) -> PeriodWindow:
     """The calendar's dates for the period if it covers this fiscal year; otherwise the days after the
@@ -707,6 +725,32 @@ def prepare_period_receipts(df_upload: pd.DataFrame, matcher: MaterialMatcher, w
         off_year = int((valid['_LABEL_YEAR'].notna() & (valid['_LABEL_YEAR'] != int(fiscal_year))).sum())
         if off_year:
             warnings.append(f"{off_year} receipt row(s) are labelled for a different fiscal year than FY{int(fiscal_year)}.")
+
+    # The register matches a receipt by date as well as quantity, cost and PO/invoice. A row that matches a registered
+    # receipt on everything but the delivery date may be the same delivery with a corrected date, or a second identical
+    # truckload; it is never dropped on a guess, but a person is told so it is not counted twice unnoticed.
+    if known_receipts and not valid.empty:
+        by_ref: dict = {}
+        for (r_alias, r_day, r_qty, r_total, r_po, r_inv), n in known_receipts.items():
+            for ref in (r_po, r_inv):
+                if ref and n > 0:
+                    by_ref.setdefault((r_alias, r_qty, r_total, ref), set()).add(r_day)
+        lookalikes = []
+        for _, row in valid.iterrows():
+            if pd.isna(row['_ALIAS']):
+                continue
+            for column in ('PO #', 'INVOICE #'):
+                ref = normalize_name(row[column]) if column in row.index and not _is_blank(row[column]) else ""
+                days = by_ref.get((int(row['_ALIAS']), round(float(row['_QTY']), 4), round(float(row['_PRICE']), 2), ref)) if ref else None
+                if days and str(row['_DATE'].date()) not in days:
+                    lookalikes.append(f"source row {row['_SOURCE_ROW']} ({_row_label(row, id_columns)}, delivered "
+                                      f"{row['_DATE']:%Y-%m-%d})")
+                    break
+        if lookalikes:
+            warnings.append(f"{len(lookalikes)} receipt row(s) match an already recognized receipt on material, quantity, cost "
+                            "and PO/invoice but carry a different delivery date, so they were recognized as new: "
+                            + "; ".join(lookalikes[:5]) + (" ..." if len(lookalikes) > 5 else "")
+                            + ". Check that none is the same delivery with a corrected date.")
 
     # Receipts dated before the cutoff but assigned to a later period (or whose evidence conflicts): ask the
     # opening layers, then the one-time decision, never a guess.

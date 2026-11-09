@@ -29,6 +29,7 @@ SETTINGS_PATH = Path(os.environ.get("FISCAL_SETTINGS_PATH", Path(__file__).resol
 _LOADED = "suite_fiscal_loaded"
 _CALENDAR = "suite_fiscal_calendar"
 _CALENDARS = "suite_fiscal_calendars"
+_VERIFIED = "suite_fiscal_verified"      # fiscal years whose calendar came from the saved file or an explicit Save
 _END = "suite_fiscal_end"
 _CONTEXT = "suite_fiscal_context"
 _VERSION = "suite_fiscal_version"
@@ -109,6 +110,7 @@ def _ensure_loaded() -> None:
     st.session_state[_CALENDAR] = calendar or default_calendar(date.today().year)
     st.session_state[_CALENDARS] = dict(calendars) if calendars else {st.session_state[_CALENDAR].year: st.session_state[_CALENDAR]}
     st.session_state[_END] = end
+    st.session_state[_VERIFIED] = set(calendars)      # the default placeholder above is never among them
     _refresh()
 
 
@@ -141,6 +143,17 @@ def calendar_for(year: int) -> Optional[FiscalCalendar]:
     return _calendars().get(int(year))
 
 
+def verified_calendar(year: int) -> Optional[FiscalCalendar]:
+    """That fiscal year's calendar only if a person saved it (loaded from the saved file, or saved this session), else None.
+
+    The default placeholder the workspace shows before any calendar is entered is never verified, so a tool that needs
+    authoritative period dates uses this rather than ``calendar_for_year``."""
+    _ensure_loaded()
+    if int(year) not in st.session_state.get(_VERIFIED, set()):
+        return None
+    return calendar_for(year)
+
+
 def calendar_for_year(year: int) -> FiscalCalendar:
     """The calendar a tool should use for the fiscal year it is processing: that year's saved calendar, else the active one
     (which a tool then recognizes as not covering the year)."""
@@ -151,6 +164,7 @@ def set_calendar(calendar: FiscalCalendar) -> None:
     """Save this year's calendar (every other year's stays) and make it the active one."""
     _ensure_loaded()
     calendars = _calendars()
+    st.session_state.setdefault(_VERIFIED, set()).add(int(calendar.year))
     if calendar == st.session_state[_CALENDAR] and calendars.get(calendar.year) == calendar:
         return
     calendars[calendar.year] = calendar

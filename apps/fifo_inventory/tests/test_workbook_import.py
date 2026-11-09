@@ -447,9 +447,9 @@ def test_a_year_typo_in_the_workbook_is_noted_and_the_calendar_is_used():
     assert p12.ending.errors == [] and p12.ending.warnings == [] and not any("typo" in n for n in p12.ending.notes)
 
 
-def test_a_calendar_that_disagrees_with_the_workbook_blocks_the_period_it_would_misplace():
+def test_a_calendar_that_disagrees_with_the_workbook_warns_and_the_calendar_wins():
     from shared.fiscal_calendar import default_calendar
-    wrong = default_calendar(2026, date(2026, 1, 1))                   # what the app starts with before a calendar is set
+    wrong = default_calendar(2026, date(2026, 1, 1))                   # a calendar the workbook's dates do not match
     from openpyxl import load_workbook
     wb = load_workbook(io.BytesIO(_workbook(GOOD_ROWS, COUNTS)))
     sheet = wb["PERIOD END 2026"]
@@ -459,8 +459,10 @@ def test_a_calendar_that_disagrees_with_the_workbook_blocks_the_period_it_would_
     wb.save(buffer)
     window = period_window(FY, PERIOD, wrong, wrong.period_ends[11])
     result = read_operations_workbook(buffer.getvalue(), FY, PERIOD, MaterialMatcher(PRODUCTS, {}), window, calendar=wrong)
-    assert any("disagree about Period 12" in e for e in result.ending.errors)
-    assert "Workspace" in result.ending.errors[0]
+    assert result.ending.errors == [] and result.ending.structural == []
+    warning = next(w for w in result.ending.warnings if "Period 12" in w)
+    assert "Aug 29, 2026" in warning and f"{wrong.period_ends[11]:%b %d, %Y}" in warning and "Workspace" in warning
+    assert result.ending.calendar_mismatch["workbook_date"] == date(2026, 8, 29)
 
 
 @pytest.mark.skipif(not REAL.exists(), reason="operations' workbook is not on this machine")

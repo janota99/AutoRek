@@ -28,7 +28,7 @@ def render_sidebar(layer_store):
         fiscal_year = int(st.number_input("Fiscal Year", min_value=2000, max_value=2200, step=1,
                                           key="fifo_fiscal_year"))
         current_period = st.selectbox("Select Fiscal Period", range(1, 14), key="fifo_fiscal_period")
-        calendar = fiscal_session.calendar_for_year(fiscal_year)
+        calendar = fiscal_session.verified_calendar(fiscal_year)
         if calendar_applies(calendar, fiscal_year):
             # The fiscal calendar already says when the period ends; no second date to keep in step.
             period_end_date = calendar.period_ends[int(current_period) - 1]

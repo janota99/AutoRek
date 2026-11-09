@@ -216,11 +216,12 @@ def _sheet_date(value):
 
 
 def _calendar_findings(raw: pd.DataFrame, header_row: int, columns: dict, calendar, period: int, sheet: str):
-    """Compare the sheet's period-end dates with the fiscal calendar: (errors, warnings, notes).
+    """Compare the sheet's period-end dates with the fiscal calendar: (errors, warnings, notes, info).
 
-    A date that is exactly a year away from the calendar's, while its neighbours agree, is a typo in the workbook:
-    the calendar is used and it is noted when it concerns the selected period. A real disagreement about the
-    selected period is blocking, because the calendar decides which receipts belong to it."""
+    The saved Workspace calendar is the authority; the sheet's dates never override it and a disagreement never blocks.
+    A date exactly a year away from the calendar's, while its neighbours agree, is noted as a typo. A real disagreement
+    about the selected period is a warning naming both dates (``info`` carries them for the page); disagreements about
+    other periods are one summary warning. ``errors`` is always empty and kept for the caller's shape."""
     if header_row < 1 or calendar is None:
         return [], [], [], None
     mismatch, typo = {}, set()
@@ -235,25 +236,24 @@ def _calendar_findings(raw: pd.DataFrame, header_row: int, columns: dict, calend
         if abs((shown - wanted).days) in (365, 366):
             typo.add(p)
     real = {p: v for p, v in mismatch.items() if p not in typo}
-    errors, warnings, notes, info = [], [], [], None
+    warnings, notes, info = [], [], None
     if period in real:
         shown, wanted = real[period]
-        # What the page shows next to the blocking message; the message itself and the rule are unchanged.
         info = {"sheet": sheet, "fiscal_year": int(calendar.year), "period": int(period), "workbook_date": shown,
                 "calendar_date": wanted, "periods_differing": len(real), "periods_compared": len(columns)}
-        errors.append(
-            f"The fiscal calendar and '{sheet}' disagree about Period {period}: the sheet says it ends "
-            f"{shown:%b %d, %Y}, the calendar says {wanted:%b %d, %Y} ({len(real)} of {len(columns)} periods disagree). "
-            "The calendar decides which receipts belong to the period, so correct the calendar on the Workspace page "
-            "(or the sheet) first.")
+        warnings.append(
+            f"'{sheet}' says Period {period} ends {shown:%b %d, %Y}, but the Workspace fiscal calendar says it ends "
+            f"{wanted:%b %d, %Y} ({len(real)} of {len(columns)} periods differ). The Workspace calendar was used, so "
+            "receipts were placed by its dates; the sheet's date was ignored. If the calendar is the one that is "
+            "wrong, correct it on the Workspace page.")
     elif real:
-        warnings.append(f"'{sheet}' and the fiscal calendar disagree about period(s) "
-                        + ", ".join(str(p) for p in sorted(real)) + "; the selected period is not affected.")
+        warnings.append(f"'{sheet}' and the Workspace fiscal calendar disagree about period(s) "
+                        + ", ".join(str(p) for p in sorted(real)) + "; the calendar was used and the selected period is not affected.")
     if period in typo:
         shown, wanted = mismatch[period]
         notes.append(f"'{sheet}' dates Period {period} as ending {shown:%b %d, %Y}, exactly a year from the calendar's "
                      f"{wanted:%b %d, %Y}. That is a year typo in the workbook; the calendar's date was used.")
-    return errors, warnings, notes, info
+    return [], warnings, notes, info
 
 
 def read_period_end(data: bytes, sheet: str, matcher: MaterialMatcher, period: int,
@@ -341,6 +341,7 @@ class OperationsImport:
     receipt_debug: dict = field(default_factory=dict)
     notes: list = field(default_factory=list)
     problems: list = field(default_factory=list)       # sheet-level: choose a sheet / unreadable layout
+    calendar_problem: Optional[str] = None             # the Workspace calendar is missing/invalid: nothing was read
 
     @property
     def has_receipts_source(self) -> bool:
@@ -351,9 +352,19 @@ def read_operations_workbook(data: bytes, fiscal_year: int, period: int, matcher
                              window: PeriodWindow, known_receipts: Optional[dict] = None,
                              cutoff=None, cutoff_period=None, cutoff_layers=None, decisions=None,
                              received_sheet: Optional[str] = None,
-                             period_end_sheet: Optional[str] = None, calendar=None) -> OperationsImport:
+                             period_end_sheet: Optional[str] = None, calendar=None,
+                             require_calendar: bool = False) -> OperationsImport:
+    """Both sources from one workbook. With ``require_calendar`` (the page), ``calendar`` must be the verified Workspace
+    calendar for ``fiscal_year``: when it is missing, for another year or inconsistent, nothing is read and
+    ``calendar_problem`` says why (processing is blocked, never defaulted)."""
     plan = plan_sheets(list_sheets(data), fiscal_year, received_sheet, period_end_sheet)
     result = OperationsImport(plan=plan, notes=list(plan.notes), problems=list(plan.problems))
+    if require_calendar:
+        from .intake import calendar_problem
+        result.calendar_problem = calendar_problem(calendar, fiscal_year)
+        if result.calendar_problem:
+            result.problems.append(result.calendar_problem)
+            return result
 
     if plan.received:
         table, errors, notes = read_received_log(data, plan.received)

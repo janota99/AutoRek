@@ -166,7 +166,7 @@ with tab_processing:
     flow_slot = st.empty()
 
     matcher = current_matcher()
-    window = period_window(fiscal_year, current_period, fiscal_session.calendar_for_year(fiscal_year), period_end_date,
+    window = period_window(fiscal_year, current_period, fiscal_session.verified_calendar(fiscal_year), period_end_date,
                            layer_store.last_closed_as_of())
 
     stored_cutoff = layer_store.receipt_cutoff()
@@ -299,7 +299,7 @@ with tab_processing:
     cutoff_layers = layer_store.cutoff_layers()
     cutoff_period = None
     if receipt_cutoff is not None:
-        _calendar = fiscal_session.calendar_for_year(fiscal_year)
+        _calendar = fiscal_session.verified_calendar(fiscal_year)
         if calendar_applies(_calendar, fiscal_year):
             cutoff_period = locate(_calendar, receipt_cutoff) or 0
         elif receipt_cutoff == default_cutoff:
@@ -315,7 +315,8 @@ with tab_processing:
             ops = read_operations_workbook(
                 ops_upload.getvalue(), fiscal_year, current_period, matcher, window, known_receipts=known_receipts,
                 cutoff=receipt_cutoff, cutoff_period=cutoff_period, cutoff_layers=cutoff_layers,
-                decisions=receipt_decisions, calendar=fiscal_session.calendar_for_year(fiscal_year),
+                decisions=receipt_decisions, calendar=fiscal_session.verified_calendar(fiscal_year),
+                require_calendar=True,
                 received_sheet=ops_received_override,
                 period_end_sheet=ops_period_end_override)
             ending, receipts_data = ops.ending, ops.receipts
@@ -388,8 +389,8 @@ with tab_processing:
             st.info("Upload the operations workbook (or the two reports separately). Every material "
                     "carries its saved layers forward; receipts are added to the materials they name, and an ending "
                     "quantity depletes the oldest layers first.")
-        elif not (ending is not None and ending.calendar_mismatch):
-            # (while the calendar disagrees with the workbook, counts built on the wrong window would only mislead)
+        elif not (ops is not None and ops.calendar_problem):
+            # (while the Workspace calendar is missing or unusable, counts built on a guessed window would only mislead)
             st.caption(_status_line())
             if not receipts_source_present:
                 st.caption("No receipts source was used: no receipts are added this period.")
@@ -403,25 +404,12 @@ with tab_processing:
                 with st.expander(f"What was read ({len(source_notes)} note(s))", expanded=False):
                     for note in source_notes:
                         st.markdown(f"- {note}")
-        _mismatch = ending.calendar_mismatch if ending is not None else None
-        if _mismatch:
+        _calendar_block = ops.calendar_problem if ops is not None else None
+        if _calendar_block:
             with st.container(border=True):
-                st.error("**Fiscal Period Mismatch — Action Required**\n\n"
-                         "The selected fiscal period's dates do not match the reporting dates in the uploaded operations workbook.",
-                         icon=":material/event_busy:")
-                st.markdown(
-                    "| Selected fiscal year | Selected period | Workbook period-end date | Workspace calendar period-end date |\n"
-                    "|---|---|---|---|\n"
-                    f"| FY{_mismatch['fiscal_year']} | Period {_mismatch['period']:02d} | "
-                    f"**{_mismatch['workbook_date']:%b %d, %Y}** (sheet '{_mismatch['sheet']}') | "
-                    f"**{_mismatch['calendar_date']:%b %d, %Y}** |")
-                st.markdown(
-                    "Update the fiscal calendar in Workspace to resolve this discrepancy. FIFO calculations and Excel "
-                    "downloads will become available once the dates match.")
-                if _mismatch['periods_differing'] > 1:
-                    st.caption(f"{_mismatch['periods_differing']} of {_mismatch['periods_compared']} periods in the workbook "
-                               "disagree with the saved calendar, which usually means the calendar for this fiscal year "
-                               "has not been entered yet.")
+                st.error("**Fiscal Calendar Required: Action Required**\n\n" + _calendar_block
+                         + "\n\nThe workbook's own period dates are never used in its place. FIFO calculations and Excel "
+                         "downloads become available once the calendar is saved.", icon=":material/event_busy:")
                 try:
                     st.page_link(DASHBOARD_SCRIPT, label="Open Workspace to update the fiscal calendar",
                                  icon=":material/calendar_month:")
@@ -444,7 +432,7 @@ with tab_processing:
                                   if isinstance(f, pd.DataFrame) and not f.empty], ignore_index=True) \
             if any(isinstance(f, pd.DataFrame) and not f.empty
                    for f in (receipt_debug.get('review_rows'), receipt_debug.get('decided_rows'))) else pd.DataFrame()
-        if not review_frame.empty and not _mismatch:
+        if not review_frame.empty:
             def _decide(widget_key, receipt_key):
                 choice = st.session_state.get(widget_key)
                 mapped = {"Include in this period": 'include', "Already in the opening layers": 'opening'}.get(choice)
@@ -466,7 +454,7 @@ with tab_processing:
                         _choices, index={None: 0, 'include': 1, 'opening': 2}[current],
                         key=f"rv::{row['KEY']}", on_change=_decide, args=(f"rv::{row['KEY']}", row['_KEY']))
         late_rows = receipt_debug.get('late_rows')
-        if isinstance(late_rows, pd.DataFrame) and not late_rows.empty and not _mismatch:
+        if isinstance(late_rows, pd.DataFrame) and not late_rows.empty:
             with st.expander(f"Late receipts picked up ({len(late_rows)})", expanded=True):
                 st.caption("These deliveries are dated before this period but were never processed in an earlier one, "
                            f"so they are recognized in {selected_key}. Delivery date and reported period are kept.")
