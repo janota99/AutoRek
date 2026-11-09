@@ -38,16 +38,67 @@ def default_calendar(year: int, start: Optional[date] = None) -> FiscalCalendar:
     return FiscalCalendar(year, start, default_period_ends(start))
 
 
+def suggest_period_ends(start: date, period13_days: int = DEFAULT_PERIOD_DAYS) -> tuple[date, ...]:
+    """Twelve four-week periods from ``start``, then Period 13 of ``period13_days`` (28, or 35 for a five-week year)."""
+    twelve = default_period_ends(start)[:PERIOD_COUNT - 1]
+    return twelve + (twelve[-1] + timedelta(days=period13_days),)
+
+
+def schedule_problems(start: date, ends) -> list[str]:
+    """Every plain-language problem with a schedule, each naming the dates in conflict. Empty means usable.
+
+    Checks exactly what was given, in order: thirteen dates, each one after the day before Period 1 starts (Period 1) or after
+    the previous period's end."""
+    ends = list(ends)
+    if len(ends) != PERIOD_COUNT:
+        return [f"A fiscal year needs {PERIOD_COUNT} period end dates; {len(ends)} were given."]
+    problems, previous, label = [], start, f"Period 1 start {start:%Y-%m-%d}"
+    for number, end in enumerate(ends, start=1):
+        if end is None:
+            problems.append(f"Period {number:02d} has no end date.")
+            continue
+        if end < previous or (number > 1 and end == previous) or (number == 1 and end < start):
+            if number == 1:
+                problems.append(f"Period 01 ends {end:%Y-%m-%d}, before it starts ({start:%Y-%m-%d}).")
+            else:
+                problems.append(f"Period {number:02d} ends {end:%Y-%m-%d}, which is not after {label} ({previous:%Y-%m-%d}).")
+        else:
+            previous, label = end, f"Period {number:02d}'s end"
+    return problems
+
+
+def parse_period_end_dates(text: str) -> tuple[Optional[tuple[date, ...]], Optional[str]]:
+    """(dates, None) for pasted text holding exactly thirteen dates, else (None, the reason).
+
+    Dates may be separated by new lines, tabs, commas or semicolons, and written as 2025-10-25, 10/25/2025 or 10/25/25
+    (month first). A cell that is not a date is named, never skipped."""
+    import re
+    separators = "[" + chr(10) + chr(13) + chr(9) + ",;]+"
+    pieces = [p.strip() for p in re.split(separators, text or "") if p.strip()]
+    dates = []
+    for position, piece in enumerate(pieces, start=1):
+        parsed = None
+        for pattern, order in ((r"^(\d{4})-(\d{1,2})-(\d{1,2})$", "ymd"), (r"^(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})$", "mdy")):
+            m = re.match(pattern, piece)
+            if m:
+                a, b, c = (int(g) for g in m.groups())
+                y, mo, d = (a, b, c) if order == "ymd" else ((c + 2000 if c < 100 else c), a, b)
+                try:
+                    parsed = date(y, mo, d)
+                except ValueError:
+                    parsed = None
+        if parsed is None:
+            return None, f"Entry {position} ('{piece}') is not a date. Use 2025-10-25 or 10/25/2025."
+        dates.append(parsed)
+    if len(dates) != PERIOD_COUNT:
+        return None, f"Found {len(dates)} dates; paste exactly {PERIOD_COUNT}, one per period."
+    return tuple(dates), None
+
+
 def validate(calendar: FiscalCalendar) -> Optional[str]:
     """A plain-language problem with the calendar, or None when it is usable."""
-    if len(calendar.period_ends) != PERIOD_COUNT:
-        return f"A fiscal year needs {PERIOD_COUNT} period end dates."
-    previous = calendar.start - timedelta(days=1)
-    for number, end in enumerate(calendar.period_ends, start=1):
-        if end <= previous:
-            return f"Period {number:02d} must end after {previous:%Y-%m-%d}."
-        previous = end
-    return None
+    problems = schedule_problems(calendar.start, calendar.period_ends)
+    return problems[0] if problems else None
 
 
 def locate(calendar: FiscalCalendar, day: date) -> Optional[int]:

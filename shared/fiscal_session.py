@@ -21,7 +21,8 @@ from typing import Optional
 
 import streamlit as st
 
-from .fiscal_calendar import FiscalCalendar, FiscalContext, default_calendar, resolve, validate
+from .fiscal_calendar import (DEFAULT_PERIOD_DAYS, FiscalCalendar, FiscalContext, default_calendar, resolve,
+                              suggest_period_ends, validate)
 
 # Saved on the server's disk like FIFO's app_settings.json, so it is shared by everyone using this copy of the app
 # and survives restarts. Real company settings: gitignored. FISCAL_SETTINGS_PATH overrides it (tests do).
@@ -196,6 +197,25 @@ def calendar_from_edit(year: int, start: date, ends: tuple) -> FiscalCalendar:
             return saved
         return default_calendar(int(year), start)
     return FiscalCalendar(int(year), start, tuple(ends))
+
+
+def suggested_ends(year: int, start: date, period13_days: Optional[int] = None) -> tuple[date, ...]:
+    """The thirteen period ends to offer for a fiscal year that starts on ``start``.
+
+    A year already saved with this start keeps its saved dates (so a five-week Period 13 survives a visit). Otherwise twelve
+    four-week periods, then Period 13 of ``period13_days`` (28 or 35); when not given, the length that makes Period 13 end the
+    day before the next saved year starts, else four weeks."""
+    saved = calendar_for(year)
+    if saved is not None and saved.start == start and period13_days is None:
+        return saved.period_ends
+    if period13_days is None:
+        period13_days = DEFAULT_PERIOD_DAYS
+        following = calendar_for(int(year) + 1)
+        if following is not None:
+            gap = (following.start - suggest_period_ends(start)[11]).days - 1
+            if gap in (28, 35):
+                period13_days = gap
+    return suggest_period_ends(start, period13_days)
 
 
 def set_end_date(end: Optional[date]) -> None:

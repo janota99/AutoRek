@@ -9,6 +9,7 @@ Feedback is its own page in the navigation bar; the account strip (shared/suite_
 """
 import html
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -17,7 +18,8 @@ import streamlit as st
 from apps import sales_page
 from apps.sales_page import TIERS
 from shared import fiscal_session
-from shared.fiscal_calendar import PERIOD_COUNT, FiscalCalendar, default_calendar, validate
+from shared.fiscal_calendar import (PERIOD_COUNT, FiscalCalendar, default_calendar, parse_period_end_dates,
+                                    schedule_problems, validate)
 from shared.layout import APPS
 from shared.styles import style_tag
 
@@ -176,12 +178,20 @@ if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
 
 
 
-def _calendar_editor(calendar: FiscalCalendar) -> None:
-    """The calendar controls: fiscal year, first day of Period 1, and an editable end date for each period.
+def _apply_pasted_dates(resets: int) -> None:
+    """Callback for "Use these dates": fill the thirteen date boxes from the pasted text, or say what is wrong with it."""
+    dates, problem = parse_period_end_dates(st.session_state.get(f"pp-fiscal-paste-{resets}", ""))
+    st.session_state[f"pp-fiscal-paste-error-{resets}"] = problem
+    if dates:
+        for number, day in enumerate(dates, start=1):
+            st.session_state[f"pp-fiscal-end-{number}-{resets}"] = day
 
-    Edits are held in a form and saved only by "Save calendar", so a half-finished edit is never stored. Changing only
-    the year or the start date rebuilds the 13 end dates from it; edit the table to set them by hand.
-    """
+
+def _calendar_editor(calendar: FiscalCalendar) -> None:
+    """Fiscal calendar setup: year and Period 1 start fill in the thirteen period ends; any date can be adjusted or pasted.
+
+    What is validated and saved is exactly what the date boxes show. Changing the year or start regenerates the dates (a year
+    already saved with that start keeps its saved dates); changing Period 13's length changes only Period 13."""
     resets = st.session_state.get("pp-fiscal-resets", 0)
     years = fiscal_session.saved_years()
     if len(years) > 1:
@@ -191,31 +201,60 @@ def _calendar_editor(calendar: FiscalCalendar) -> None:
         if chosen != calendar.year and fiscal_session.use_calendar(chosen):
             st.session_state["pp-fiscal-resets"] = resets + 1
             st.rerun()
-    with st.form("pp-fiscal-form", border=False):
-        year_col, start_col = st.columns(2)
-        year = int(year_col.number_input("Fiscal year", 1900, 2199, calendar.year, 1, key=f"pp-fiscal-year-{resets}"))
-        start = start_col.date_input("Period 1 starts", calendar.start, key=f"pp-fiscal-start-{resets}")
-        edited = st.data_editor(
-            pd.DataFrame({"Period": [f"{n:02d}" for n in range(1, PERIOD_COUNT + 1)],
-                          "Ends": list(calendar.period_ends)}),
-            hide_index=True, disabled=["Period"], width="stretch", num_rows="fixed",
-            column_config={"Ends": st.column_config.DateColumn("Period end date", format="YYYY-MM-DD", required=True)},
-            key=f"pp-fiscal-ends-{resets}",
-        )
-        saved = st.form_submit_button("Save calendar", type="primary", icon=":material/save:")
-    if saved:
-        ends = tuple(d.date() if hasattr(d, "date") else d for d in edited["Ends"])
-        # An edited table is taken as typed. Only the year or start changed: that year's saved calendar if it has one with this
-        # start, else thirteen four-week periods from the start rather than end dates that no longer fit.
-        new_calendar = fiscal_session.calendar_from_edit(year, start, ends)
-        problem = validate(new_calendar)
-        if problem:
-            st.error(problem + " Nothing was saved. Fix the period end dates in the table.")
-        else:
-            fiscal_session.set_calendar(new_calendar)
-            st.session_state["pp-fiscal-resets"] = resets + 1   # fresh widgets that show what was saved
-            st.session_state["pp-fiscal-flash"] = True
-            st.rerun()
+    ky, ks, kp, kb = (f"pp-fiscal-year-{resets}", f"pp-fiscal-start-{resets}", f"pp-fiscal-p13-{resets}",
+                      f"pp-fiscal-basis-{resets}")
+    end_key = lambda n: f"pp-fiscal-end-{n}-{resets}"      # noqa: E731
+    weeks = {"4 weeks": 28, "5 weeks": 35}
+    if ky not in st.session_state:                          # first sight of this calendar: show exactly what is saved
+        st.session_state[ky], st.session_state[ks] = calendar.year, calendar.start
+        st.session_state[kp] = "5 weeks" if (calendar.period_ends[12] - calendar.period_ends[11]).days == 35 else "4 weeks"
+        for number, day in enumerate(calendar.period_ends, start=1):
+            st.session_state[end_key(number)] = day
+        st.session_state[kb] = (calendar.year, calendar.start, st.session_state[kp])
+    # A change is read from the widgets' stored values *before* they are drawn, so the dates (and the Period 13 choice) can be
+    # updated in the same run.
+    year, start, p13 = st.session_state[ky], st.session_state[ks], st.session_state[kp]
+    old_year, old_start, old_p13 = st.session_state[kb]
+    if (year, start) != (old_year, old_start):             # a different year or start: offer its dates afresh
+        fresh = fiscal_session.suggested_ends(int(year), start)
+        for number, day in enumerate(fresh, start=1):
+            st.session_state[end_key(number)] = day
+        p13 = st.session_state[kp] = "5 weeks" if (fresh[12] - fresh[11]).days == 35 else "4 weeks"
+    elif p13 != old_p13:                                   # only Period 13's length changed
+        st.session_state[end_key(13)] = st.session_state[end_key(12)] + timedelta(days=weeks[p13])
+    st.session_state[kb] = (year, start, p13)
+    year_col, start_col, p13_col = st.columns([1, 1.3, 1.4])
+    year = int(year_col.number_input("Fiscal year", 1900, 2199, step=1, key=ky))
+    start = start_col.date_input("Period 1 starts", min_value=date(2000, 1, 1), max_value=date(2100, 12, 31),
+                                 format="YYYY-MM-DD", key=ks)
+    p13_col.radio("Period 13 length", list(weeks), horizontal=True, key=kp,
+                  help="Most years have 13 four-week periods. A 53-week year has a five-week Period 13.")
+
+    with st.expander("Adjust individual dates", expanded=False):
+        left, right = st.columns(2)
+        for number in range(1, PERIOD_COUNT + 1):
+            (left if number <= 7 else right).date_input(
+                f"Period {number:02d} ends", min_value=date(2000, 1, 1), max_value=date(2100, 12, 31),
+                format="YYYY-MM-DD", key=end_key(number))
+    with st.expander("Paste all 13 dates", expanded=False):
+        st.text_area("Period end dates", key=f"pp-fiscal-paste-{resets}", height=120,
+                     placeholder="One per line, or copy a spreadsheet column: 2025-10-25, 2025-11-22, ...",
+                     help="Thirteen dates, written 2025-10-25 or 10/25/2025.")
+        st.button("Use these dates", key=f"pp-fiscal-paste-go-{resets}", on_click=_apply_pasted_dates, args=(resets,))
+        if st.session_state.get(f"pp-fiscal-paste-error-{resets}"):
+            st.error(st.session_state[f"pp-fiscal-paste-error-{resets}"])
+
+    ends = tuple(st.session_state[end_key(n)] for n in range(1, PERIOD_COUNT + 1))
+    problems = schedule_problems(start, ends)
+    st.caption("Period 01 " + f"{start:%Y-%m-%d}" + " to " + f"{ends[0]:%Y-%m-%d}" + "; Period 13 ends " + f"{ends[-1]:%Y-%m-%d}"
+               + f" ({(ends[-1] - ends[-2]).days // 7} weeks long).")
+    for problem in problems:
+        st.error(problem)
+    if st.button("Save calendar", type="primary", icon=":material/save:", disabled=bool(problems), key=f"pp-fiscal-save-{resets}"):
+        fiscal_session.set_calendar(FiscalCalendar(year, start, ends))
+        st.session_state["pp-fiscal-resets"] = resets + 1   # fresh widgets that show what was saved
+        st.session_state["pp-fiscal-flash"] = True
+        st.rerun()
     if st.session_state.pop("pp-fiscal-flash", False):
         st.success("Calendar saved for future sessions.", icon=":material/check_circle:")
 
