@@ -20,6 +20,7 @@ from apps.sales_tax.cleanup import (
     detect_mapping_conflicts,
     detect_trial_balance_conflicts,
     get_controlled_options,
+    header_position_warnings,
     pad_numeric_segment,
     process_transactions,
     validate_inputs,
@@ -302,6 +303,48 @@ def test_reconciliation_input_validation_and_mapping_completeness():
         "Missing Taxability for Vendor ID(s): 2", "Missing Grouping for Vendor ID(s): 2"]
 
 
+# --- header position warnings (warn-only) --------------------------------------------------------
+
+SOURCE_HEADERS = ["Vendor", "Invoice Date", "Transaction ID", "Description", "Account #",
+                  "Cost Center", "Amount", "Tax Code", "Reference", "Code", "Period"]
+MAPPING_HEADERS = ["Vendor Name", "Vendor ID", "Notes", "Taxability", "Grouping", "Status"]
+
+
+def test_correctly_ordered_headers_raise_no_warning():
+    assert header_position_warnings(
+        pd.DataFrame(columns=SOURCE_HEADERS), pd.DataFrame(columns=MAPPING_HEADERS)) == []
+
+
+def test_a_mapping_with_vendor_id_first_is_warned_about():
+    headers = ["Vendor ID", "Vendor Name", "Subfolder Name", "Taxability", "Grouping"]
+    notes = header_position_warnings(
+        pd.DataFrame(columns=SOURCE_HEADERS), pd.DataFrame(columns=headers))
+    assert len(notes) == 1 and "column 1 as Vendor Name" in notes[0] and "column 2" in notes[0]
+
+
+def test_swapped_taxability_and_grouping_are_both_reported():
+    headers = ["Vendor Name", "Vendor ID", "Notes", "Grouping", "Taxability"]
+    notes = header_position_warnings(
+        pd.DataFrame(columns=SOURCE_HEADERS), pd.DataFrame(columns=headers))
+    assert len(notes) == 2
+
+
+def test_blank_or_unusual_headers_are_never_flagged():
+    unnamed = pd.DataFrame(columns=["Unnamed: 0", "Unnamed: 1", "Unnamed: 2"])
+    odd_mapping = pd.DataFrame(columns=["Payee", "Code", "Notes", "Tax?", "Bucket"])
+    assert header_position_warnings(unnamed, odd_mapping) == []
+
+
+def test_a_shifted_source_column_is_warned_about_and_nothing_is_changed():
+    headers = ["Vendor", "Transaction ID", "Invoice Date", "Description", "Account #",
+               "Cost Center", "Amount", "Tax Code", "Reference", "Code", "Period"]
+    source = pd.DataFrame(columns=headers)
+    before = source.copy()
+    notes = header_position_warnings(source, pd.DataFrame(columns=MAPPING_HEADERS))
+    assert len(notes) == 1 and "Transaction ID" in notes[0]
+    assert source.equals(before)
+
+
 # --- excluded vendor IDs -------------------------------------------------------------------------
 
 def test_excluded_ids_are_normalized_deduplicated_and_ordered():
@@ -321,6 +364,25 @@ def test_a_bad_exclusion_csv_keeps_the_text_ids_and_explains():
     assert ids == ["7"] and "empty" in error
 
 
+def test_exclusion_csv_recognizes_more_header_labels_but_never_a_numeric_id():
+    ids, error = parse_excluded_ids("", csv_file=b"Excluded Vendors\n2\n3\n")
+    assert ids == ["2", "3"] and error is None
+    ids, error = parse_excluded_ids("", csv_file=b"101806\n2\n")
+    assert ids == ["101806", "2"] and error is None
+
+
+def test_exclusion_csv_tolerates_a_byte_order_mark_and_trailing_delimiters():
+    ids, error = parse_excluded_ids("", csv_file="﻿Vendor ID\n5\n6\n".encode("utf-8"))
+    assert ids == ["5", "6"] and error is None
+    ids, error = parse_excluded_ids("", csv_file=b"7,\n8,\n")
+    assert ids == ["7", "8"] and error is None
+
+
+def test_exclusion_csv_with_no_ids_says_so():
+    ids, error = parse_excluded_ids("", csv_file=b",\n,\n")
+    assert ids == [] and "no Vendor IDs" in error
+
+
 # --- upload limits -------------------------------------------------------------------------------
 
 def test_empty_oversized_and_unreadable_uploads_are_refused_with_a_message():
@@ -332,6 +394,17 @@ def test_empty_oversized_and_unreadable_uploads_are_refused_with_a_message():
         ingestion._read_file_bytes(b"x" * 11, max_bytes=10, label="Test")
     with pytest.raises(IngestionError, match="could not be read"):
         ingestion.read_excel_upload(b"this is not a workbook")
+
+
+def test_an_unreadable_upload_says_what_it_looks_like():
+    with pytest.raises(IngestionError, match="plain text"):
+        ingestion.read_excel_upload(b"a,b,c\n1,2,3\n")
+    with pytest.raises(IngestionError, match="web page"):
+        ingestion.read_excel_upload(b"<html><table></table></html>")
+    with pytest.raises(IngestionError, match="password-protected"):
+        ingestion.read_excel_upload(ingestion._OLE_MAGIC + b"\x00" * 600)
+    with pytest.raises(IngestionError, match="damaged"):
+        ingestion.read_excel_upload(b"PK\x03\x04" + b"\x00" * 100)
 
 
 # --- the shared trial balance cache ---------------------------------------------------------------
@@ -359,6 +432,27 @@ def test_saving_a_trial_balance_makes_it_the_cache_and_reports_incomplete_accoun
     assert status.valid and status.row_count == 2 and status.incomplete_count == 1
     df, loaded = ingestion.load_trial_balance_cache_snapshot()
     assert len(df) == 2 and loaded.fingerprint == status.fingerprint
+
+
+def test_the_cache_reports_accounts_listed_more_than_once(cache):
+    status = ingestion.save_trial_balance_cache(
+        _workbook(("", "Cash", "A-1"), ("", "", "A-1"), ("", "Bank", "B-2")))
+    assert status.duplicate_count == 1
+    assert ingestion.get_trial_balance_cache_status().duplicate_count == 1
+
+
+def test_an_unchanged_cache_is_not_reparsed_and_callers_get_copies(cache, monkeypatch):
+    ingestion.save_trial_balance_cache(_workbook(("", "Cash", "A-1")))
+    first, _ = ingestion.load_trial_balance_cache_snapshot()
+    first.iloc[0, 1] = "TAMPERED"
+    calls = []
+    real = ingestion._load_cache_snapshot
+    monkeypatch.setattr(ingestion, "_load_cache_snapshot", lambda: calls.append(1) or real())
+    second, _ = ingestion.load_trial_balance_cache_snapshot()
+    assert not calls and second.iloc[0, 1] == "Cash"
+    ingestion.save_trial_balance_cache(_workbook(("", "Bank", "B-2")))
+    third, _ = ingestion.load_trial_balance_cache_snapshot()
+    assert calls and third.iloc[0, 1] == "Bank"
 
 
 def test_a_bad_upload_never_replaces_a_good_cache(cache):

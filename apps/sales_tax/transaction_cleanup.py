@@ -30,6 +30,7 @@ from .cleanup import (
     detect_mapping_conflicts,
     detect_trial_balance_conflicts,
     get_controlled_options,
+    header_position_warnings,
     input_digests,
     MAIN_SHEET_NAME,
     process_transactions,
@@ -249,6 +250,11 @@ def render_transaction_cleanup():
                     f"{cached_tb_status.incomplete_count} GL account(s) in this file "
                     "have no Account Name yet."
                 )
+            if cached_tb_status.duplicate_count:
+                st.caption(
+                    f"{cached_tb_status.duplicate_count} GL account(s) are listed on "
+                    "more than one row (no conflicting names)."
+                )
             with st.expander("Replace or clear cached file"):
                 replacement = st.file_uploader(
                     "Upload a new Trial Balance (.xlsx or .xlsm)",
@@ -363,6 +369,8 @@ def render_transaction_cleanup():
             try:
                 df_source = read_excel_upload(source_file)
                 df_mapping = read_excel_upload(mapping_file)
+                # Warn-only: kept so the notes show with the result, never gates the run.
+                st.session_state["tc_header_warnings"] = header_position_warnings(df_source, df_mapping)
                 validation_errors = validate_inputs(df_source, df_mapping, cached_tb_df)
                 # Conflicting master-data duplicates (a vendor ID mapped to two
                 # different Taxability/Grouping combos, or a GL account tied to
@@ -372,6 +380,8 @@ def render_transaction_cleanup():
                 validation_errors += detect_mapping_conflicts(df_mapping)
                 validation_errors += detect_trial_balance_conflicts(cached_tb_df)
                 if validation_errors:
+                    for note in st.session_state["tc_header_warnings"]:
+                        st.warning(note)
                     st.error(
                         "Please fix the following before running cleanup:\n\n"
                         + "\n".join(f"- {e}" for e in validation_errors)
@@ -429,6 +439,9 @@ def render_transaction_cleanup():
             if current_fingerprint != st.session_state.get("tc_fingerprint"):
                 st.warning("Inputs have changed. Run Cleanup again before downloading.")
                 return
+
+            for note in st.session_state.get("tc_header_warnings", []):
+                st.warning(note)
 
             result_df = st.session_state["tc_result"]
             new_vendor_flags = st.session_state["tc_flags"]

@@ -97,6 +97,54 @@ def clean_key(value) -> str:
     return s.upper()
 
 
+# Header words each positionally-read column is expected to carry. Used only
+# by header_position_warnings, which warns and never blocks or reorders.
+_SOURCE_HEADER_HINTS = (
+    (VENDOR_COL_IDX, "vendor", "Vendor"),
+    (TXN_ID_COL_IDX, "transaction", "Transaction ID"),
+    (ACCOUNT_NUMBER_COL_IDX, "account", "Account #"),
+    (COST_CENTER_COL_IDX, "cost", "Cost Center"),
+    (AMOUNT_COL_IDX, "amount", "Amount"),
+    (CODE_COL_IDX, "code", "Code"),
+)
+# Mapping: column 0 = vendor NAME (matched on), 3 = taxability, 4 = grouping.
+_MAPPING_HEADER_HINTS = (
+    (0, "name", "Vendor Name"),
+    (3, "taxab", "Taxability"),
+    (4, "group", "Grouping"),
+)
+
+
+def _misplaced_header_notes(df: pd.DataFrame, hints, file_label: str) -> list:
+    headers = [str(h).strip().lower() for h in df.columns]
+    notes = []
+    for position, word, label in hints:
+        if position >= len(headers) or word in headers[position]:
+            continue
+        elsewhere = [i for i, h in enumerate(headers) if word in h and i != position]
+        if elsewhere:
+            found = elsewhere[0]
+            notes.append(
+                f"{file_label}: this tool reads column {position + 1} as {label}, "
+                f"but its header there is '{df.columns[position]}'; a '{label}'-like "
+                f"header is in column {found + 1} ('{df.columns[found]}'). "
+                "If the columns are in a different order, results will be wrong."
+            )
+    return notes
+
+
+def header_position_warnings(df_source: pd.DataFrame, df_mapping: pd.DataFrame) -> list:
+    """Warn-only check that the positionally-read columns sit where the tool
+    expects them. Fires only when a column's expected header word is missing
+    at its position AND present in another column, so a file with unusual or
+    blank headers is never flagged. Never blocks a run, never reorders
+    columns, never changes a number."""
+    return (
+        _misplaced_header_notes(df_source, _SOURCE_HEADER_HINTS, "Source Transactions")
+        + _misplaced_header_notes(df_mapping, _MAPPING_HEADER_HINTS, "Vendor Mapping")
+    )
+
+
 def validate_inputs(df_source: pd.DataFrame, df_mapping: pd.DataFrame,
                      df_trial_balance: pd.DataFrame) -> list:
     """Schema/shape validation for all three input files. Collects every

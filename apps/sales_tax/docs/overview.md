@@ -20,7 +20,7 @@ title: **Transaction Cleanup**, **Vendor Reconciliation**, **Sales Tax Calculato
 | `contractor_guide.py` / `contractor_guide.js` | The click-through "Should we pay Texas sales tax on this contractor bill?" guide on the Texas Tax Rules tab. The Python module holds the decision tree as data (5 outcomes, each pointing at scenario numbers in the rules), validates it, and emits it as JSON plus a no-script outline; the script draws it as buttons with a trail, back/start-over, a ripple and slide animation (off under reduced motion), and remembers the path in `sessionStorage`. Computes nothing. Tests: `tests/test_contractor_guide.py`. |
 | `tax_calculator_live.js` | Browser side of the calculator: applies the price a moment after each keystroke and copies the tape picture to the clipboard. Keep it free of `<` (the page sanitizer drops such a script). The numbers are still computed in Python. |
 | `tax_tape.py` | Draws the compact PNG/PDF "tape" of one calculator result (Pillow) for attaching to invoices as backup. Draws a `TaxResult` that was already computed; recomputes nothing. |
-| `ingestion.py` | File reading with size limits, the on-disk trial balance cache, excluded vendor IDs. No Streamlit. |
+| `ingestion.py` | File reading with size limits, the on-disk trial balance cache, excluded vendor IDs. No Streamlit. Unreadable uploads get a hint about what the file looks like (CSV, web page, old `.xls` or password-protected, damaged) and the real error is logged. The cache is memoized by path, mtime and size, so an unchanged file is not re-parsed each rerun (callers get a copy); `CacheStatus.duplicate_count` is display only. The exclusion CSV accepts a BOM, trailing delimiters, and header labels containing "vendor" or "exclu" (never a value with a digit). |
 | `data/` | `trial_balance_cache.xlsx` (the live cache) plus sample input files. Real company data, gitignored. |
 
 Dependency direction:
@@ -38,6 +38,11 @@ other app module.
 - **The mapping file is positional too.** Column 0 = vendor **name** (what transactions match on),
   3 = taxability, 4 = grouping. Keep `vendor_reconciliation.MAPPING_SCHEMA_COLS` in step with
   what `cleanup.py` reads.
+- **Header position warnings are warn-only.** `cleanup.header_position_warnings` flags a
+  positionally-read column whose expected header word is missing at its position but present in
+  another column (for example a mapping with Vendor ID first). It never blocks a run, reorders
+  columns, or changes a number; blank or unusual headers are never flagged. The page shows the
+  notes with the result.
 - **Blank ≠ conflict.** A blank value on a duplicate row is an incomplete entry. Only two or more
   *different* non-blank values sharing a key are a conflict. `ingestion.py` and `cleanup.py`
   each apply this rule, so change both together.

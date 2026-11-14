@@ -25,6 +25,7 @@ apply the identical rule independently for the same reason.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import re
 import tempfile
@@ -45,14 +46,41 @@ MAX_EXCEL_BYTES = 25 * 1024 * 1024
 MAX_EXCLUSION_CSV_BYTES = 2 * 1024 * 1024
 MIN_TRIAL_BALANCE_COLUMNS = 3
 
+logger = logging.getLogger(__name__)
+
 _WHOLE_NUMBER_FLOAT_RE = re.compile(r"^(\d+)\.0+$")
 _LIKELY_EXCLUSION_HEADERS = {
     "VENDOR",
+    "VENDORS",
     "VENDORID",
+    "VENDORIDS",
     "VENDORNUMBER",
     "VENDORNO",
+    "VENDORNUM",
+    "VENDORCODE",
+    "VENDORLIST",
     "ID",
+    "IDS",
+    "EXCLUDE",
+    "EXCLUDED",
+    "EXCLUSIONS",
 }
+
+_ZIP_MAGIC = b"PK\x03\x04"
+_OLE_MAGIC = bytes.fromhex("D0CF11E0A1B11AE1")
+
+
+def _looks_like_exclusion_header(value) -> bool:
+    """True for a first-row label such as "Vendor ID" or "Excluded Vendors".
+
+    A value with a digit in it is never a header (real vendor IDs are
+    numeric or alphanumeric codes); a digit-free value is a header when it is
+    a known label or names a vendor or an exclusion.
+    """
+    key = _normalize_identifier(value)
+    if not key or any(ch.isdigit() for ch in key):
+        return False
+    return key in _LIKELY_EXCLUSION_HEADERS or "VENDOR" in key or "EXCLUD" in key
 
 
 class IngestionError(ValueError):
@@ -73,6 +101,9 @@ class CacheStatus:
     # of unclassified accounts could otherwise look identical to a fully
     # validated one in the UI.
     incomplete_count: int = 0
+    # GL accounts that appear on more than one row (consistent or blank
+    # names, never conflicting - conflicts are refused). Display only.
+    duplicate_count: int = 0
     error: str | None = None
 
 
@@ -113,20 +144,58 @@ def _read_file_bytes(file_or_bytes, *, max_bytes: int, label: str) -> bytes:
     return data
 
 
+def _unreadable_hint(data: bytes) -> str:
+    """Say what an unreadable upload most likely is, from its first bytes.
+
+    Used only after pandas has already failed, so it never changes which
+    files are accepted - it only explains the refusal.
+    """
+    if data.startswith(_ZIP_MAGIC):
+        return "The file looks damaged; try opening it in Excel and saving it again."
+    if data.startswith(_OLE_MAGIC):
+        return (
+            "It looks like an older .xls workbook or a password-protected file. "
+            "Open it in Excel and save it as .xlsx without a password."
+        )
+    head = data[:2048]
+    lowered = head.lstrip().lower()
+    if lowered.startswith((b"<!doctype", b"<html", b"<table", b"<?xml")):
+        return "It looks like a web page or XML export, not an Excel workbook."
+    if b"\x00" not in head:
+        try:
+            head.decode("utf-8")
+        except UnicodeDecodeError:
+            return ""
+        return "It looks like plain text (for example a CSV). Save it as an .xlsx workbook."
+    return ""
+
+
 def _read_excel_bytes(data: bytes, *, label: str, sheet_name=0) -> pd.DataFrame:
     try:
         df = pd.read_excel(BytesIO(data), header=0, sheet_name=sheet_name)
-    except (ValueError, ImportError, OSError) as exc:
-        raise IngestionError(
+    except ImportError as exc:
+        logger.warning("%s: Excel engine unavailable", label, exc_info=True)
+        hint = _unreadable_hint(data)
+        message = (
             f"{label}: the workbook could not be read as an Excel file."
-        ) from exc
+            if hint
+            else f"{label}: this server is missing the library needed to read "
+            "that kind of Excel file."
+        )
+        raise IngestionError(f"{message} {hint}".strip()) from exc
+    except (ValueError, OSError) as exc:
+        logger.warning("%s: workbook could not be read", label, exc_info=True)
+        message = f"{label}: the workbook could not be read as an Excel file."
+        hint = _unreadable_hint(data)
+        raise IngestionError(f"{message} {hint}".strip()) from exc
     except Exception as exc:
-        # Parser implementations may raise library-specific exception types.
-        # Convert these to one stable, user-facing application exception while
-        # preserving the original exception for logs and debugging.
-        raise IngestionError(
-            f"{label}: an unexpected workbook-reading error occurred."
-        ) from exc
+        # Parser implementations may raise library-specific exception types
+        # (a bad zip, for one). Convert these to one stable, user-facing
+        # exception; the original is chained and logged for debugging.
+        logger.warning("%s: unexpected workbook-reading error", label, exc_info=True)
+        message = f"{label}: an unexpected workbook-reading error occurred."
+        hint = _unreadable_hint(data)
+        raise IngestionError(f"{message} {hint}".strip()) from exc
 
     if not isinstance(df, pd.DataFrame):
         raise IngestionError(f"{label}: select exactly one worksheet.")
@@ -217,6 +286,18 @@ def _validate_trial_balance(df: pd.DataFrame) -> int:
     return len(all_keys - named_keys)
 
 
+def _duplicate_account_count(df: pd.DataFrame) -> int:
+    """GL accounts listed on more than one row. Display only; call after validation."""
+    keys = df.iloc[:, 2].map(_normalize_identifier)
+    return int((keys[keys != ""].value_counts() > 1).sum())
+
+
+def _summarize_trial_balance(df: pd.DataFrame) -> tuple[int, int]:
+    """Validate, then return (incomplete_count, duplicate_count)."""
+    incomplete = _validate_trial_balance(df)
+    return incomplete, _duplicate_account_count(df)
+
+
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -242,7 +323,7 @@ def _load_cache_snapshot() -> tuple[pd.DataFrame, CacheStatus]:
     if len(data) > MAX_EXCEL_BYTES:
         raise IngestionError("Cached Trial Balance: the cache file is oversized.")
     df = _read_excel_bytes(data, label="Cached Trial Balance")
-    incomplete_count = _validate_trial_balance(df)
+    incomplete_count, duplicate_count = _summarize_trial_balance(df)
     status = CacheStatus(
         exists=True,
         valid=True,
@@ -250,8 +331,25 @@ def _load_cache_snapshot() -> tuple[pd.DataFrame, CacheStatus]:
         fingerprint=_sha256(data),
         row_count=len(df),
         incomplete_count=incomplete_count,
+        duplicate_count=duplicate_count,
     )
     return df, status
+
+
+# One-entry memo so a Streamlit rerun does not re-read and re-validate an
+# unchanged cache file. Keyed by path, mtime and size (taken BEFORE the read,
+# so a file replaced mid-read is simply reloaded next time). Callers get a
+# copy of the frame, so nobody can alter the remembered one.
+_snapshot_memo: dict = {"key": None, "df": None, "status": None}
+
+
+def _forget_snapshot() -> None:
+    _snapshot_memo.update(key=None, df=None, status=None)
+
+
+def _snapshot_key():
+    stat = TRIAL_BALANCE_CACHE_PATH.stat()
+    return (str(TRIAL_BALANCE_CACHE_PATH), stat.st_mtime_ns, stat.st_size)
 
 
 def load_trial_balance_cache_snapshot() -> tuple[pd.DataFrame | None, CacheStatus]:
@@ -269,9 +367,15 @@ def load_trial_balance_cache_snapshot() -> tuple[pd.DataFrame | None, CacheStatu
             error="No Trial Balance is cached.",
         )
     try:
-        return _load_cache_snapshot()
+        key = _snapshot_key()
+        if _snapshot_memo["key"] == key:
+            return _snapshot_memo["df"].copy(), _snapshot_memo["status"]
+        df, status = _load_cache_snapshot()
     except (IngestionError, OSError) as exc:
+        _forget_snapshot()
         return None, CacheStatus(exists=True, valid=False, error=str(exc))
+    _snapshot_memo.update(key=key, df=df, status=status)
+    return df.copy(), status
 
 
 def load_cached_trial_balance():
@@ -336,15 +440,26 @@ def save_trial_balance_cache(file_bytes: bytes) -> CacheStatus:
         label="Trial Balance",
     )
     df = _read_excel_bytes(data, label="Trial Balance")
-    incomplete_count = _validate_trial_balance(df)
+    incomplete_count, duplicate_count = _summarize_trial_balance(df)
 
-    if TRIAL_BALANCE_CACHE_PATH.exists():
-        current_status = get_trial_balance_cache_status()
-        if current_status.valid:
-            current_data = TRIAL_BALANCE_CACHE_PATH.read_bytes()
+    # Read the current cache once; the bytes that are validated are the bytes
+    # that become the backup, even if another session replaces the file.
+    try:
+        current_data = TRIAL_BALANCE_CACHE_PATH.read_bytes()
+    except OSError:
+        current_data = None
+    if current_data and len(current_data) <= MAX_EXCEL_BYTES:
+        try:
+            _validate_trial_balance(
+                _read_excel_bytes(current_data, label="Cached Trial Balance")
+            )
+        except IngestionError:
+            pass  # An invalid current cache is not worth keeping as a backup.
+        else:
             _write_private_file_atomically(TRIAL_BALANCE_BACKUP_PATH, current_data)
 
     _write_private_file_atomically(TRIAL_BALANCE_CACHE_PATH, data)
+    _forget_snapshot()
     return CacheStatus(
         exists=True,
         valid=True,
@@ -352,6 +467,7 @@ def save_trial_balance_cache(file_bytes: bytes) -> CacheStatus:
         fingerprint=_sha256(data),
         row_count=len(df),
         incomplete_count=incomplete_count,
+        duplicate_count=duplicate_count,
     )
 
 
@@ -362,7 +478,7 @@ def restore_trial_balance_cache_backup() -> CacheStatus:
 
     backup_data = TRIAL_BALANCE_BACKUP_PATH.read_bytes()
     backup_df = _read_excel_bytes(backup_data, label="Trial Balance backup")
-    incomplete_count = _validate_trial_balance(backup_df)
+    incomplete_count, duplicate_count = _summarize_trial_balance(backup_df)
 
     current_data = (
         TRIAL_BALANCE_CACHE_PATH.read_bytes()
@@ -372,6 +488,7 @@ def restore_trial_balance_cache_backup() -> CacheStatus:
     _write_private_file_atomically(TRIAL_BALANCE_CACHE_PATH, backup_data)
     if current_data:
         _write_private_file_atomically(TRIAL_BALANCE_BACKUP_PATH, current_data)
+    _forget_snapshot()
 
     return CacheStatus(
         exists=True,
@@ -380,6 +497,7 @@ def restore_trial_balance_cache_backup() -> CacheStatus:
         fingerprint=_sha256(backup_data),
         row_count=len(backup_df),
         incomplete_count=incomplete_count,
+        duplicate_count=duplicate_count,
     )
 
 
@@ -389,6 +507,7 @@ def clear_trial_balance_cache(*, include_backup: bool = True) -> int:
     if include_backup:
         targets.append(TRIAL_BALANCE_BACKUP_PATH)
 
+    _forget_snapshot()
     removed = 0
     for path in targets:
         try:
@@ -432,19 +551,31 @@ def parse_excluded_ids(text: str, csv_file=None):
             max_bytes=MAX_EXCLUSION_CSV_BYTES,
             label="Exclusion CSV",
         )
-        exclusion_df = pd.read_csv(BytesIO(csv_bytes), header=None, dtype=object)
+        try:
+            # utf-8-sig drops the byte-order mark Excel adds to "CSV UTF-8".
+            exclusion_df = pd.read_csv(
+                BytesIO(csv_bytes), header=None, dtype=object, encoding="utf-8-sig"
+            )
+        except UnicodeDecodeError:
+            exclusion_df = pd.read_csv(
+                BytesIO(csv_bytes), header=None, dtype=object, encoding="cp1252"
+            )
+        # A trailing delimiter ("101,\n102,") makes an all-blank extra column.
+        exclusion_df = exclusion_df.dropna(axis=1, how="all")
+        if exclusion_df.shape[1] == 0:
+            return normalized_ids, "Exclusion CSV: no Vendor IDs were found in the file."
         if exclusion_df.shape[1] != 1:
             return normalized_ids, (
                 "Exclusion CSV: exactly one column of Vendor IDs is required."
             )
 
         csv_values = exclusion_df.iloc[:, 0].dropna().tolist()
-        if csv_values:
-            first_key = _normalize_identifier(csv_values[0])
-            if first_key in _LIKELY_EXCLUSION_HEADERS:
-                csv_values = csv_values[1:]
+        if csv_values and _looks_like_exclusion_header(csv_values[0]):
+            csv_values = csv_values[1:]
         add_values(csv_values)
         return normalized_ids, None
+    except pd.errors.EmptyDataError:
+        return normalized_ids, "Exclusion CSV: no Vendor IDs were found in the file."
     except (IngestionError, pd.errors.ParserError, UnicodeError, OSError) as exc:
         return normalized_ids, str(exc)
     except Exception:
