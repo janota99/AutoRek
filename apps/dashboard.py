@@ -82,6 +82,12 @@ def _list(items) -> str:
     return "<ul>" + "".join(f"<li>{html.escape(i)}</li>" for i in items) + "</ul>"
 
 
+def _field(app, name: str):
+    """An AppEntry field added with the redesigned cards, or an empty tuple if the deployed shared/layout.py predates it
+    (a half-updated deploy), so the page still loads instead of failing."""
+    return getattr(app, name, ())
+
+
 def _pills(items) -> str:
     return "".join(f'<span class="pp-pill">{html.escape(i)}</span>' for i in items)
 
@@ -97,7 +103,7 @@ def _template_files() -> dict[str, list[tuple[str, str, bytes]]]:
              "fifo_receipts_template.xlsx": build_receipts_template}
     found: dict[str, list[tuple[str, str, bytes]]] = {}
     for app in APPS:
-        for label, name in app.templates:
+        for label, name in _field(app, "templates"):
             try:
                 data = built[name]() if name in built else (SAMPLE_DIR / name).read_bytes()
             except Exception:
@@ -117,17 +123,17 @@ def _template_buttons(path: str) -> str:
 
 
 def _schema_tables(app) -> str:
-    if not app.schemas:
+    if not _field(app, "schemas"):
         return '<p class="pp-muted">No upload files: this prototype uses simulated invoice mail.</p>'
     return "".join(
         f'<div class="pp-schema"><h5>{html.escape(name)}</h5><ol class="pp-cols">'
         + "".join(f'<li><span class="pp-colno">{n:02d}</span>{html.escape(c)}</li>' for n, c in enumerate(cols, 1))
-        + "</ol></div>" for name, cols in app.schemas)
+        + "</ol></div>" for name, cols in _field(app, "schemas"))
 
 
 def _pane(app) -> str:
     """One application's slide-over content: workflow steps, column schemas, limits, and sample templates."""
-    steps = '<ol class="pp-flow">' + "".join(f"<li>{html.escape(t)}</li>" for t in app.steps) + "</ol>"
+    steps = '<ol class="pp-flow">' + "".join(f"<li>{html.escape(t)}</li>" for t in _field(app, "steps")) + "</ol>"
     sections = (
         ("Workflow", steps),
         ("Required column schemas", _schema_tables(app)),
@@ -147,7 +153,7 @@ def _pane(app) -> str:
 
 def _templates_pane() -> str:
     groups = "".join(f"<section><h4>{html.escape(a.title)}</h4>{_template_buttons(a.url_path)}</section>"
-                     for a in APPS if a.templates)
+                     for a in APPS if _field(a, "templates"))
     return ('<div class="pp-pane" data-pane="templates" hidden><p class="pp-eyebrow">Sample templates</p>'
             '<h3>Start from a correctly shaped file</h3><p class="pp-muted">Synthetic files in the layout each tool '
             f'expects. They contain no real data.</p>{groups}</div>')
@@ -157,8 +163,8 @@ def _card(app) -> str:
     badge = f'<span class="pp-badge">{html.escape(app.badge)}</span>' if app.badge else ""
     path = html.escape(app.url_path)
     # What it takes in and produces is printed on the card, not hidden behind a hover: touch screens have no hover.
-    io = (f'<dl class="pp-io"><dt>Takes in</dt><dd>{_pills(app.takes_badges)}</dd>'
-          f'<dt>Produces</dt><dd>{_pills(app.makes_badges)}</dd></dl>')
+    io = (f'<dl class="pp-io"><dt>Takes in</dt><dd>{_pills(_field(app, "takes_badges") or app.inputs)}</dd>'
+          f'<dt>Produces</dt><dd>{_pills(_field(app, "makes_badges") or app.outputs)}</dd></dl>')
     return (
         f'<div class="pp-card" data-href="/{path}">'
         f'<div class="pp-icon" data-icon="{path}"></div>'
