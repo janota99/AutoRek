@@ -43,6 +43,11 @@ other app module.
   another column (for example a mapping with Vendor ID first). It never blocks a run, reorders
   columns, or changes a number; blank or unusual headers are never flagged. The page shows the
   notes with the result.
+- **Only the first worksheet is read.** `ingestion.extra_sheet_note` names it, and the ignored
+  ones, when an uploaded workbook has several (warn-only; the read itself is unchanged).
+- **Two identifier normalizers, one behavior.** `ingestion._normalize_identifier` and
+  `cleanup.clean_key` / `clean_key_series` are separate on purpose; a test feeds them the same
+  messy values so they cannot drift apart.
 - **Blank ≠ conflict.** A blank value on a duplicate row is an incomplete entry. Only two or more
   *different* non-blank values sharing a key are a conflict. `ingestion.py` and `cleanup.py`
   each apply this rule, so change both together.

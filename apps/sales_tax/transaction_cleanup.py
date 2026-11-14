@@ -15,6 +15,7 @@ from shared.sample_data import sample_downloads, sample_uploader
 from . import ui
 from .ingestion import (
     clear_trial_balance_cache,
+    extra_sheet_note,
     IngestionError,
     load_trial_balance_cache_snapshot,
     parse_excluded_ids,
@@ -370,7 +371,12 @@ def render_transaction_cleanup():
                 df_source = read_excel_upload(source_file)
                 df_mapping = read_excel_upload(mapping_file)
                 # Warn-only: kept so the notes show with the result, never gates the run.
-                st.session_state["tc_header_warnings"] = header_position_warnings(df_source, df_mapping)
+                st.session_state["tc_header_warnings"] = header_position_warnings(df_source, df_mapping) + [
+                    note for note in (
+                        extra_sheet_note(source_file, label="Source Transactions"),
+                        extra_sheet_note(mapping_file, label="Vendor Mapping"),
+                    ) if note
+                ]
                 validation_errors = validate_inputs(df_source, df_mapping, cached_tb_df)
                 # Conflicting master-data duplicates (a vendor ID mapped to two
                 # different Taxability/Grouping combos, or a GL account tied to

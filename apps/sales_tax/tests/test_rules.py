@@ -345,6 +345,44 @@ def test_a_shifted_source_column_is_warned_about_and_nothing_is_changed():
     assert source.equals(before)
 
 
+# --- extra worksheets (warn-only) ----------------------------------------------------------------
+
+def _two_sheet_workbook() -> bytes:
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer) as writer:
+        pd.DataFrame({"a": [1]}).to_excel(writer, sheet_name="Summary", index=False)
+        pd.DataFrame({"a": [2]}).to_excel(writer, sheet_name="Data", index=False)
+    return buffer.getvalue()
+
+
+def test_a_multi_sheet_workbook_names_the_sheet_that_is_read_and_still_reads_it():
+    data = _two_sheet_workbook()
+    note = ingestion.extra_sheet_note(data, label="Source Transactions")
+    assert "2 sheets" in note and "'Summary'" in note and "'Data'" in note
+    assert ingestion.read_excel_upload(data)["a"].tolist() == [1]  # reading is unchanged
+
+
+def test_single_sheet_or_unreadable_workbooks_give_no_sheet_note():
+    assert ingestion.extra_sheet_note(_workbook(("", "Cash", "A-1")), label="X") is None
+    assert ingestion.extra_sheet_note(b"junk", label="X") is None
+    assert ingestion.extra_sheet_note(None, label="X") is None
+
+
+# --- the two identifier normalizers must agree ---------------------------------------------------
+
+MESSY_IDS = ["101806", 101806, 101806.0, " 101806 ", '"101806"', "'101806'", "101 806",
+             "101806\xa0", "00123", "00123.00", "abc-9", "ABC-9", "a b c", "1.5", "1.0.0",
+             "  ", "", None, float("nan"), pd.NA, "\t42", "4​2", "x.0", "'\"7\"'"]
+
+
+def test_the_ingestion_and_cleanup_identifier_normalizers_agree_on_messy_values():
+    """ingestion._normalize_identifier and cleanup.clean_key/clean_key_series are written
+    twice on purpose (ingestion has no cleanup import); this keeps them from drifting."""
+    series = clean_key_series(pd.Series(MESSY_IDS, dtype=object)).tolist()
+    for value, from_series in zip(MESSY_IDS, series):
+        assert ingestion._normalize_identifier(value) == clean_key(value) == from_series, repr(value)
+
+
 # --- excluded vendor IDs -------------------------------------------------------------------------
 
 def test_excluded_ids_are_normalized_deduplicated_and_ordered():

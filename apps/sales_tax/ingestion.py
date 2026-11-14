@@ -216,6 +216,34 @@ def read_excel_upload(uploaded_file, sheet_name=0) -> pd.DataFrame:
     return _read_excel_bytes(data, label="Excel upload", sheet_name=sheet_name)
 
 
+def extra_sheet_note(uploaded_file, *, label: str) -> str | None:
+    """Warn-only: name the sheet that gets read when a workbook has several.
+
+    ``read_excel_upload`` always reads the first sheet. A workbook with a
+    summary tab in front would be read from the wrong place without a word, so
+    the page shows this note. Returns None for a single-sheet workbook or when
+    the sheet names cannot be listed; never raises and never changes a read.
+    """
+    try:
+        from openpyxl import load_workbook
+
+        data = _read_file_bytes(uploaded_file, max_bytes=MAX_EXCEL_BYTES, label=label)
+        workbook = load_workbook(BytesIO(data), read_only=True)
+        try:
+            names = list(workbook.sheetnames)
+        finally:
+            workbook.close()
+    except Exception:  # best-effort note only
+        return None
+    if len(names) < 2:
+        return None
+    others = ", ".join(f"'{n}'" for n in names[1:])
+    return (
+        f"{label}: this workbook has {len(names)} sheets. Only the first sheet, "
+        f"'{names[0]}', is read; the others ({others}) are ignored."
+    )
+
+
 def _normalize_identifier(value) -> str:
     """Normalize spreadsheet identifiers while preserving textual zeroes."""
     if pd.isna(value):
