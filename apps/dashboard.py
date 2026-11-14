@@ -7,6 +7,7 @@ through Streamlit's own navigation so the session is kept.
 The signed-in person's invoice dashboard lives on the Invoice Lifecycle Hub page and Reviews &
 Feedback is its own page in the navigation bar; the account strip (shared/suite_banner.js) is on every page.
 """
+import base64
 import html
 import json
 from datetime import date, timedelta
@@ -21,6 +22,7 @@ from shared import fiscal_session
 from shared.fiscal_calendar import (PERIOD_COUNT, FiscalCalendar, default_calendar, parse_period_end_dates,
                                     schedule_problems, validate)
 from shared.layout import APPS
+from shared.sample_data import SAMPLE_DIR
 from shared.styles import style_tag
 
 _HERE = Path(__file__).resolve().parent
@@ -80,23 +82,83 @@ def _list(items) -> str:
     return "<ul>" + "".join(f"<li>{html.escape(i)}</li>" for i in items) + "</ul>"
 
 
-def _details(app) -> str:
-    """The "View details" drawer on a card: what it accepts, needs, produces, and cannot do."""
+def _pills(items) -> str:
+    return "".join(f'<span class="pp-pill">{html.escape(i)}</span>' for i in items)
+
+
+@st.cache_data(show_spinner=False)
+def _template_files() -> dict[str, list[tuple[str, str, bytes]]]:
+    """Each application's sample templates as (label, file name, bytes), keyed by url_path.
+
+    Files come from sample_data/ (synthetic); the FIFO ones are the app's own blank upload templates. A template that
+    cannot be built is left out, so the drawer never offers a download that fails."""
+    from apps.fifo_inventory.upload_templates import build_master_grid_template, build_receipts_template
+    built = {"fifo_master_grid_template.xlsx": build_master_grid_template,
+             "fifo_receipts_template.xlsx": build_receipts_template}
+    found: dict[str, list[tuple[str, str, bytes]]] = {}
+    for app in APPS:
+        for label, name in app.templates:
+            try:
+                data = built[name]() if name in built else (SAMPLE_DIR / name).read_bytes()
+            except Exception:
+                continue
+            found.setdefault(app.url_path, []).append((label, name, data))
+    return found
+
+
+def _template_buttons(path: str) -> str:
+    items = _template_files().get(path, [])
+    if not items:
+        return '<p class="pp-muted">No sample templates for this application.</p>'
+    return '<div class="pp-tpls">' + "".join(
+        f'<button type="button" class="pp-tpl" data-tpl="{html.escape(path)}:{i}">'
+        f'<span class="pp-tpl-ext">.xlsx</span><span class="pp-tpl-name">{html.escape(label.replace(" (.xlsx)", ""))}</span>'
+        '<span class="pp-tpl-go">Download</span></button>' for i, (label, _n, _d) in enumerate(items)) + "</div>"
+
+
+def _schema_tables(app) -> str:
+    if not app.schemas:
+        return '<p class="pp-muted">No upload files: this prototype uses simulated invoice mail.</p>'
+    return "".join(
+        f'<div class="pp-schema"><h5>{html.escape(name)}</h5><ol class="pp-cols">'
+        + "".join(f'<li><span class="pp-colno">{n:02d}</span>{html.escape(c)}</li>' for n, c in enumerate(cols, 1))
+        + "</ol></div>" for name, cols in app.schemas)
+
+
+def _pane(app) -> str:
+    """One application's slide-over content: workflow steps, column schemas, limits, and sample templates."""
+    steps = '<ol class="pp-flow">' + "".join(f"<li>{html.escape(t)}</li>" for t in app.steps) + "</ol>"
     sections = (
-        ("Supported files", app.files), ("Required inputs", app.inputs),
-        ("Example outputs", app.outputs), ("Limitations", app.limits),
+        ("Workflow", steps),
+        ("Required column schemas", _schema_tables(app)),
+        ("Sample templates", _template_buttons(app.url_path)),
+        ("Good to know", _list(app.limits) + f'<p class="pp-muted">Plan: {html.escape(_plan_names(app))}. '
+                                              "Every application is open in this demo.</p>"),
     )
-    body = "".join(f"<h4>{label}</h4>{_list(items)}" for label, items in sections if items)
-    body += f"<h4>Plan availability</h4><p>{html.escape(_plan_names(app))}. Every application is open in this demo.</p>"
-    return f'<div class="pp-details" hidden>{body}</div>'
+    body = "".join(f"<section><h4>{label}</h4>{content}</section>" for label, content in sections)
+    path = html.escape(app.url_path)
+    return (f'<div class="pp-pane" data-pane="{path}" hidden>'
+            f'<p class="pp-eyebrow">Module details</p><h3>{html.escape(app.title)}</h3>'
+            f'<p class="pp-muted">{html.escape(app.summary)}</p>{body}'
+            f'<div class="pp-pane-actions"><a class="pp-action" href="/{path}" target="_self" data-route>'
+            f'{html.escape(app.action)} &rarr;</a>'
+            f'<a class="pp-ghost" href="/{path}?demo=1" target="_self" data-route>Try demo</a></div></div>')
+
+
+def _templates_pane() -> str:
+    groups = "".join(f"<section><h4>{html.escape(a.title)}</h4>{_template_buttons(a.url_path)}</section>"
+                     for a in APPS if a.templates)
+    return ('<div class="pp-pane" data-pane="templates" hidden><p class="pp-eyebrow">Sample templates</p>'
+            '<h3>Start from a correctly shaped file</h3><p class="pp-muted">Synthetic files in the layout each tool '
+            f'expects. They contain no real data.</p>{groups}</div>')
 
 
 def _card(app) -> str:
     badge = f'<span class="pp-badge">{html.escape(app.badge)}</span>' if app.badge else ""
     path = html.escape(app.url_path)
     # What it takes in and produces is printed on the card, not hidden behind a hover: touch screens have no hover.
-    io = (f'<dl class="pp-io"><dt>Takes in</dt><dd>{html.escape(" · ".join(app.inputs))}</dd>'
-          f'<dt>Produces</dt><dd>{html.escape(" · ".join(app.outputs))}</dd></dl>')
+    io = (f'<dl class="pp-io"><dt>Takes in</dt><dd>{_pills(app.takes_badges)}</dd>'
+          f'<dt>Produces</dt><dd>{_pills(app.makes_badges)}</dd></dl>')
     return (
         f'<div class="pp-card" data-href="/{path}">'
         f'<div class="pp-icon" data-icon="{path}"></div>'
@@ -105,8 +167,7 @@ def _card(app) -> str:
         '<div class="pp-actions">'
         f'<a class="pp-action" href="/{path}" target="_self" data-route>{html.escape(app.action)} &rarr;</a>'
         f'<a class="pp-ghost" href="/{path}?demo=1" target="_self" title="Opens with sample data loaded; no company files needed">Try demo</a>'
-        '<button type="button" class="pp-link" aria-expanded="false">View details</button></div>'
-        f'{_details(app)}</div>'
+        f'<button type="button" class="pp-link" data-open-pane="{path}">View details</button></div></div>'
     )
 
 
@@ -116,28 +177,40 @@ def _icons_json() -> str:
     return json.dumps(icons).replace("<", "\\u003c")
 
 
-def _get_started() -> str:
-    """One compact panel: the three first steps and the workspace and plan status, side by side."""
+def _templates_json() -> str:
+    """The sample files as base64, for dashboard.js to turn into a download (a data: link would be stripped)."""
+    files = {path: [{"name": name, "b64": base64.b64encode(data).decode("ascii")} for _l, name, data in items]
+             for path, items in _template_files().items()}
+    return json.dumps(files).replace("<", "\\u003c")
+
+
+def _status_bar() -> str:
+    """The workspace and plan status pills, with a quiet upgrade button."""
     return (
-        '<section class="pp-panel pp-start" aria-labelledby="pp-start-h">'
-        '<div class="pp-start-head"><h2 id="pp-start-h">Get started</h2>'
         '<div class="pp-stats">'
         '<span class="pp-stat"><span class="pp-dot"></span>Workspace <strong>Ready</strong></span>'
-        f'<span class="pp-stat">Applications <strong>{len(APPS)} available</strong></span>'
-        '<span class="pp-stat">Plan <strong>Free preview</strong>'
-        '<button type="button" class="pp-link" data-open-plans>Compare plans</button></span></div></div>'
-        '<ol class="pp-steps">'
-        "<li><strong>Try a demo.</strong> Choose <em>Try demo</em> on a card: sample data is already loaded.</li>"
-        "<li><strong>Get a template.</strong> Each card has a <em>Download Sample Templates</em> drawer.</li>"
-        "<li><strong>Run your files.</strong> Upload exports, run, and download the Excel workbook.</li></ol>"
-        "</section>"
+        f'<span class="pp-stat">Applications <strong class="pp-num">{len(APPS)} available</strong></span>'
+        '<span class="pp-stat pp-plan">Plan <span class="pp-tier">Preview tier</span>'
+        '<button type="button" class="pp-upgrade" data-open-plans>Upgrade to Pro <span aria-hidden="true">&#10022;</span></button></span>'
+        '</div>'
+    )
+
+
+def _onboarding() -> str:
+    """One compact, dismissible bar in place of the three-step panel and the tip banner."""
+    return (
+        '<div class="pp-onboard" role="note"><p><strong>New to Janota?</strong> '
+        '<button type="button" class="pp-link" data-tour>Launch interactive tour</button> or '
+        '<button type="button" class="pp-link" data-open-pane="templates">grab sample templates &rarr;</button>'
+        '<span class="pp-onboard-hint">Each tool keeps its own files; to keep two loaded, open the second in a new browser tab.</span></p>'
+        '<button type="button" class="pp-notice-close" aria-label="Dismiss">&times;</button></div>'
     )
 
 
 # What is stored where, from the code: uploads live in the browser session; Excel outputs are built in memory
 # for download; a few small files are written to the server's disk. Update this if that changes.
 _DATA_HANDLING = (
-    '<details class="pp-panel pp-data"><summary>How your data is handled</summary><ul>'
+    '<ul class="pp-gov">'
     "<li><strong>Uploads</strong> are held in memory for your browser session only. Leaving an application or closing "
     "the tab clears them.</li>"
     "<li><strong>Excel outputs</strong> are built on request for you to download. With no database configured the "
@@ -152,24 +225,42 @@ _DATA_HANDLING = (
     "<li><strong>Access:</strong> the sign-in is simulated in your browser and is not access control. Anyone who can "
     "open this app can open every tool and the stored data above. Where your organization has set up a real sign-in, "
     "it only labels who ran and reviewed things in the Recon run history as verified; it does not restrict access.</li>"
-    "<li><strong>Demo data</strong> is synthetic: made-up vendors, customers, and amounts.</li></ul></details>"
+    "<li><strong>Demo data</strong> is synthetic: made-up vendors, customers, and amounts.</li></ul>"
 )
+
+# Only claims the code backs up: no certification or encryption is asserted here (see _DATA_HANDLING for the detail).
+_TRUST_BADGES = ("Uploads held in session memory", "Outputs built on request", "Sample data is synthetic",
+                 "Sign-in is a preview, not access control")
+
+
+def _trust_footer() -> str:
+    return (
+        '<footer class="pp-trust"><div class="pp-trust-badges">'
+        + "".join(f'<span class="pp-shield"><span aria-hidden="true">&#10003;</span>{html.escape(t)}</span>' for t in _TRUST_BADGES)
+        + '</div><button type="button" class="pp-link" data-open-pane="governance">Security &amp; Data Governance &rarr;</button></footer>'
+    )
+
+
+def _drawer() -> str:
+    governance = ('<div class="pp-pane" data-pane="governance" hidden><p class="pp-eyebrow">Trust</p>'
+                  f'<h3>Security &amp; Data Governance</h3>{_DATA_HANDLING}</div>')
+    return ('<div class="pp-scrim" hidden></div>'
+            '<aside class="pp-drawer" role="dialog" aria-modal="true" aria-label="Details" hidden tabindex="-1">'
+            '<button type="button" class="pp-drawer-close" aria-label="Close details">&times;</button>'
+            f'<div class="pp-drawer-body">{"".join(_pane(a) for a in APPS)}{_templates_pane()}{governance}</div></aside>')
+
 
 page = (
     f"{style_tag('dashboard')}"
     '<div class="pp-dash"><div class="pp-main">'
     '<header class="pp-hero" id="pp-overview"><p class="pp-brand">Janota Fin Automations</p>'
-    '<h1>Accounting Workspace</h1><p>Choose an application to get started.</p></header>'
-    f"{_get_started()}"
-    '<div class="pp-notice" role="note"><span class="pp-notice-icon" aria-hidden="true">i</span>'
-    '<p><strong>Tip:</strong> Each application keeps its own files while you work; to keep two loaded at once, open '
-    "the second in a new browser tab. Set a fiscal period end date at the top of this page to fill it in for the tools that take one; you can still change it inside any tool.</p>"
-    '<button type="button" class="pp-notice-close" aria-label="Dismiss notice">&times;</button></div>'
+    f'<h1>Accounting Workspace</h1><p>Choose an application to get started.</p>{_status_bar()}</header>'
+    f"{_onboarding()}"
     '<h2 class="pp-section" id="pp-apps">Applications</h2>'
     f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
-    f"{_DATA_HANDLING}"
-    "</div></div>"
-    f"<script>window.PP_ICONS = {_icons_json()};\n"
+    f"{_trust_footer()}"
+    f"</div>{_drawer()}</div>"
+    f"<script>window.PP_ICONS = {_icons_json()};window.PP_TEMPLATES = {_templates_json()};\n"
     f"{(_HERE / 'dashboard.js').read_text(encoding='utf-8')}</script>"
 )
 if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:

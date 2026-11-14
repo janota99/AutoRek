@@ -59,6 +59,12 @@ class AppEntry:
     outputs: tuple[str, ...] = ()  # what it produces; shown with the inputs
     files: tuple[str, ...] = ()    # supported file types; shown under "View details"
     limits: tuple[str, ...] = ()   # known limitations; shown under "View details"
+    # Dashboard card and "View details" drawer (apps/dashboard.py). Badges are short noun phrases, not sentences.
+    takes_badges: tuple[str, ...] = ()   # the I/O pills under "Takes in"
+    makes_badges: tuple[str, ...] = ()   # the I/O pills under "Produces"
+    steps: tuple[str, ...] = ()          # the workflow, in order
+    schemas: tuple[tuple[str, tuple[str, ...]], ...] = ()  # (file, its columns in order), as the app reads them
+    templates: tuple[tuple[str, str], ...] = ()            # (button label, file name) of each sample template
 
 
 APPS: list[AppEntry] = [
@@ -74,6 +80,17 @@ APPS: list[AppEntry] = [
         limits=("Periods close in sequence, oldest first.",
                 "A preview never changes the official layers; only Close & Commit does.",
                 "Close & Commit is disabled while demo data is loaded."),
+        takes_badges=("Excel / CSV", "Master Grid", "Receipts"),
+        makes_badges=("Master Report.xlsx", "PASS / REVIEW / FAIL", "Period Snapshot"),
+        steps=("Load the Master Grid and the current-period receipts.",
+               "Preview the strict FIFO costing. A preview never changes the official layers.",
+               "Review the PASS / REVIEW / FAIL controls and clear anything flagged.",
+               "Close & Commit the period, then download the Excel report."),
+        schemas=(("Master Grid", ("PRODUCT ALIAS", "DESCRIPTION", "01 … 13 (quantity by period)", "01V … 13V (value by period)")),
+                 ("Receipts", ("PRODUCT ALIAS", "DESCRIPTION", "ITEMS", "COMPANY", "DATE DELIVERED", "LOT #", "BOL #",
+                               "SEAL #", "PO #", "QUANTITY", "PRICE", "PERIOD", "INVOICE #"))),
+        templates=(("Master Grid template (.xlsx)", "fifo_master_grid_template.xlsx"),
+                   ("Receipts template (.xlsx)", "fifo_receipts_template.xlsx")),
     ),
     AppEntry(
         title="Data Reconciliation Studio",
@@ -86,6 +103,18 @@ APPS: list[AppEntry] = [
         files=("Excel (.xlsx) or CSV",),
         limits=("Amounts must agree to the cent.",
                 "Ambiguous matches stay unresolved for your review; the app never picks the closest one."),
+        takes_badges=("QuickBooks", "Infinium", "Excel / CSV"),
+        makes_badges=("Reconciliation Workpaper.xlsx", "Exception List"),
+        steps=("Upload the QuickBooks and Infinium sales exports (and optional historical files).",
+               "Run the match. Amounts must agree to the signed cent.",
+               "Review the exceptions; ambiguous matches stay unresolved for you.",
+               "Download the reconciliation workpaper."),
+        schemas=(("QuickBooks sales", ("PERIOD", "Date", "Num", "Memo/Description", "P.O. NUMBER", "Customer name", "QTY", "AMOUNT")),
+                 ("Infinium sales", ("OHAPD", "OHOBDE", "OHCO", "CUNO", "OHOBNO", "OHTOTA", "OHDESC"))),
+        templates=(("QuickBooks sales (.xlsx)", "recon_quickbooks_sales.xlsx"),
+                   ("Infinium sales (.xlsx)", "recon_infinium_sales.xlsx"),
+                   ("Historical QuickBooks (.xlsx)", "recon_quickbooks_historical.xlsx"),
+                   ("Historical Infinium (.xlsx)", "recon_infinium_historical.xlsx")),
     ),
     AppEntry(
         title="Transaction Preparation & Review",
@@ -99,6 +128,22 @@ APPS: list[AppEntry] = [
         limits=("Source and mapping files are read by column position, not by header name.",
                 "The download stays disabled until the dollar control check is $0.00.",
                 "The trial balance is a cache shared by everyone using the app."),
+        takes_badges=("Transactions .xlsx", "Vendor Mapping", "Trial Balance"),
+        makes_badges=("Cleaned Workbook.xlsx", "Updated Mapping", "Vendor Comparison"),
+        steps=("Upload the source transactions and the vendor mapping (the trial balance is cached).",
+               "Run the cleanup against the mapping.",
+               "Clear the dollar control check to $0.00; the download stays disabled until then.",
+               "Download the cleaned workbook, or compare two vendor lists."),
+        schemas=(("Source transactions (read by position)", ("Vendor", "Invoice Date", "Transaction ID", "Description", "Account #",
+                                                            "Cost Center", "Amount", "Tax Code", "Reference", "Code", "Period")),
+                 ("Vendor mapping (read by position)", ("Vendor Name", "Vendor ID", "Notes", "Taxability", "Grouping", "Status")),
+                 ("Trial balance", ("Entity", "Account Name", "GL Account", "Balance")),
+                 ("Vendor listing", ("Vendor ID", "Vendor Name", "Taxability", "Grouping"))),
+        templates=(("Source transactions (.xlsx)", "sales_tax_source_transactions.xlsx"),
+                   ("Vendor mapping (.xlsx)", "sales_tax_vendor_mapping.xlsx"),
+                   ("Trial balance (.xlsx)", "sales_tax_trial_balance.xlsx"),
+                   ("Previous vendor listing (.xlsx)", "vendor_listing_previous.xlsx"),
+                   ("Updated vendor listing (.xlsx)", "vendor_listing_updated.xlsx")),
     ),
     AppEntry(
         title="Invoice Lifecycle Hub",
@@ -113,6 +158,11 @@ APPS: list[AppEntry] = [
         files=("None: this prototype uses simulated invoice mail",),
         limits=("Prototype: Outlook mail and sign-in are simulated in your browser.",
                 "Sign-in personalizes the page; it is not access control."),
+        takes_badges=("Outlook (simulated)",),
+        makes_badges=("AP / AR Tracking", "Invoice Dashboard"),
+        steps=("Open the service overview to see the invoice stages.",
+               "Sign in (simulated in your browser; it personalizes only).",
+               "Open My Dashboard for your invoice workspace."),
     ),
 ]
 

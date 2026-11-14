@@ -91,9 +91,14 @@ Streamlit widgets, since they download files and hold purchase state.
 
 ## Dashboard layout
 
-The Dashboard is one `st.html` block: a Get started panel, the application cards, and a
-"How your data is handled" drawer. There is no left rail: the top navigation bar is the only navigation, and unbuilt features are not shown. Each card has **Open workspace**, **Try demo**, and **View details** (supported files,
-inputs, outputs, limitations, and plan availability, from `AppEntry` in `shared/layout.py` and `TIERS`).
+The Dashboard is one `st.html` block: a status row (workspace, applications, plan tier with an "Upgrade to Pro"
+button), one dismissible "New to Janota?" bar (interactive tour, sample templates), the application cards with
+Takes in / Produces pills, and a trust footer. There is no left rail: the top navigation bar is the only navigation, and unbuilt features are not shown. Each card has **Open workspace**, **Try demo**, and **View details**, which opens a slide-over drawer
+(workflow steps, column schemas, sample-template downloads, limitations, plan availability) built from `AppEntry`
+in `shared/layout.py` and `TIERS`. The same drawer shows all templates ("grab sample templates") and Security & Data Governance (the
+trust footer's link). Template files travel as base64 in the page script and `dashboard.js` builds the download; a
+`data:` link would be stripped. The trust footer states only what the code does (uploads in session memory, outputs built on
+request); do not add certification or encryption claims there unless they are true.
 
 - **Try demo** links to `/<app>?demo=1`. `shared/sample_data.py:_seed_demo` loads each uploader's sample once per session
   when it sees that parameter, so the workflow opens populated. It reuses the existing sample files and builders; nothing
