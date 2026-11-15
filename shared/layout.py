@@ -65,6 +65,11 @@ class AppEntry:
     steps: tuple[str, ...] = ()          # the workflow, in order
     schemas: tuple[tuple[str, tuple[str, ...]], ...] = ()  # (file, its columns in order), as the app reads them
     templates: tuple[tuple[str, str], ...] = ()            # (button label, file name) of each sample template
+    # Dashboard card copy framed as business value (apps/dashboard.py). Falls back to summary / outputs when empty.
+    category: str = ""       # short tag above the title, e.g. "Inventory & Cost Control"
+    benefit: str = ""        # one friendly sentence: what it does for you
+    benefit_icon: str = ""   # emoji shown before the benefit
+    result: str = ""         # one short phrase: what you walk away with
 
 
 APPS: list[AppEntry] = [
@@ -82,6 +87,10 @@ APPS: list[AppEntry] = [
                 "Close & Commit is disabled while demo data is loaded."),
         takes_badges=("Excel / CSV", "Master Grid", "Receipts"),
         makes_badges=("Master Report.xlsx", "PASS / REVIEW / FAIL", "Period Snapshot"),
+        category="Inventory & Cost Control",
+        benefit="Automates strict FIFO costing and surfaces control exceptions instantly.",
+        benefit_icon="\U0001F504",
+        result="An Excel master report with PASS / REVIEW / FAIL controls.",
         steps=("Load the Master Grid and the current-period receipts.",
                "Preview the strict FIFO costing. A preview never changes the official layers.",
                "Review the PASS / REVIEW / FAIL controls and clear anything flagged.",
@@ -105,6 +114,10 @@ APPS: list[AppEntry] = [
                 "Ambiguous matches stay unresolved for your review; the app never picks the closest one."),
         takes_badges=("QuickBooks", "Infinium", "Excel / CSV"),
         makes_badges=("Reconciliation Workpaper.xlsx", "Exception List"),
+        category="Automated Sales Matching",
+        benefit="Cross-checks two systems to the exact cent and flags exceptions for your review.",
+        benefit_icon="⚡",
+        result="A clean, audit-ready reconciliation workpaper.",
         steps=("Upload the QuickBooks and Infinium sales exports (and optional historical files).",
                "Run the match. Amounts must agree to the signed cent.",
                "Review the exceptions; ambiguous matches stay unresolved for you.",
@@ -128,8 +141,12 @@ APPS: list[AppEntry] = [
         limits=("Source and mapping files are read by column position, not by header name.",
                 "The download stays disabled until the dollar control check is $0.00.",
                 "The trial balance is a cache shared by everyone using the app."),
-        takes_badges=("Transactions .xlsx", "Vendor Mapping", "Trial Balance"),
+        takes_badges=("Transactions", "Vendor Mapping", "Trial Balance"),
         makes_badges=("Cleaned Workbook.xlsx", "Updated Mapping", "Vendor Comparison"),
+        category="Smart Data Cleanup",
+        benefit="Standardizes messy vendor lists and walks you through sales-tax review without manual reformatting.",
+        benefit_icon="\U0001F9F9",
+        result="A cleaned, ready-to-file workbook.",
         steps=("Upload the source transactions and the vendor mapping (the trial balance is cached).",
                "Run the cleanup against the mapping.",
                "Clear the dollar control check to $0.00; the download stays disabled until then.",
@@ -160,6 +177,10 @@ APPS: list[AppEntry] = [
                 "Sign-in personalizes the page; it is not access control."),
         takes_badges=("Outlook (simulated)",),
         makes_badges=("AP / AR Tracking", "Invoice Dashboard"),
+        category="Invoice Tracking Hub",
+        benefit="Follow every invoice from the first email through final payment, stage by stage.",
+        benefit_icon="\U0001F4EC",
+        result="A personal invoice dashboard (simulated in this preview).",
         steps=("Open the service overview to see the invoice stages.",
                "Sign in (simulated in your browser; it personalizes only).",
                "Open My Dashboard for your invoice workspace."),

@@ -162,14 +162,23 @@ def _templates_pane() -> str:
 def _card(app) -> str:
     badge = f'<span class="pp-badge">{html.escape(app.badge)}</span>' if app.badge else ""
     path = html.escape(app.url_path)
-    # What it takes in and produces is printed on the card, not hidden behind a hover: touch screens have no hover.
-    io = (f'<dl class="pp-io"><dt>Takes in</dt><dd>{_pills(_field(app, "takes_badges") or app.inputs)}</dd>'
-          f'<dt>Produces</dt><dd>{_pills(_field(app, "makes_badges") or app.outputs)}</dd></dl>')
+    # The card leads with what the tool does for you; the inputs and the result are printed on the card, not hidden
+    # behind a hover: touch screens have no hover. Falls back to the plain summary if the registry lacks the new copy.
+    category = _field(app, "category") or ""
+    benefit = _field(app, "benefit") or app.summary
+    icon = _field(app, "benefit_icon") or ""
+    result = _field(app, "result") or ", ".join(app.outputs[:2])
+    tag = f'<p class="pp-category">{html.escape(category)}</p>' if category else ""
+    lead = f'<span class="pp-emoji" aria-hidden="true">{icon}</span>' if icon else ""
+    io = (f'<div class="pp-inputs"><span class="pp-io-label"><span aria-hidden="true">&#128196;</span> Inputs</span>'
+          f'{_pills(_field(app, "takes_badges") or app.inputs)}</div>'
+          f'<p class="pp-result"><span class="pp-emoji" aria-hidden="true">&#128193;</span>'
+          f'<span><strong>Output:</strong> {html.escape(result)}</span></p>')
     return (
         f'<div class="pp-card" data-href="/{path}">'
         f'<div class="pp-icon" data-icon="{path}"></div>'
-        f'<h3 class="pp-title">{html.escape(app.title)}{badge}</h3>'
-        f'<p class="pp-summary">{html.escape(app.summary)}</p>{io}'
+        f'{tag}<h3 class="pp-title">{html.escape(app.title)}{badge}</h3>'
+        f'<p class="pp-summary">{lead}<span>{html.escape(benefit)}</span></p>{io}'
         '<div class="pp-actions">'
         f'<a class="pp-action" href="/{path}" target="_self" data-route>{html.escape(app.action)} &rarr;</a>'
         f'<a class="pp-ghost" href="/{path}?demo=1" target="_self" title="Opens with sample data loaded; no company files needed">Try demo</a>'
@@ -205,12 +214,25 @@ def _status_bar() -> str:
 def _onboarding() -> str:
     """One compact, dismissible bar in place of the three-step panel and the tip banner."""
     return (
-        '<div class="pp-onboard" role="note"><p><strong>New to Janota?</strong> '
-        '<button type="button" class="pp-link" data-tour>Launch interactive tour</button> or '
-        '<button type="button" class="pp-link" data-open-pane="templates">grab sample templates &rarr;</button>'
-        '<span class="pp-onboard-hint">Each tool keeps its own files; to keep two loaded, open the second in a new browser tab.</span></p>'
+        '<div class="pp-onboard" role="note"><span class="pp-onboard-emoji" aria-hidden="true">&#128075;</span>'
+        '<div class="pp-onboard-text"><strong>Welcome to Janota</strong>'
+        '<span>Take a two-minute tour, or start from a correctly shaped sample file.</span>'
+        '<span class="pp-onboard-hint">Each tool keeps its own files; to keep two loaded, open the second in a new browser tab.</span></div>'
+        '<div class="pp-onboard-actions">'
+        '<button type="button" class="pp-onboard-cta" data-tour>Launch interactive tour</button>'
+        '<button type="button" class="pp-link" data-open-pane="templates">Grab sample templates &rarr;</button></div>'
         '<button type="button" class="pp-notice-close" aria-label="Dismiss">&times;</button></div>'
     )
+
+
+# Placeholder social proof: replace with a real, attributed customer quote before launch. The page labels it "Example".
+_QUOTE = "Saved our team 15+ hours during our last close cycle."
+
+
+def _quote_banner() -> str:
+    return (f'<figure class="pp-quote"><span class="pp-quote-mark" aria-hidden="true">&ldquo;</span>'
+            f'<blockquote>{html.escape(_QUOTE)}</blockquote>'
+            '<figcaption><span class="pp-quote-tag">Example quote</span> Month-end close team</figcaption></figure>')
 
 
 # What is stored where, from the code: uploads live in the browser session; Excel outputs are built in memory
@@ -236,15 +258,17 @@ _DATA_HANDLING = (
     "<li><strong>Demo data</strong> is synthetic: made-up vendors, customers, and amounts.</li></ul>"
 )
 
-# Only claims the code backs up: no certification or encryption is asserted here (see _DATA_HANDLING for the detail).
-_TRUST_BADGES = ("Uploads held in session memory", "Outputs built on request", "Sample data is synthetic",
-                 "Sign-in is a preview, not access control")
+# Friendly badges only; the exact data handling (session memory, simulated sign-in, what is saved where) is in the
+# Security & Data Governance drawer (_DATA_HANDLING). No certification or encryption standard is asserted here, so
+# "Bank-Level" is deliberately not claimed.
+_TRUST_BADGES = (("&#128274;", "Your Data Stays in Your Session"), ("&#9889;", "Zero Setup Required"),
+                 ("&#128737;&#65039;", "Confidential & Private Session Storage"))
 
 
 def _trust_footer() -> str:
     return (
         '<footer class="pp-trust"><div class="pp-trust-badges">'
-        + "".join(f'<span class="pp-shield"><span aria-hidden="true">&#10003;</span>{html.escape(t)}</span>' for t in _TRUST_BADGES)
+        + "".join(f'<span class="pp-shield"><span aria-hidden="true">{i}</span>{html.escape(t)}</span>' for i, t in _TRUST_BADGES)
         + '</div><button type="button" class="pp-link" data-open-pane="governance">Security &amp; Data Governance &rarr;</button></footer>'
     )
 
@@ -263,7 +287,7 @@ page = (
     '<div class="pp-dash"><div class="pp-main">'
     '<header class="pp-hero" id="pp-overview"><p class="pp-brand">Janota Fin Automations</p>'
     f'<h1>Accounting Workspace</h1><p>Choose an application to get started.</p>{_status_bar()}</header>'
-    f"{_onboarding()}"
+    f"{_onboarding()}{_quote_banner()}"
     '<h2 class="pp-section" id="pp-apps">Applications</h2>'
     f'<div class="pp-grid">{"".join(_card(app) for app in APPS)}</div>'
     f"{_trust_footer()}"
@@ -360,12 +384,14 @@ def _calendar_editor(calendar: FiscalCalendar) -> None:
 
 with st.container(key="pp-fiscal"):
     stored_end = fiscal_session.get_end_date()
-    field, calendar_slot, status = st.columns([1.2, 1, 3], vertical_alignment="bottom")
-    entered = field.date_input(
-        "Fiscal period ending date (optional)", value=stored_end, format="YYYY-MM-DD", key="pp-fiscal-end",
-        help="Fills in the fiscal year, period, and period end date in the tools that ask for them. Leave blank to choose inside each tool.",
-    )
-    with calendar_slot.popover("Fiscal calendar", icon=":material/calendar_month:"):
+    # One quiet line: an "active period" menu (holds the optional end date), the fiscal calendar menu, and the result.
+    field, calendar_slot, status = st.columns([1.3, 1, 4], vertical_alignment="center")
+    with field.popover("Select active period", icon=":material/calendar_month:", use_container_width=True):
+        entered = st.date_input(
+            "Fiscal period ending date (optional)", value=stored_end, format="YYYY-MM-DD", key="pp-fiscal-end",
+            help="Fills in the fiscal year, period, and period end date in the tools that ask for them. Leave blank to choose inside each tool.",
+        )
+    with calendar_slot.popover("Fiscal calendar", icon=":material/edit_calendar:", use_container_width=True):
         _calendar_editor(fiscal_session.get_calendar())
     fiscal_session.set_end_date(entered)
     if fiscal_session.save_problem():

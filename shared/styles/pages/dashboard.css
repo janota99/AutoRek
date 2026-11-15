@@ -104,21 +104,25 @@
 .pp-onboard {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-    padding: 0.5rem 0.5rem 0.5rem 1rem;
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--blue);
-    border-radius: 0.5rem;
-    background: #ffffff;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.9rem 0.75rem 0.9rem 1.1rem;
+    border: 1.5px solid transparent;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #f4f9ff, #ffffff) padding-box,
+                linear-gradient(120deg, #2f70a8, #22b8cf 55%, #153d68) border-box;
+    box-shadow: 0 4px 14px rgba(21, 61, 104, 0.08);
     color: #334155;
     font-size: 0.97rem;
 }
 
-.pp-onboard p { flex: 1; margin: 0; }
-.pp-onboard strong { color: var(--navy); }
-.pp-onboard .pp-link { padding: 0.1rem 0.15rem; }
-.pp-onboard-hint { display: block; margin-top: 0.15rem; color: #64748b; font-size: 0.85rem; }
+.pp-onboard-emoji { flex: none; font-size: 1.6rem; }
+.pp-onboard-text { flex: 1; display: grid; gap: 0.1rem; }
+.pp-onboard strong { color: var(--navy); font-size: 1.05rem; }
+.pp-onboard-hint { color: #64748b; font-size: 0.85rem; }
+.pp-onboard-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.9rem; }
+.pp-onboard-cta { padding: 0.5rem 1rem; border: 0; border-radius: 0.6rem; background: var(--navy); color: #fff; font: 600 0.95rem Inter, "Segoe UI", system-ui, sans-serif; cursor: pointer; transition: background 0.15s ease, transform 0.15s ease; }
+.pp-onboard-cta:hover { background: var(--blue-dark); transform: translateY(-1px); }
 .pp-onboard[hidden] { display: none; }
 
 .pp-notice-close {
@@ -136,6 +140,12 @@
 
 .pp-notice-close:hover { background: #f1f5f9; color: var(--navy); }
 
+.pp-quote { display: flex; align-items: baseline; gap: 0.6rem; margin: 0 0 1.25rem; padding: 0.55rem 1rem; border-radius: 0.75rem; background: #eef5fb; color: #334155; }
+.pp-quote-mark { color: var(--blue); font-size: 1.8rem; font-weight: 800; line-height: 0; }
+.pp-quote blockquote { margin: 0; padding: 0; border: 0; color: var(--navy); font-size: 1.02rem; font-style: italic; font-weight: 600; }
+.pp-quote figcaption { margin-left: auto; color: #64748b; font-size: 0.85rem; white-space: nowrap; }
+.pp-quote-tag { margin-right: 0.35rem; padding: 0.05rem 0.45rem; border-radius: 9999px; background: #fff; color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
 .pp-section {
     margin: 0 0 0.6rem;
     padding: 0;
@@ -151,8 +161,8 @@
 .pp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; margin-top: auto; }
 .pp-actions > .pp-action,
 .pp-actions > .pp-ghost { box-sizing: border-box; display: inline-flex; align-items: center; min-height: 2.75rem; }
-.pp-ghost { padding: 0.55rem 1rem; border: 1px solid var(--blue); border-radius: 0.5rem; color: var(--blue-dark); font-size: 1rem; font-weight: 600; text-decoration: none; }
-.pp-ghost:hover { background: var(--tile); }
+.pp-ghost { padding: 0.55rem 1rem; border: 1px solid var(--line-strong); border-radius: 0.5rem; background: transparent; color: var(--blue-dark); font-size: 1rem; font-weight: 500; text-decoration: none; transition: background 0.15s ease, border-color 0.15s ease; }
+.pp-ghost:hover { background: var(--tile); border-color: var(--blue); }
 .pp-link { padding: 0.3rem 0.2rem; border: 0; background: transparent; color: var(--blue-dark); font: 600 0.95rem Inter, "Segoe UI", system-ui, sans-serif; text-decoration: underline; cursor: pointer; }
 .pp-stat .pp-link { margin-left: 0.4rem; font-size: 0.9rem; }
 .pp-grid {
@@ -172,18 +182,20 @@
     display: flex;
     flex-direction: column;
     padding: 1.1rem 1.25rem;
-    border: 1px solid var(--line);
-    border-radius: 0.75rem;
+    border: 1px solid #e6edf4;
+    border-radius: 1rem;
     background: #ffffff;
+    box-shadow: 0 1px 2px rgba(21, 61, 104, 0.05), 0 6px 18px rgba(21, 61, 104, 0.07);
     color: inherit;
     text-decoration: none;
     overflow: hidden;
     cursor: pointer;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .pp-card:hover,
-.pp-card:focus-visible { border-color: var(--blue); }
+.pp-card:focus-visible { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(47, 112, 168, 0.14), 0 14px 30px rgba(21, 61, 104, 0.14); }
+.pp-js .pp-card.pp-in:hover { transform: translateY(-4px); }
 
 .pp-card:focus-visible {
     outline: 2px solid var(--blue);
@@ -232,26 +244,31 @@
     text-transform: uppercase;
 }
 
+.pp-category { margin: 0 0 0.2rem; color: var(--blue-dark); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; }
 .pp-summary {
-    flex: 1;
-    margin: 0 0 1rem;
+    display: flex;
+    gap: 0.5rem;
+    margin: 0 0 0.9rem;
     color: #2f3e51;
-    font-size: 1.05rem;
+    font-size: 1.02rem;
     line-height: 1.5;
 }
+.pp-emoji { flex: none; }
+.pp-result { display: flex; gap: 0.5rem; flex: 1; margin: 0 0 1rem; color: #334155; font-size: 0.95rem; line-height: 1.45; }
+.pp-result strong { color: var(--navy); font-weight: 600; }
 
 .pp-action {
     text-decoration: none;
     padding: 0.6rem 1.25rem;
     border-radius: 0.5rem;
-    background: var(--blue);
+    background: var(--navy);
     color: #ffffff;
     font-size: 1.02rem;
     font-weight: 600;
     transition: background 0.15s ease;
 }
 
-.pp-card:hover .pp-action { background: var(--blue-dark); }
+.pp-card:hover .pp-action { background: #0e2d4f; }
 
 /* The primary action is stretched over the whole card: one tap or click anywhere opens the app, and keyboard
    users tab to a single link. The secondary controls sit above the stretched link. */
@@ -261,11 +278,10 @@
 .pp-card .pp-pill { position: relative; z-index: 1; }
 .pp-card:has(.pp-action:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
 
-/* What the app takes in and produces, as pills; always visible (no hover needed). */
-.pp-io { margin: 0 0 0.9rem; padding: 0; }
-.pp-io dt { margin: 0.55rem 0 0; padding: 0; color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.pp-io dd { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.25rem 0 0; padding: 0; }
-.pp-pill { padding: 0.15rem 0.6rem; border: 1px solid var(--line); border-radius: 9999px; background: var(--canvas); color: #334155; font: 500 0.8rem/1.4 var(--mono); white-space: nowrap; }
+/* What the app works with, as friendly pills; always visible (no hover needed). Mono is kept for live numbers and dates only. */
+.pp-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin: 0 0 0.75rem; }
+.pp-io-label { margin-right: 0.15rem; color: #64748b; font-size: 0.85rem; font-weight: 600; }
+.pp-pill { padding: 0.15rem 0.65rem; border: 1px solid var(--line); border-radius: 9999px; background: var(--canvas); color: #334155; font: 500 0.82rem/1.4 Inter, "Segoe UI", system-ui, sans-serif; white-space: nowrap; }
 
 /* Entrance: JS adds .pp-in as each card scrolls into view. Without JS the cards just show. */
 .pp-js .pp-card,
@@ -280,6 +296,7 @@
     transform: none;
     transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.15s ease;
 }
+.pp-js .pp-card.pp-in { transition: opacity 0.5s ease, transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
 
 
 /* Animated Sales Reconciliation logo: two documents slide together, merge, and get a check. */
@@ -385,6 +402,7 @@
     .pp-fifo-queue, .pp-fifo-out { animation: none; }
     .pp-fifo-in { animation: none; opacity: 0; }
     .pp-card, .pp-icon, .pp-action, .pp-drawer, .pp-scrim { transition: none; }
+    .pp-js .pp-card.pp-in:hover { transform: none; }
     .pp-js .pp-card, .pp-js .pp-hero, .pp-js .pp-onboard { opacity: 1; transform: none; }
     .pp-doc-left, .pp-doc-right { animation: none; opacity: 0; }
     .pp-doc-merged { animation: none; opacity: 1; transform: none; }
@@ -402,22 +420,20 @@
     height: 3.4rem !important;
 }
 
-/* Fiscal period bar (apps/dashboard.py): sits above the hero, same width as the content column. */
+/* Fiscal period bar (apps/dashboard.py): one quiet line above the hero; the menus hold the controls. */
 .st-key-pp-fiscal {
     max-width: 1560px;
-    margin: 1rem auto 0.75rem;
-    padding: 0.6rem 1rem;
+    margin: 0.5rem auto 0.75rem;
+    padding: 0.3rem 0.6rem;
     border: 1px solid var(--line, #e2e8f0);
     border-radius: 0.75rem;
     background: #ffffff;
-    font-variant-numeric: tabular-nums;
+    box-shadow: 0 1px 2px rgba(21, 61, 104, 0.04);
 }
-.st-key-pp-fiscal input,
+.st-key-pp-fiscal [data-testid="stPopover"] button { border-radius: 9999px; border-color: var(--line-strong, #cbd5e1); color: var(--navy, #153d68); font-weight: 600; }
 .st-key-pp-fiscal [data-testid="stCaptionContainer"],
-.st-key-pp-fiscal [data-testid="stAlertContainer"] {
-    font-family: var(--mono, ui-monospace, Consolas, monospace);
-    font-variant-numeric: tabular-nums;
-}
+.st-key-pp-fiscal [data-testid="stAlertContainer"] { font-variant-numeric: tabular-nums; }
+[data-testid="stPopoverBody"] input { font-family: var(--mono, ui-monospace, Consolas, monospace); font-variant-numeric: tabular-nums; }
 
 
 /* Slide-over drawer: module workflow, column schemas, sample templates, and the data-governance notes. */
@@ -478,10 +494,10 @@
 .pp-gov { display: grid; gap: 0.7rem; margin-top: 1rem !important; }
 
 /* Trust footer. */
-.pp-trust { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; margin-top: 1.5rem; padding: 0.9rem 1.1rem; border: 1px solid var(--line); border-radius: 0.75rem; background: #ffffff; }
-.pp-trust-badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pp-trust { display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: center; gap: 0.75rem 1.5rem; margin-top: 1.5rem; padding: 0.9rem 1.1rem; border: 1px solid var(--line); border-radius: 0.75rem; background: #ffffff; }
+.pp-trust-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; }
 .pp-shield { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.7rem; border: 1px solid var(--line); border-radius: 0.4rem; background: var(--canvas); color: #334155; font-size: 0.85rem; font-weight: 600; }
-.pp-shield > span { color: #16a34a; }
+.pp-shield > span { font-size: 1rem; }
 
 /* Interactive tour: a highlighted target and a small card pinned to the bottom of the screen. */
 .pp-tour-target { position: relative; z-index: 999980; outline: 3px solid var(--blue); outline-offset: 3px; border-radius: 0.5rem; }
@@ -494,5 +510,7 @@
 .pp-tour .pp-action::after { display: none; }
 
 @media (max-width: 720px) {
-    .pp-onboard { align-items: flex-start; }
+    .pp-onboard { flex-wrap: wrap; align-items: flex-start; }
+    .pp-quote { flex-wrap: wrap; }
+    .pp-quote figcaption { margin-left: 0; white-space: normal; }
 }
