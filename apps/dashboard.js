@@ -167,4 +167,12 @@
   root.querySelectorAll("[data-tour]").forEach(function (b) {
     b.addEventListener("click", function () { at = 0; showStop(); });
   });
+
+  // Help & Docs (account strip) on another page leaves a note naming what to open here.
+  var wanted = null;
+  try { wanted = sessionStorage.getItem("pp.dash.help"); sessionStorage.removeItem("pp.dash.help"); } catch (e) {}
+  if (wanted) setTimeout(function () {
+    var control = root.querySelector(wanted === "tour" ? "[data-tour]" : '[data-open-pane="' + wanted + '"]');
+    if (control) control.click();
+  }, 600);
 })();

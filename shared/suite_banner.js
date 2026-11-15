@@ -59,7 +59,7 @@
     var left = Infinity;
     document.querySelectorAll('[data-testid="stToolbar"] button, [data-testid="stToolbar"] a')
       .forEach(function (el) {
-        if (el.closest('[data-testid^="stTopNav"], [data-testid="stHeaderLogo"]')) return;
+        if (el.closest('[data-testid^="stTopNav"], [data-testid="stHeaderLogo"], [data-testid="stLogoLink"]')) return;
         var r = el.getBoundingClientRect();
         if (r.width > 0) left = Math.min(left, r.left);
       });
@@ -71,10 +71,10 @@
   }
 
   function closeMenu(banner) {
-    var popover = banner.querySelector('.pp-sb-popover');
-    var toggle = banner.querySelector('[data-action="menu"]');
-    if (popover) popover.hidden = true;
-    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    Array.prototype.forEach.call(banner.querySelectorAll('.pp-sb-popover'), function (p) { p.hidden = true; });
+    Array.prototype.forEach.call(banner.querySelectorAll('[data-action="menu"]'), function (t) {
+      t.setAttribute('aria-expanded', 'false');
+    });
   }
 
   function render() {
@@ -156,6 +156,17 @@
     visit(HUB_PATH);
   }
 
+  // Help & Docs: the tour, sample templates and data-governance notes all live on the Workspace page. On it, press the
+  // matching control; from another page, leave a note for dashboard.js and go there (keeps the session).
+  var HELP_KEY = 'pp.dash.help';
+  function openHelp(what) {
+    var selector = what === 'tour' ? '.pp-dash [data-tour]' : '.pp-dash [data-open-pane="' + what + '"]';
+    var control = document.querySelector(selector);
+    if (control) { control.click(); return; }
+    try { window.sessionStorage.setItem(HELP_KEY, what); } catch (e) { /* ignore */ }
+    visit('/workspace');
+  }
+
   document.addEventListener('click', function (event) {
     var banner = document.querySelector('.pp-suite-banner');
     if (!banner) return;
@@ -163,14 +174,16 @@
     if (!button) { closeMenu(banner); return; }   // a click anywhere else closes the menu
     var action = button.getAttribute('data-action');
     if (action === 'menu') {
-      var popover = banner.querySelector('.pp-sb-popover');
+      var popover = button.parentElement.querySelector('.pp-sb-popover');
       var opening = popover.hidden;
+      closeMenu(banner);   // one menu open at a time
       popover.hidden = !opening;
       button.setAttribute('aria-expanded', opening ? 'true' : 'false');
       return;
     }
     closeMenu(banner);
-    if (action === 'signout') signOut(); else openWorkspace();
+    if (action.indexOf('help-') === 0) openHelp(action.slice(5));
+    else if (action === 'signout') signOut(); else openWorkspace();
   });
 
   document.addEventListener('keydown', function (event) {

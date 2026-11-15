@@ -17,6 +17,7 @@ SUITE_NAME = "Janota Fin Automations Accounting Apps"
 
 _SHARED_DIR = Path(__file__).resolve().parent
 _LOGO_PATH = _SHARED_DIR / "assets" / "janota_fin_logo.png"
+_HEADER_LOGO_PATH = _SHARED_DIR / "assets" / "janota_fin_logo_light.png"   # transparent: navy "Janota", blue "FIN"
 FAVICON_PATH = _SHARED_DIR / "assets" / "favicon.png"   # the logo's "J" and cyan accent on its navy, square
 BRAND = "Janota FIN"
 HOME_TAGLINE = "Month-end automation for manufacturers and distributors"
@@ -27,6 +28,14 @@ _BANNER_JS_PATH = _SHARED_DIR / "suite_banner.js"
 # top-right corner of every page and never restricts one.
 _BANNER_HTML = (
     '<div class="pp-suite-banner" data-state="out">'
+    '<div class="pp-sb-helpmenu">'
+    '<button type="button" class="pp-sb-help" data-action="menu" aria-haspopup="menu" aria-expanded="false">'
+    'Help &amp; Docs<span class="pp-sb-caret" aria-hidden="true">&#9662;</span></button>'
+    '<div class="pp-sb-popover" role="menu" hidden>'
+    '<button type="button" class="pp-sb-item" role="menuitem" data-action="help-tour">Take the interactive tour</button>'
+    '<button type="button" class="pp-sb-item" role="menuitem" data-action="help-templates">Sample templates</button>'
+    '<button type="button" class="pp-sb-item" role="menuitem" data-action="help-governance">Security &amp; data governance</button>'
+    '</div></div>'
     '<div class="pp-sb-hello">'
     '<span class="pp-sb-greeting" data-slot="greeting"></span>'
     '<span class="pp-sb-role" data-slot="eyebrow"></span>'
@@ -232,8 +241,11 @@ def title_for_path(path: str) -> str:
 
 def apply_template() -> None:
     """Suite-wide chrome drawn on every page, before the page's own content."""
-    if _LOGO_PATH.is_file():
-        st.logo(str(_LOGO_PATH), size="large")
+    # The header is white, so it gets the transparent navy-and-blue wordmark; the original (white on navy) is
+    # kept for the landing page and as the fallback.
+    logo = _HEADER_LOGO_PATH if _HEADER_LOGO_PATH.is_file() else _LOGO_PATH
+    if logo.is_file():
+        st.logo(str(logo), size="large")
     inject_base()
     try:
         banner_js = _BANNER_JS_PATH.read_text(encoding="utf-8")

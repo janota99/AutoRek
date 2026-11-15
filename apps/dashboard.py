@@ -301,6 +301,13 @@ if st.session_state.get(sales_page.VIEW_KEY) == sales_page.PRICING_VIEW:
 
 
 
+def _status_pill(kind: str, label: str, detail: str, tip: str) -> str:
+    mark = "&#10003;" if kind == "ok" else "!"
+    return (f'<div class="pp-fiscal-status"><span class="pp-fpill pp-fpill-{kind}" title="{html.escape(tip)}">'
+            f'<span class="pp-fpill-mark" aria-hidden="true">{mark}</span><strong>{html.escape(label)}</strong>'
+            f'<span class="pp-fpill-detail">{detail}</span></span></div>')
+
+
 def _apply_pasted_dates(resets: int) -> None:
     """Callback for "Use these dates": fill the thirteen date boxes from the pasted text, or say what is wrong with it."""
     dates, problem = parse_period_end_dates(st.session_state.get(f"pp-fiscal-paste-{resets}", ""))
@@ -385,27 +392,32 @@ def _calendar_editor(calendar: FiscalCalendar) -> None:
 with st.container(key="pp-fiscal"):
     stored_end = fiscal_session.get_end_date()
     # One quiet line: an "active period" menu (holds the optional end date), the fiscal calendar menu, and the result.
-    field, calendar_slot, status = st.columns([1.3, 1, 4], vertical_alignment="center")
-    with field.popover("Select active period", icon=":material/calendar_month:", use_container_width=True):
+    field, calendar_slot, status = st.columns([1.2, 1, 4], vertical_alignment="center")
+    with field.popover("Select active period", icon=":material/calendar_month:"):
         entered = st.date_input(
             "Fiscal period ending date (optional)", value=stored_end, format="YYYY-MM-DD", key="pp-fiscal-end",
             help="Fills in the fiscal year, period, and period end date in the tools that ask for them. Leave blank to choose inside each tool.",
         )
-    with calendar_slot.popover("Fiscal calendar", icon=":material/edit_calendar:", use_container_width=True):
+    with calendar_slot.popover("Fiscal calendar", icon=":material/edit_calendar:"):
         _calendar_editor(fiscal_session.get_calendar())
     fiscal_session.set_end_date(entered)
     if fiscal_session.save_problem():
         st.warning(fiscal_session.save_problem())
     context = fiscal_session.current()
+    # A quiet status pill instead of a sentence of system output; the full explanation is the pill's tooltip.
     if context is None:
-        status.caption("No date set: each tool keeps its own fiscal period controls.")
+        pill = _status_pill("ok", "Ready", "set the period inside each tool",
+                            "No date set: each tool keeps its own fiscal period controls.")
     elif context.period is None:
-        status.warning(f"{context.end_date:%Y-%m-%d} is outside the fiscal calendar, so only the end date is passed on. "
-                       "Open Fiscal calendar to adjust it.", icon=":material/event_busy:")
+        pill = _status_pill("warn", "Outside fiscal calendar", f'<span class="pp-date">{context.end_date:%Y-%m-%d}</span> only',
+                            f"{context.end_date:%Y-%m-%d} is outside the fiscal calendar, so only the end date is passed on. "
+                            "Open Fiscal calendar to adjust it.")
     else:
-        status.success(f"FY{context.fiscal_year} Period {context.period:02d}, ending {context.end_date:%Y-%m-%d}. "
-                       "Set in Inventory Costing and Data Reconciliation; change it there any time.",
-                       icon=":material/event_available:")
+        pill = _status_pill("ok", f"FY{context.fiscal_year} Period {context.period:02d}",
+                            f'ends <span class="pp-date">{context.end_date:%Y-%m-%d}</span>',
+                            f"FY{context.fiscal_year} Period {context.period:02d}, ending {context.end_date:%Y-%m-%d}. "
+                            "Set in Inventory Costing and Data Reconciliation; change it there any time.")
+    status.html(pill)
 
 st.html(page, unsafe_allow_javascript=True)
 # The only way into the sales page: it is not a registered page, so it has no URL or nav entry.

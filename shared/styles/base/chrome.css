@@ -61,11 +61,11 @@
 /* Streamlit's navigation bar collapses extra pages into a "more" menu to fit its width; leave room
    for the strip so it never covers a page link. */
 .stApp:has(.pp-suite-banner) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 19rem);
+    max-width: calc(100% - 26rem);
 }
 
 .stApp:has(.pp-suite-banner[data-state="in"]) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 29rem);
+    max-width: calc(100% - 36rem);
 }
 
 .pp-sb-hello {
@@ -77,14 +77,43 @@
 }
 
 .pp-sb-greeting {
-    color: var(--pp-navy);
-    font-size: 0.95rem;
-    font-weight: 700;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .pp-sb-role {
-    color: var(--pp-text-secondary);
-    font-size: 0.85rem;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.pp-sb-helpmenu {
+    position: relative;
+}
+
+.pp-suite-banner .pp-sb-help {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #475569;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+.pp-suite-banner .pp-sb-help:hover,
+.pp-suite-banner .pp-sb-help[aria-expanded="true"] {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.pp-sb-helpmenu .pp-sb-popover {
+    min-width: 15rem;
 }
 
 .pp-suite-banner[data-state="out"] .pp-sb-hello,
@@ -124,7 +153,7 @@
     width: 2rem;
     height: 2rem;
     border-radius: 50%;
-    background: var(--pp-navy);
+    background: #0f172a;
     color: var(--pp-surface);
     font-size: 0.8rem;
     font-weight: 800;
@@ -178,9 +207,9 @@
     border: 0;
     border-radius: 0.35rem;
     background: transparent;
-    color: var(--pp-navy);
-    font-size: 0.95rem;
-    font-weight: 600;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 500;
     text-align: left;
 }
 
@@ -191,12 +220,12 @@
 .pp-suite-banner .pp-sb-signin {
     min-height: 2.25rem;
     padding: 0.3rem 1rem;
-    border: 1px solid var(--pp-navy);
-    border-radius: 0.4rem;
-    background: var(--pp-navy);
+    border: 1px solid #0f172a;
+    border-radius: 6px;
+    background: #0f172a;
     color: var(--pp-surface);
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .pp-suite-banner .pp-sb-signin:hover {
@@ -204,7 +233,7 @@
 }
 
 @media (max-width: 720px) {
-    .pp-sb-hello { display: none; }
+    .pp-sb-hello, .pp-sb-helpmenu { display: none; }
 }
 
 /* Small helper text (captions, upload statuses) is easier to read a little larger than Streamlit's default. */
@@ -260,11 +289,11 @@
 
 /* Room for the button in the navigation row so it never covers a page link. */
 .stApp:has(.st-key-pp-open-pricing) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 37rem);
+    max-width: calc(100% - 44rem);
 }
 
 .stApp:has(.st-key-pp-open-pricing):has(.pp-suite-banner[data-state="in"]) [data-testid="stHeader"] .rc-overflow {
-    max-width: calc(100% - 52rem);
+    max-width: calc(100% - 59rem);
 }
 
 /* Sample-data controls (shared/sample_data.py): an amber "Demo data" badge whenever a sample stands in for an upload. */
@@ -274,9 +303,25 @@
 
 /* Top-bar logo: the Janota Fin badge, sized to fill the bar's height rather than Streamlit's default 2rem. */
 [data-testid="stHeaderLogo"] {
-    height: 2.75rem !important;
+    height: 1.9rem !important;
     width: auto !important;
-    border-radius: 6px;
+}
+
+/* The navigation links sit next to the logo (not pinned to the far right), leaving the right side to the account controls. */
+[data-testid="stHeader"] div:has(> .rc-overflow) {
+    justify-content: flex-start;
+    gap: 1.25rem;
+}
+
+/* A white header with a hairline under it; the logo is a transparent wordmark that sits straight on it. */
+[data-testid="stHeader"] {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* The FIFO sidebar is navy: show the wordmark in white there. */
+[data-testid="stSidebarLogo"] {
+    filter: brightness(0) invert(1);
 }
 
 /* Demo banner (apps/demo_banner.py): above a solution's tool when it was opened from a "Try ..." button. */
@@ -348,10 +393,13 @@
 }
 
 [data-testid="stHeader"] a[data-testid="stTopNavLink"][data-pp-active],
+[data-testid="stHeader"] a[data-testid="stTopNavLink"][aria-current="page"],
 [data-testid="stHeader"] [data-testid="stTopNavSection"][data-pp-active] {
-    color: var(--pp-primary);
+    color: #0f172a !important;
     font-weight: 600;
-    background-color: var(--pp-accent-soft);
+    background-color: transparent !important;   /* Streamlit paints its own gray block on the current page */
+    border-radius: 6px 6px 0 0;
+    box-shadow: inset 0 -2px 0 #0f172a !important;
 }
 
 /* Heading scale (tokens.css): Streamlit's own headings, so st.title / st.header / st.subheader match the pages that
