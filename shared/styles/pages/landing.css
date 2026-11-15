@@ -31,7 +31,7 @@
 /* 1. Public bar. One header only: Streamlit's page links are hidden while the landing page shows, and this bar sits in
    their place, beside the wordmark st.logo draws. The account strip (Sign in / greeting) stays at the right. */
 .stApp:has(.pp-land) [data-testid="stHeader"] .rc-overflow { display: none; }
-.pp-l-nav { position: fixed; top: .45rem; left: 11rem; z-index: 1000000; display: flex; align-items: center; gap: 1rem; height: 2.75rem; }
+.pp-l-nav { position: fixed; top: .45rem; left: 15.5rem; z-index: 1000000; display: flex; align-items: center; gap: 1rem; height: 2.75rem; }
 .pp-l-links { display: flex; align-items: center; gap: .25rem; }
 .pp-l-links button, .pp-l-links a { padding: .45rem .8rem; border: 0; border-radius: var(--pp-btn-radius); background: transparent; color: var(--pp-navy) !important;
     font: inherit; font-size: .95rem; font-weight: 600; text-decoration: none !important; cursor: pointer; }
