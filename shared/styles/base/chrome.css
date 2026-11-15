@@ -319,10 +319,8 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
-/* The FIFO sidebar is navy: show the wordmark in white there. */
-[data-testid="stSidebarLogo"] {
-    filter: brightness(0) invert(1);
-}
+/* The navy sidebars show the transparent wordmark in white: shared/layout.py adds that filter only while it is
+   serving the transparent logo, because the same filter turns the original opaque logo into a solid white box. */
 
 /* Demo banner (apps/demo_banner.py): above a solution's tool when it was opened from a "Try ..." button. */
 .st-key-pp-demo-bar { margin: .5rem 0 1rem; padding: .9rem 1.2rem; border-radius: .75rem; background: linear-gradient(135deg, var(--pp-navy), var(--pp-accent)); }

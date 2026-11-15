@@ -22,6 +22,7 @@ FAVICON_PATH = _SHARED_DIR / "assets" / "favicon.png"   # the logo's "J" and cya
 BRAND = "Janota FIN"
 HOME_TAGLINE = "Month-end automation for manufacturers and distributors"
 _BANNER_JS_PATH = _SHARED_DIR / "suite_banner.js"
+_SIDEBAR_LOGO_STYLE = '<style>[data-testid="stSidebarLogo"]{filter:brightness(0) invert(1)}</style>'
 
 # The account strip: filled in by suite_banner.js. Signed in it shows a greeting, the role, and an
 # avatar menu (profile, invoice workspace, sign out); signed out, a Sign in button. It sits in the
@@ -243,13 +244,17 @@ def apply_template() -> None:
     """Suite-wide chrome drawn on every page, before the page's own content."""
     # The header is white, so it gets the transparent navy-and-blue wordmark; the original (white on navy) is
     # kept for the landing page and as the fallback.
-    logo = _HEADER_LOGO_PATH if _HEADER_LOGO_PATH.is_file() else _LOGO_PATH
+    transparent = _HEADER_LOGO_PATH.is_file()
+    logo = _HEADER_LOGO_PATH if transparent else _LOGO_PATH
     if logo.is_file():
         st.logo(str(logo), size="large")
     inject_base()
+    # Navy sidebars (FIFO, Recon, Sales Tax) get the wordmark in white. Only the transparent logo can take this filter;
+    # on the opaque original it would paint a white box, so it is emitted only when that logo is the one served.
+    if transparent:
+        st.markdown(_SIDEBAR_LOGO_STYLE, unsafe_allow_html=True)
     try:
         banner_js = _BANNER_JS_PATH.read_text(encoding="utf-8")
     except FileNotFoundError:
         return  # No banner; every page still works.
     st.html(f"{_BANNER_HTML}<script>{banner_js}</script>", unsafe_allow_javascript=True)
-
