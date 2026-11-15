@@ -8,11 +8,13 @@ import html
 import pandas as pd
 import streamlit as st
 
+from shared import database
+from shared.identity import current_identity
 from shared.messages import friendly_error
 from shared import workflow
 from shared.sample_data import sample_downloads, sample_uploader
 
-from . import ui
+from . import ingestion, ui
 from .ingestion import (
     clear_trial_balance_cache,
     extra_sheet_note,
@@ -45,6 +47,9 @@ from .excel_output import (
     build_workbook,
     group_output_sheets,
 )
+
+# The shared trial balance lives in the organization's database when one is configured, else on disk (see ingestion.py).
+ingestion.configure_database(database.config, lambda: current_identity().name or "app")
 
 
 @st.cache_data(show_spinner=False, max_entries=8)

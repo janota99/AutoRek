@@ -8,12 +8,14 @@ Schema for saved reconciliation mappings and the FIFO period/layer store. The Cu
 | `migrations/002_integrity_and_tenant_security.sql` | Sequence, rollforward and latest-only-reopen triggers; tolerance on layer totals; append-only history; no cascading deletes; row-level security; the `app_runtime_role` grants. |
 | `migrations/003_supabase_hardening_and_app_login.sql` | Takes Supabase's `anon` and `authenticated` roles' access away (now and by default for new tables); creates `app_login`, the role the deployed app connects as. It has no password until you set one by hand. |
 | `migrations/004_recon_saved_runs.sql` | Saved Recon runs: `recon_runs`, `recon_run_inputs` (file fingerprints only), `recon_run_events` (notes, reviewed, workpaper prepared), `recon_run_workpapers`. All append-only, row-level security, no update/delete for the app role. Used by `apps/recon/run_store.py`. |
+| `migrations/005_workspace_settings_and_trial_balance.sql` | `workspace_settings` (the Workspace's fiscal calendars, one JSON document per organization; editable, no delete) and `sales_tax_trial_balance_versions` (every trial balance uploaded, restored or cleared; append-only, so the newest row is current, the one before it is the backup, and a clear row hides what came before). Used by `shared/settings_store.py` and `apps/sales_tax/trial_balance_store.py`. |
 | `connection.py` | Reads the app's database settings and opens a connection scoped to one organization; refuses an owner connection. |
 | `migrate.py` | Applies new migration files once each (`py -m db.migrate`, `--status`). Reads `DATABASE_URL`. |
 | `tests/test_connection.py` | Settings handling; always runs. |
 | `tests/test_store_live.py` | The saved-mapping library through the real app role; needs `DB_TEST_ADMIN_URL`. |
 | `tests/test_migrate.py` | File checks; always runs. |
 | `tests/test_runs_migration.py`, `tests/test_runs_live.py` | Migration 004 file checks (always run); saved runs through the real app role (need `DB_TEST_ADMIN_URL`). |
+| `tests/test_workspace_settings_live.py` | Migration 005 file checks and an unreachable-database check (always run); settings, trial balance history and the Sales Tax cache through the real app role (need `DB_TEST_ADMIN_URL`). |
 | `run_live_tests.py` | `py -m db.run_live_tests`: starts a temporary embedded PostgreSQL, runs `pytest db` against it, and removes it. |
 | `tests/test_schema_live.py` | Applies the migrations to a throwaway database and checks every rule; runs only when `DB_TEST_ADMIN_URL` is set. |
 

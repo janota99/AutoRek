@@ -227,7 +227,9 @@ _DATA_HANDLING = (
     "from the app. Runs on the built-in sample data are never saved.</li>"
     "<li><strong>Saved on the server's disk:</strong> FIFO closed-period snapshots and settings; the Sales Tax trial "
     "balance cache, which everyone using the app shares; and Recon's confirmed vendor aliases, with who confirmed "
-    "each one and when. To remove any of these, delete the files from the app's folders.</li>"
+    "each one and when. To remove any of these, delete the files from the app's folders. When your organization's database is connected, "
+    "the Sales Tax trial balance and the fiscal calendar are kept there instead (with a history of each trial balance), "
+    "not on the server's disk.</li>"
     "<li><strong>Access:</strong> the sign-in is simulated in your browser and is not access control. Anyone who can "
     "open this app can open every tool and the stored data above. Where your organization has set up a real sign-in, "
     "it only labels who ran and reviewed things in the Recon run history as verified; it does not restrict access.</li>"
@@ -366,8 +368,8 @@ with st.container(key="pp-fiscal"):
     with calendar_slot.popover("Fiscal calendar", icon=":material/calendar_month:"):
         _calendar_editor(fiscal_session.get_calendar())
     fiscal_session.set_end_date(entered)
-    if fiscal_session.save_failed():
-        st.warning("These settings could not be saved to disk, so they will be gone next session.")
+    if fiscal_session.save_problem():
+        st.warning(fiscal_session.save_problem())
     context = fiscal_session.current()
     if context is None:
         status.caption("No date set: each tool keeps its own fiscal period controls.")

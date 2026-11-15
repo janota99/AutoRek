@@ -7,8 +7,11 @@ functions can be exercised in ordinary unit tests.
 
 The Trial Balance cache is shared by default. In a multi-user deployment,
 access to replace or clear it should be restricted in the UI to authorized
-administrators. Local disk also may not survive a hosting restart, so this is
-a convenience cache rather than a permanent system of record. Atomic writes
+administrators. By default it lives on local disk, which may not survive a
+hosting restart. When the app is configured with a PostgreSQL database
+(``configure_database``), the cache lives there instead, per organization and
+append-only (``trial_balance_store``): nothing falls back to disk, so a database
+problem is reported as an error rather than showing a different file. Atomic writes
 protect against a corrupted file from a failed/concurrent write, and a
 one-version backup gives an undo path - neither of those is the same thing
 as per-user isolation or access control, which remain a UI-layer TODO.
@@ -37,6 +40,8 @@ from typing import BinaryIO
 
 import pandas as pd
 
+from . import trial_balance_store
+
 
 CACHE_DIR = Path(__file__).resolve().parent / "data"
 TRIAL_BALANCE_CACHE_PATH = CACHE_DIR / "trial_balance_cache.xlsx"
@@ -47,6 +52,42 @@ MAX_EXCLUSION_CSV_BYTES = 2 * 1024 * 1024
 MIN_TRIAL_BALANCE_COLUMNS = 3
 
 logger = logging.getLogger(__name__)
+
+# The Streamlit side tells this module how to reach the database (it keeps this module free of Streamlit):
+# ``config`` returns a db.connection.DatabaseConfig or None for "no database, use the disk"; ``actor`` names who is acting.
+DB_WAIT_SECONDS = 4
+_database = {"config": lambda: None, "actor": lambda: "app"}
+
+
+def configure_database(config_provider, actor_provider=None) -> None:
+    """Choose where the cache lives: ``config_provider()`` returns a DatabaseConfig, or None to use local disk."""
+    _database["config"] = config_provider
+    _database["actor"] = actor_provider or (lambda: "app")
+
+
+def _db_config():
+    """The configured database, or None for local disk. A broken database setting is an error, not a silent fallback."""
+    try:
+        return _database["config"]()
+    except Exception as exc:  # noqa: BLE001
+        raise IngestionError(f"The database settings are unusable ({exc}); the shared Trial Balance cannot be read.") from exc
+
+
+def _in_database(config, action):
+    """Run ``action(conn)`` as one transaction scoped to the organization; any database failure becomes an IngestionError."""
+    from db.connection import tenant_connection
+
+    try:
+        with tenant_connection(config, connect_timeout=DB_WAIT_SECONDS) as conn:
+            return action(conn)
+    except IngestionError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - psycopg errors, timeouts, a refused role
+        if type(exc).__name__ == "UndefinedTable":
+            detail = "the table is missing; an administrator needs to apply migration 005 (py -m db.migrate)"
+        else:
+            detail = f"{type(exc).__name__}: {str(exc).splitlines()[0][:160] if str(exc) else ''}"
+        raise IngestionError(f"The shared Trial Balance in the database could not be reached or updated ({detail}).") from exc
 
 _WHOLE_NUMBER_FLOAT_RE = re.compile(r"^(\d+)\.0+$")
 _LIKELY_EXCLUSION_HEADERS = {
@@ -345,7 +386,11 @@ def _load_cache_snapshot() -> tuple[pd.DataFrame, CacheStatus]:
     Raises IngestionError/OSError on any problem; callers decide how to
     handle that (load_cached_trial_balance treats it as "no usable cache",
     get_trial_balance_cache_status surfaces it as the specific error)."""
-    data = TRIAL_BALANCE_CACHE_PATH.read_bytes()
+    return _snapshot_from_bytes(TRIAL_BALANCE_CACHE_PATH.read_bytes(), _cache_mtime(TRIAL_BALANCE_CACHE_PATH))
+
+
+def _snapshot_from_bytes(data: bytes, modified_at: datetime) -> tuple[pd.DataFrame, CacheStatus]:
+    """(df, CacheStatus) for the cached workbook's bytes, wherever they were stored."""
     if not data:
         raise IngestionError("Cached Trial Balance: the cache file is empty.")
     if len(data) > MAX_EXCEL_BYTES:
@@ -355,7 +400,7 @@ def _load_cache_snapshot() -> tuple[pd.DataFrame, CacheStatus]:
     status = CacheStatus(
         exists=True,
         valid=True,
-        modified_at=_cache_mtime(TRIAL_BALANCE_CACHE_PATH),
+        modified_at=modified_at,
         fingerprint=_sha256(data),
         row_count=len(df),
         incomplete_count=incomplete_count,
@@ -388,6 +433,12 @@ def load_trial_balance_cache_snapshot() -> tuple[pd.DataFrame | None, CacheStatu
     rerun. Missing and invalid caches return ``None`` for the DataFrame and a
     status containing the reason.
     """
+    try:
+        config = _db_config()
+    except IngestionError as exc:
+        return None, CacheStatus(exists=True, valid=False, error=str(exc))
+    if config is not None:
+        return _load_snapshot_from_database(config)
     if not TRIAL_BALANCE_CACHE_PATH.exists():
         return None, CacheStatus(
             exists=False,
@@ -400,6 +451,26 @@ def load_trial_balance_cache_snapshot() -> tuple[pd.DataFrame | None, CacheStatu
             return _snapshot_memo["df"].copy(), _snapshot_memo["status"]
         df, status = _load_cache_snapshot()
     except (IngestionError, OSError) as exc:
+        _forget_snapshot()
+        return None, CacheStatus(exists=True, valid=False, error=str(exc))
+    _snapshot_memo.update(key=key, df=df, status=status)
+    return df.copy(), status
+
+
+def _load_snapshot_from_database(config) -> tuple[pd.DataFrame | None, CacheStatus]:
+    """The snapshot when the cache lives in the database: one cheap query says which version is current, and the workbook
+    is read and parsed only when that version is not the one already remembered."""
+    try:
+        version = _in_database(config, trial_balance_store.current_version)
+        if version is None:
+            _forget_snapshot()
+            return None, CacheStatus(exists=False, valid=False, error="No Trial Balance is cached.")
+        key = ("database", config.org_id, version.version_id)
+        if _snapshot_memo["key"] == key:
+            return _snapshot_memo["df"].copy(), _snapshot_memo["status"]
+        data = _in_database(config, lambda conn: trial_balance_store.read_file(conn, version.version_id))
+        df, status = _snapshot_from_bytes(data, version.created_at)
+    except IngestionError as exc:
         _forget_snapshot()
         return None, CacheStatus(exists=True, valid=False, error=str(exc))
     _snapshot_memo.update(key=key, df=df, status=status)
@@ -470,6 +541,14 @@ def save_trial_balance_cache(file_bytes: bytes) -> CacheStatus:
     df = _read_excel_bytes(data, label="Trial Balance")
     incomplete_count, duplicate_count = _summarize_trial_balance(df)
 
+    config = _db_config()
+    if config is not None:   # the database keeps the previous version as the backup by itself
+        _, saved_at = _in_database(config, lambda conn: trial_balance_store.save(
+            conn, config.org_id, data, saved_by=_database["actor"]()))
+        _forget_snapshot()
+        return CacheStatus(exists=True, valid=True, modified_at=saved_at, fingerprint=_sha256(data),
+                           row_count=len(df), incomplete_count=incomplete_count, duplicate_count=duplicate_count)
+
     # Read the current cache once; the bytes that are validated are the bytes
     # that become the backup, even if another session replaces the file.
     try:
@@ -501,6 +580,9 @@ def save_trial_balance_cache(file_bytes: bytes) -> CacheStatus:
 
 def restore_trial_balance_cache_backup() -> CacheStatus:
     """Restore the last valid cache version, retaining the current one."""
+    config = _db_config()
+    if config is not None:
+        return _restore_backup_in_database(config)
     if not TRIAL_BALANCE_BACKUP_PATH.exists():
         raise IngestionError("No Trial Balance cache backup is available.")
 
@@ -529,8 +611,33 @@ def restore_trial_balance_cache_backup() -> CacheStatus:
     )
 
 
+def _restore_backup_in_database(config) -> CacheStatus:
+    def restore(conn):
+        backup = trial_balance_store.backup_version(conn)
+        if backup is None:
+            raise IngestionError("No Trial Balance cache backup is available.")
+        data = trial_balance_store.read_file(conn, backup.version_id)
+        df = _read_excel_bytes(data, label="Trial Balance backup")
+        incomplete_count, duplicate_count = _summarize_trial_balance(df)
+        _, saved_at = trial_balance_store.save(conn, config.org_id, data, kind="restore", saved_by=_database["actor"]())
+        return CacheStatus(exists=True, valid=True, modified_at=saved_at, fingerprint=_sha256(data), row_count=len(df),
+                           incomplete_count=incomplete_count, duplicate_count=duplicate_count)
+
+    status = _in_database(config, restore)
+    _forget_snapshot()
+    return status
+
+
 def clear_trial_balance_cache(*, include_backup: bool = True) -> int:
-    """Remove cached Trial Balance files and return the number removed."""
+    """Remove cached Trial Balance files and return the number removed.
+
+    In the database nothing is deleted: a marker row hides the files, so the history stays."""
+    config = _db_config()
+    if config is not None:
+        removed = _in_database(config, lambda conn: trial_balance_store.clear(
+            conn, config.org_id, include_backup=include_backup, saved_by=_database["actor"]()))
+        _forget_snapshot()
+        return removed
     targets = [TRIAL_BALANCE_CACHE_PATH]
     if include_backup:
         targets.append(TRIAL_BALANCE_BACKUP_PATH)

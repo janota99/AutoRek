@@ -70,6 +70,7 @@ workbook cell. The September 2026 split was verified this way on 104,446 rows.
 
 ## Known issues
 
+- With a database configured (`[database]` secrets), the trial balance cache and the Workspace fiscal calendar live in PostgreSQL per organization (migration 005; `trial_balance_store.py`, `shared/settings_store.py`) and the disk is not used. If the database cannot be reached the page shows an error; it never falls back to a different file. Without one, both stay on the server's disk.
 - The trial balance cache is shared by everyone using the app, with no access control. The
   `ingestion.py` docstring describes it as a convenience cache, not a system of record.
 - `cleanup.get_controlled_options` (column index) and `vendor_reconciliation.get_controlled_options`

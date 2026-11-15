@@ -9,6 +9,10 @@ The workspace page writes the calendar and the optional period-end date here. A 
 ``pending_for(<tool>)`` before it draws its own fiscal widgets; it gets the context once per change
 (None if the field is blank or already applied) and sets its widgets from it. After that the tool's
 own controls win until the workspace value changes again.
+
+Where it is saved: in the organization's PostgreSQL database when one is configured (``shared.database``), otherwise in a file
+on the server's disk. The two are never mixed: with a database configured, the file is not read or written, and if the
+database cannot be reached the page says so and does not save over what it could not read.
 """
 from __future__ import annotations
 
@@ -21,6 +25,7 @@ from typing import Optional
 
 import streamlit as st
 
+from . import database, settings_store
 from .fiscal_calendar import (DEFAULT_PERIOD_DAYS, FiscalCalendar, FiscalContext, default_calendar, resolve,
                               suggest_period_ends, validate)
 
@@ -34,6 +39,9 @@ _VERIFIED = "suite_fiscal_verified"      # fiscal years whose calendar came from
 _END = "suite_fiscal_end"
 _CONTEXT = "suite_fiscal_context"
 _VERSION = "suite_fiscal_version"
+_DB_PROBLEM = "suite_fiscal_db_problem"  # why the database could not be read; while set, nothing is written to it
+_LAST_DB = "suite_fiscal_last_saved"     # what this session last read from or wrote to the database
+DB_WAIT_SECONDS = 4
 
 
 def _path() -> Path:
@@ -50,12 +58,54 @@ def _parse_calendar(year, data) -> Optional[FiscalCalendar]:
 
 
 def _read_all() -> tuple[Optional[FiscalCalendar], Optional[date], dict]:
-    """(active calendar, end date, {year: calendar}) from the saved file; (None, None, {}) when it is unusable. Never raises.
+    """(active calendar, end date, {year: calendar}) from where the settings are saved; (None, None, {}) when there are none
+    or they are unusable. Never raises. A database that cannot be read is recorded in session state (see ``save_problem``)."""
+    config, problem = _database_config()
+    if problem is None and config is not None:
+        try:
+            data = _from_database(config)
+        except Exception as exc:  # noqa: BLE001 - unreachable, refused role, missing table
+            problem = _why(exc)
+            data = None
+        else:
+            st.session_state[_LAST_DB] = data
+    elif problem is None:
+        try:
+            data = json.loads(_path().read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = None
+    else:
+        data = None
+    if problem is not None:
+        st.session_state[_DB_PROBLEM] = problem
+    return _parse_all(data)
 
-    An older file holds one year at the top level and nothing else: that year is the active calendar and the only one saved.
-    A damaged entry in the ``calendars`` map is skipped; the others are kept."""
+
+def _why(exc: BaseException) -> str:
+    if type(exc).__name__ == "UndefinedTable":
+        return "the settings table is missing; an administrator needs to apply migration 005 (py -m db.migrate)"
+    return f"{type(exc).__name__}: {str(exc).splitlines()[0][:160] if str(exc) else ''}"
+
+
+def _database_config():
+    """(config, problem): the configured database, or (None, None) for file storage, or (None, why) for a bad setting."""
     try:
-        data = json.loads(_path().read_text(encoding="utf-8"))
+        return database.config(), None
+    except Exception as exc:  # noqa: BLE001 - DatabaseConfigError
+        return None, str(exc)
+
+
+def _from_database(config) -> Optional[dict]:
+    from db.connection import tenant_connection
+
+    with tenant_connection(config, connect_timeout=DB_WAIT_SECONDS) as conn:
+        return settings_store.get(conn, settings_store.FISCAL)
+
+
+def _parse_all(data) -> tuple[Optional[FiscalCalendar], Optional[date], dict]:
+    """Parse the saved document. An older file holds one year at the top level and nothing else: that year is the active
+    calendar and the only one saved. A damaged entry in the ``calendars`` map is skipped; the others are kept."""
+    try:
         active = _parse_calendar(data["year"], data)
         if active is None:
             return None, None, {}
@@ -80,13 +130,50 @@ def _read_saved() -> tuple[Optional[FiscalCalendar], Optional[date]]:
     return active, end
 
 
-def _save() -> None:
+def _serialize() -> dict:
     calendar, end = get_calendar(), get_end_date()
-    data = {"year": calendar.year, "start": calendar.start.isoformat(),
+    return {"year": calendar.year, "start": calendar.start.isoformat(),
             "period_ends": [d.isoformat() for d in calendar.period_ends],
             "end_date": end.isoformat() if end else None,
             "calendars": {str(year): {"start": c.start.isoformat(), "period_ends": [d.isoformat() for d in c.period_ends]}
                           for year, c in sorted(_calendars().items())}}
+
+
+def _actor() -> str:
+    try:
+        from .identity import current_identity
+        return current_identity().name or "app"
+    except Exception:  # noqa: BLE001 - the name is for the audit column only
+        return "app"
+
+
+def _save_to_database(config, data: dict) -> None:
+    from db.connection import tenant_connection
+
+    if st.session_state.get(_DB_PROBLEM):
+        st.session_state["suite_fiscal_save_error"] = True   # never write over settings that could not be read
+        return
+    if data == st.session_state.get(_LAST_DB):
+        return
+    try:
+        with tenant_connection(config, connect_timeout=DB_WAIT_SECONDS) as conn:
+            settings_store.put(conn, config.org_id, settings_store.FISCAL, data, updated_by=_actor())
+    except Exception:  # noqa: BLE001
+        st.session_state["suite_fiscal_save_error"] = True   # the page says so; the session still works
+    else:
+        st.session_state[_LAST_DB] = data
+
+
+def _save() -> None:
+    data = _serialize()
+    config, problem = _database_config()
+    if problem is not None:
+        st.session_state[_DB_PROBLEM] = problem
+        st.session_state["suite_fiscal_save_error"] = True
+        return
+    if config is not None:
+        _save_to_database(config, data)
+        return
     path = _path()
     try:
         if json.loads(path.read_text(encoding="utf-8")) == data:
@@ -116,7 +203,18 @@ def _ensure_loaded() -> None:
 
 
 def save_failed() -> bool:
-    return bool(st.session_state.get("suite_fiscal_save_error"))
+    return bool(st.session_state.get("suite_fiscal_save_error") or st.session_state.get(_DB_PROBLEM))
+
+
+def save_problem() -> Optional[str]:
+    """A sentence for the page when the settings could not be read from or saved to where they live, else None."""
+    if st.session_state.get(_DB_PROBLEM):
+        return ("The database that holds these settings could not be read, so what you see is the default and nothing "
+                f"you change will be saved ({st.session_state[_DB_PROBLEM]}). Check the [database] settings.")
+    if st.session_state.get("suite_fiscal_save_error"):
+        where = "to the database" if _database_config()[0] is not None else "to disk"
+        return f"These settings could not be saved {where}, so they will be gone next session."
+    return None
 
 
 def get_calendar() -> FiscalCalendar:
